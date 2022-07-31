@@ -12,6 +12,67 @@ import androidx.lifecycle.LifecycleOwner
  */
 @Composable
 fun LifecycleAwareComponent(
+    onEnterCompose: ((owner: LifecycleOwner) -> Unit)? = null,
+    onExitCompose: ((owner: LifecycleOwner) -> Unit)? = null,
+    onCreate: ((owner: LifecycleOwner) -> Unit)? = null,
+    onStart: ((owner: LifecycleOwner) -> Unit)? = null,
+    onResume: ((owner: LifecycleOwner) -> Unit)? = null,
+    onPause: ((owner: LifecycleOwner) -> Unit)? = null,
+    onStop: ((owner: LifecycleOwner) -> Unit)? = null,
+    onDestroy: ((owner: LifecycleOwner) -> Unit)? = null,
+    content: @Composable () -> Unit
+) {
+    LifecycleAwareComponent(
+        listener = object : ComposeLifecycleListener {
+            override fun onEnterCompose(owner: LifecycleOwner) {
+                super.onEnterCompose(owner)
+                onEnterCompose?.invoke(owner)
+            }
+
+            override fun onExitCompose(owner: LifecycleOwner) {
+                super.onExitCompose(owner)
+                onExitCompose?.invoke(owner)
+            }
+
+            override fun onCreate(owner: LifecycleOwner) {
+                super.onCreate(owner)
+                onCreate?.invoke(owner)
+            }
+
+            override fun onStart(owner: LifecycleOwner) {
+                super.onStart(owner)
+                onStart?.invoke(owner)
+            }
+
+            override fun onResume(owner: LifecycleOwner) {
+                super.onResume(owner)
+                onResume?.invoke(owner)
+            }
+
+            override fun onPause(owner: LifecycleOwner) {
+                super.onPause(owner)
+                onPause?.invoke(owner)
+            }
+
+            override fun onStop(owner: LifecycleOwner) {
+                super.onStop(owner)
+                onStop?.invoke(owner)
+            }
+
+            override fun onDestroy(owner: LifecycleOwner) {
+                super.onDestroy(owner)
+                onDestroy?.invoke(owner)
+            }
+        },
+        content = content
+    )
+}
+
+/**
+ * 感知生命周期
+ */
+@Composable
+fun LifecycleAwareComponent(
     listener: ComposeLifecycleListener? = null,
     content: @Composable () -> Unit
 ) {
