@@ -1,0 +1,91 @@
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+    id "org.jetbrains.kotlin.kapt"
+}
+
+android {
+    compileSdk 32
+
+    defaultConfig {
+        minSdk 21
+        targetSdk 32
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+    }
+
+    buildFeatures {
+        compose true
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            zipAlignEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+        freeCompilerArgs += [
+                "-Xallow-jvm-ir-dependencies",
+                "-Xskip-prerelease-check",
+                "-Xuse-experimental=kotlinx.coroutines.ExperimentalCoroutinesApi",
+                "-Xuse-experimental=androidx.compose.animation.ExperimentalAnimationApi",
+                "-Xopt-in=androidx.compose.material.ExperimentalMaterialApi",
+                "-Xopt-in=com.google.accompanist.pager.ExperimentalPagerApi",
+                "-Xopt-in=kotlin.RequiresOptIn",
+        ]
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion "$compose_compiler_version"
+    }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+
+    implementation 'androidx.core:core-ktx:1.8.0'
+    implementation 'androidx.appcompat:appcompat:1.4.2'
+    implementation 'com.google.android.material:material:1.6.1'
+
+    // Compose
+    api "androidx.compose.ui:ui:$compose_version"
+    api "androidx.compose.ui:ui-util:$compose_version"
+    api "androidx.compose.ui:ui-tooling-preview:$compose_version"
+    api "androidx.compose.ui:ui-viewbinding:$compose_version"
+    api "androidx.compose.material:material:$compose_version"
+    api "androidx.compose.runtime:runtime-livedata:$compose_version"
+
+    androidTestApi "androidx.compose.ui:ui-test-junit4:$compose_version"
+    debugApi "androidx.compose.ui:ui-tooling:$compose_version"
+    debugApi "androidx.compose.ui:ui-test-manifest:$compose_version"
+
+    api "com.google.accompanist:accompanist-systemuicontroller:$accompanist_version"
+    api "com.google.accompanist:accompanist-drawablepainter:$accompanist_version"
+    api "com.google.accompanist:accompanist-navigation-animation:$accompanist_version"
+    api "com.google.accompanist:accompanist-pager:$accompanist_version"
+    api "com.google.accompanist:accompanist-pager-indicators:$accompanist_version"
+//    api "com.google.accompanist:accompanist-appcompat-theme:$accompanist_version"
+    api "com.google.accompanist:accompanist-swiperefresh:$accompanist_version"
+    api "com.google.accompanist:accompanist-flowlayout:$accompanist_version"
+    api "com.google.accompanist:accompanist-permissions:$accompanist_version"
+    api "com.google.accompanist:accompanist-placeholder-material:$accompanist_version"
+
+    api "androidx.paging:paging-compose:1.0.0-alpha15"
+    api "androidx.paging:paging-runtime-ktx:3.1.1"
+    api "androidx.paging:paging-common:3.1.1"
+
+    api 'androidx.activity:activity-compose:1.5.1'
+    api "androidx.navigation:navigation-compose:2.5.1"
+    api "androidx.constraintlayout:constraintlayout-compose:1.0.1"
+
+    api "io.coil-kt:coil-compose:2.1.0"
+}
