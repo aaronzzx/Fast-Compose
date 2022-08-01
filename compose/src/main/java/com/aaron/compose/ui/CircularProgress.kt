@@ -35,6 +35,7 @@ import kotlin.math.min
  */
 @Composable
 fun CircularProgress(
+    progress: Float,
     modifier: Modifier = Modifier,
     strokeWidth: Dp = StrokeWidth,
     strokeCap: StrokeCap = StrokeCap.Butt,
@@ -45,7 +46,6 @@ fun CircularProgress(
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
     smoothProgress: Boolean = true,
     smoothProgressSpec: AnimationSpec<Float> = tween(),
-    progress: Float
 ) {
     require(progress in valueRange) {
         "Invalid progress: $progress"
