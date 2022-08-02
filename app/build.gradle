@@ -15,6 +15,9 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables {
+            useSupportLibrary true
+        }
     }
 
     buildFeatures {
@@ -37,6 +40,11 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion "$compose_compiler_version"
     }
+    packagingOptions {
+        resources {
+            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+        }
+    }
 }
 
 dependencies {
@@ -50,4 +58,6 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 
     implementation project(':compose')
+
+    implementation("org.greenrobot:eventbus:3.3.1")
 }

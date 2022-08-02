@@ -3,6 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.aaron.fastcompose">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:name=".App"
         android:allowBackup="true"
@@ -14,6 +16,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FastCompose"
         tools:targetApi="31">
+        <activity
+            android:name=".SecondActivity"
+            android:exported="false"
+            android:label="@string/title_activity_second"
+            android:theme="@style/Theme.FastCompose" />
         <activity
             android:name=".MainActivity"
             android:exported="true">
