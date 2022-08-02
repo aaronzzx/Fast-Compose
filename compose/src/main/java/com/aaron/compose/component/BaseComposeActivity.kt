@@ -16,12 +16,19 @@ abstract class BaseComposeActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         init(savedInstanceState)
         setContent {
-            Content()
+            PreContent {
+                Content()
+            }
         }
     }
 
     protected open fun init(savedInstanceState: Bundle?) {
         WindowCompat.setDecorFitsSystemWindows(window, false)
+    }
+
+    @Composable
+    protected open fun PreContent(content: @Composable () -> Unit) {
+        content()
     }
 
     @Composable
