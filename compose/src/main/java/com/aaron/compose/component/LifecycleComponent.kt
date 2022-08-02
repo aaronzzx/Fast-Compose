@@ -23,7 +23,7 @@ fun RegistryComponent(
         onExitCompose = {
             unregister()
         },
-        content = content
+        content = content ?: {}
     )
 }
 
@@ -40,7 +40,7 @@ fun LifecycleComponent(
     onPause: ((owner: LifecycleOwner) -> Unit)? = null,
     onStop: ((owner: LifecycleOwner) -> Unit)? = null,
     onDestroy: ((owner: LifecycleOwner) -> Unit)? = null,
-    content: (@Composable () -> Unit)? = null
+    content: @Composable () -> Unit
 ) {
     LifecycleComponent(
         listener = object : ComposeLifecycleListener {
@@ -94,7 +94,7 @@ fun LifecycleComponent(
 @Composable
 fun LifecycleComponent(
     listener: ComposeLifecycleListener,
-    content: (@Composable () -> Unit)? = null
+    content: @Composable () -> Unit
 ) {
     val owner = LocalLifecycleOwner.current
 
@@ -120,7 +120,7 @@ fun LifecycleComponent(
         }
     }
 
-    content?.invoke()
+    content()
 }
 
 interface ComposeLifecycleListener {
