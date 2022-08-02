@@ -8,10 +8,30 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 
 /**
- * 感知生命周期
+ * 处理注册、解注册的组件
  */
 @Composable
-fun LifecycleAwareComponent(
+fun RegistryComponent(
+    register: () -> Unit,
+    unregister: () -> Unit,
+    content: (@Composable () -> Unit)? = null
+) {
+    LifecycleComponent(
+        onEnterCompose = {
+            register()
+        },
+        onExitCompose = {
+            unregister()
+        },
+        content = content
+    )
+}
+
+/**
+ * 感知生命周期组件
+ */
+@Composable
+fun LifecycleComponent(
     onEnterCompose: ((owner: LifecycleOwner) -> Unit)? = null,
     onExitCompose: ((owner: LifecycleOwner) -> Unit)? = null,
     onCreate: ((owner: LifecycleOwner) -> Unit)? = null,
@@ -20,9 +40,9 @@ fun LifecycleAwareComponent(
     onPause: ((owner: LifecycleOwner) -> Unit)? = null,
     onStop: ((owner: LifecycleOwner) -> Unit)? = null,
     onDestroy: ((owner: LifecycleOwner) -> Unit)? = null,
-    content: @Composable () -> Unit
+    content: (@Composable () -> Unit)? = null
 ) {
-    LifecycleAwareComponent(
+    LifecycleComponent(
         listener = object : ComposeLifecycleListener {
             override fun onEnterCompose(owner: LifecycleOwner) {
                 super.onEnterCompose(owner)
@@ -69,40 +89,38 @@ fun LifecycleAwareComponent(
 }
 
 /**
- * 感知生命周期
+ * 感知生命周期组件
  */
 @Composable
-fun LifecycleAwareComponent(
-    listener: ComposeLifecycleListener? = null,
-    content: @Composable () -> Unit
+fun LifecycleComponent(
+    listener: ComposeLifecycleListener,
+    content: (@Composable () -> Unit)? = null
 ) {
-    listener?.also {
-        val owner = LocalLifecycleOwner.current
+    val owner = LocalLifecycleOwner.current
 
-        DisposableEffect(Unit) {
-            listener.onEnterCompose(owner)
-            val observer = LifecycleEventObserver { _, event ->
-                when (event) {
-                    Lifecycle.Event.ON_CREATE -> listener.onCreate(owner)
-                    Lifecycle.Event.ON_START -> listener.onStart(owner)
-                    Lifecycle.Event.ON_RESUME -> listener.onResume(owner)
-                    Lifecycle.Event.ON_PAUSE -> listener.onPause(owner)
-                    Lifecycle.Event.ON_STOP -> listener.onStop(owner)
-                    Lifecycle.Event.ON_DESTROY -> listener.onDestroy(owner)
-                    else -> Unit
-                }
+    DisposableEffect(Unit) {
+        listener.onEnterCompose(owner)
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_CREATE -> listener.onCreate(owner)
+                Lifecycle.Event.ON_START -> listener.onStart(owner)
+                Lifecycle.Event.ON_RESUME -> listener.onResume(owner)
+                Lifecycle.Event.ON_PAUSE -> listener.onPause(owner)
+                Lifecycle.Event.ON_STOP -> listener.onStop(owner)
+                Lifecycle.Event.ON_DESTROY -> listener.onDestroy(owner)
+                else -> Unit
             }
+        }
 
-            owner.lifecycle.addObserver(observer)
+        owner.lifecycle.addObserver(observer)
 
-            onDispose {
-                listener.onExitCompose(owner)
-                owner.lifecycle.removeObserver(observer)
-            }
+        onDispose {
+            listener.onExitCompose(owner)
+            owner.lifecycle.removeObserver(observer)
         }
     }
 
-    content()
+    content?.invoke()
 }
 
 interface ComposeLifecycleListener {
