@@ -1,4 +1,4 @@
-package com.aaron.compose
+package com.aaron.compose.ktx
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource

@@ -1,4 +1,4 @@
-package com.aaron.compose.component
+package com.aaron.compose.base
 
 import android.os.Bundle
 import androidx.activity.compose.setContent
