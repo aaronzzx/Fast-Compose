@@ -26,3 +26,20 @@ fun ScreenAdapter(adaptWidth: Int, content: @Composable () -> Unit) {
         content = content
     )
 }
+
+/**
+ * 取消屏幕适配，如果上级组合中使用了 [ScreenAdapter] 则用这个函数可以取消适配
+ */
+@Composable
+fun UnsetScreenAdapter(content: @Composable () -> Unit) {
+    val metrics = LocalContext.current.resources.displayMetrics
+    val density = metrics.density
+    val fontScale = LocalDensity.current.fontScale
+    CompositionLocalProvider(
+        LocalDensity provides Density(
+            density = density,
+            fontScale = fontScale
+        ),
+        content = content
+    )
+}
