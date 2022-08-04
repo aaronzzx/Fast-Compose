@@ -6,15 +6,20 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import com.aaron.compose.ktx.rememberEventBusEvent
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import kotlinx.coroutines.delay
 import org.greenrobot.eventbus.EventBus
@@ -38,7 +43,13 @@ class SecondActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    Greeting("Android")
+                    val helloEvent by rememberEventBusEvent(AnotherEvent::class, true)
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = helloEvent?.text ?: "SecondActivity")
+                    }
 
                     val activity = LocalContext.current as Activity
                     LaunchedEffect(Unit) {
