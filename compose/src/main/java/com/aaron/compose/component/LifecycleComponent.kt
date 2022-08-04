@@ -14,7 +14,7 @@ import androidx.lifecycle.LifecycleOwner
 fun RegistryComponent(
     register: () -> Unit,
     unregister: () -> Unit,
-    content: (@Composable () -> Unit)? = null
+    content: @Composable () -> Unit
 ) {
     LifecycleComponent(
         onEnterCompose = {
@@ -23,7 +23,7 @@ fun RegistryComponent(
         onExitCompose = {
             unregister()
         },
-        content = content ?: {}
+        content = content
     )
 }
 
@@ -32,56 +32,56 @@ fun RegistryComponent(
  */
 @Composable
 fun LifecycleComponent(
-    onEnterCompose: ((owner: LifecycleOwner) -> Unit)? = null,
-    onExitCompose: ((owner: LifecycleOwner) -> Unit)? = null,
-    onCreate: ((owner: LifecycleOwner) -> Unit)? = null,
-    onStart: ((owner: LifecycleOwner) -> Unit)? = null,
-    onResume: ((owner: LifecycleOwner) -> Unit)? = null,
-    onPause: ((owner: LifecycleOwner) -> Unit)? = null,
-    onStop: ((owner: LifecycleOwner) -> Unit)? = null,
-    onDestroy: ((owner: LifecycleOwner) -> Unit)? = null,
+    onEnterCompose: (() -> Unit)? = null,
+    onExitCompose: (() -> Unit)? = null,
+    onCreate: (() -> Unit)? = null,
+    onStart: (() -> Unit)? = null,
+    onResume: (() -> Unit)? = null,
+    onPause: (() -> Unit)? = null,
+    onStop: (() -> Unit)? = null,
+    onDestroy: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     LifecycleComponent(
         listener = object : ComposeLifecycleListener {
             override fun onEnterCompose(owner: LifecycleOwner) {
                 super.onEnterCompose(owner)
-                onEnterCompose?.invoke(owner)
+                onEnterCompose?.invoke()
             }
 
             override fun onExitCompose(owner: LifecycleOwner) {
                 super.onExitCompose(owner)
-                onExitCompose?.invoke(owner)
+                onExitCompose?.invoke()
             }
 
             override fun onCreate(owner: LifecycleOwner) {
                 super.onCreate(owner)
-                onCreate?.invoke(owner)
+                onCreate?.invoke()
             }
 
             override fun onStart(owner: LifecycleOwner) {
                 super.onStart(owner)
-                onStart?.invoke(owner)
+                onStart?.invoke()
             }
 
             override fun onResume(owner: LifecycleOwner) {
                 super.onResume(owner)
-                onResume?.invoke(owner)
+                onResume?.invoke()
             }
 
             override fun onPause(owner: LifecycleOwner) {
                 super.onPause(owner)
-                onPause?.invoke(owner)
+                onPause?.invoke()
             }
 
             override fun onStop(owner: LifecycleOwner) {
                 super.onStop(owner)
-                onStop?.invoke(owner)
+                onStop?.invoke()
             }
 
             override fun onDestroy(owner: LifecycleOwner) {
                 super.onDestroy(owner)
-                onDestroy?.invoke(owner)
+                onDestroy?.invoke()
             }
         },
         content = content

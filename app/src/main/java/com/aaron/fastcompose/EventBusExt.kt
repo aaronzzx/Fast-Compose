@@ -6,7 +6,7 @@ import com.aaron.compose.component.RegistryComponent
 import org.greenrobot.eventbus.EventBus
 
 @Composable
-fun EventBusComponent(subscriber: Any, content: (@Composable () -> Unit)? = null) {
+fun EventBusComponent(subscriber: Any, content: @Composable () -> Unit) {
     RegistryComponent(
         register = {
             Log.d("zzx", "register: $subscriber")

@@ -42,7 +42,7 @@ class SecondActivity : ComponentActivity() {
 
                     val activity = LocalContext.current as Activity
                     LaunchedEffect(Unit) {
-                        delay(1000)
+                        delay(2000)
                         val date = Date(System.currentTimeMillis())
                         val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT)
                         EventBus.getDefault().post(HelloEvent("SecondActivity: ${sdf.format(date)}"))
