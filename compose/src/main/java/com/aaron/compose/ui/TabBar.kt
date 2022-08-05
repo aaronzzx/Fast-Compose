@@ -63,7 +63,7 @@ fun <T> TabBar(
         val isSelected = selectedTabIndex == index
         if (enableRipple) {
             Tab(
-                modifier = modifier.heightIn(min = 44.dp),
+                modifier = modifier.heightIn(min = 48.dp),
                 selected = isSelected,
                 onClick = {
                     onTabClick(index, item)
