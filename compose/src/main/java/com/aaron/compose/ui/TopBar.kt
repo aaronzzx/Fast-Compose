@@ -1,25 +1,17 @@
 package com.aaron.compose.ui
 
-import android.app.Activity
-import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.material.AppBarDefaults
 import androidx.compose.material.Divider
+import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
-import androidx.compose.material.LocalContentAlpha
-import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
@@ -35,8 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -44,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
-import com.aaron.compose.ktx.requireActivity
 import com.aaron.compose.ktx.toDp
 
 private const val DEBUG = false
@@ -52,8 +42,8 @@ private const val DEBUG = false
 @Composable
 fun TopBar(
     title: String,
-    @DrawableRes backIcon: Int,
     modifier: Modifier = Modifier,
+    @DrawableRes startIcon: Int? = null,
     backgroundColor: Color = MaterialTheme.colors.primarySurface,
     titleColor: Color = contentColorFor(backgroundColor),
     titleSize: TextUnit = 18.sp,
@@ -61,7 +51,8 @@ fun TopBar(
     elevation: Dp = AppBarDefaults.TopAppBarElevation,
     showBottomDivider: Boolean = false,
     bottomDividerColor: Color = Color(0xFFF2F2F2),
-    onBackClick: (() -> Unit)? = null,
+    contentPadding: PaddingValues = AppBarDefaults.ContentPadding,
+    onStartIconClick: (() -> Unit)? = null,
     startLayout: (@Composable BoxScope.() -> Unit)? = null,
     endLayout: (@Composable BoxScope.() -> Unit)? = null,
     titleLayout: (@Composable BoxScope.() -> Unit)? = null
@@ -72,16 +63,18 @@ fun TopBar(
         elevation = elevation,
         showBottomDivider = showBottomDivider,
         bottomDividerColor = bottomDividerColor,
+        contentPadding = contentPadding,
         startLayout = {
             if (startLayout != null) {
                 this.startLayout()
-            } else {
-                val currentOnBackClick by rememberUpdatedState(newValue = onBackClick)
-                val activity = LocalContext.current.requireActivity<Activity>()
-                IconButton(onClick = {
-                    currentOnBackClick?.invoke() ?: activity.onBackPressed()
-                }) {
-                    ResIcon(resId = backIcon, tint = LocalContentColor.current.copy(1f))
+            } else if (startIcon != null) {
+                val currentOnStartIconClick by rememberUpdatedState(newValue = onStartIconClick)
+                IconButton(
+                    onClick = {
+                        currentOnStartIconClick?.invoke()
+                    }
+                ) {
+                    Icon(painter = painterResource(id = startIcon), contentDescription = null)
                 }
             }
         },
@@ -114,6 +107,7 @@ fun BaseTopBar(
     showBottomDivider: Boolean = false,
     bottomDividerHeight: Dp = 1.dp,
     bottomDividerColor: Color = Color(0xFFF2F2F2),
+    contentPadding: PaddingValues = AppBarDefaults.ContentPadding,
     startLayout: (@Composable BoxScope.() -> Unit)? = null,
     endLayout: (@Composable BoxScope.() -> Unit)? = null,
     titleLayout: (@Composable BoxScope.() -> Unit)? = null
@@ -123,7 +117,7 @@ fun BaseTopBar(
         backgroundColor = backgroundColor,
         contentColor = contentColor,
         elevation = elevation,
-        contentPadding = PaddingValues(start = 0.dp, end = 0.dp)
+        contentPadding = contentPadding
     ) {
         ConstraintLayout(
             modifier = Modifier.fillMaxSize()
