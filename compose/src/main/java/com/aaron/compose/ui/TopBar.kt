@@ -1,6 +1,5 @@
 package com.aaron.compose.ui
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -8,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.AppBarDefaults
 import androidx.compose.material.Divider
 import androidx.compose.material.Icon
@@ -26,8 +26,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -35,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
+import coil.compose.AsyncImage
 import com.aaron.compose.ktx.toDp
 
 private const val DEBUG = false
@@ -43,9 +46,9 @@ private const val DEBUG = false
 fun TopBar(
     title: String,
     modifier: Modifier = Modifier,
-    @DrawableRes startIcon: Int? = null,
+    startIcon: Any? = null,
     backgroundColor: Color = MaterialTheme.colors.primarySurface,
-    titleColor: Color = contentColorFor(backgroundColor),
+    contentColor: Color = contentColorFor(backgroundColor),
     titleSize: TextUnit = 18.sp,
     titleWeight: FontWeight? = FontWeight.Bold,
     elevation: Dp = AppBarDefaults.TopAppBarElevation,
@@ -74,7 +77,21 @@ fun TopBar(
                         currentOnStartIconClick?.invoke()
                     }
                 ) {
-                    Icon(painter = painterResource(id = startIcon), contentDescription = null)
+                    if (startIcon is ImageVector) {
+                        Icon(
+                            imageVector = startIcon,
+                            contentDescription = null,
+                            tint = contentColor
+                        )
+                    } else {
+                        AsyncImage(
+                            modifier = Modifier.size(48.dp),
+                            contentScale = ContentScale.Inside,
+                            model = startIcon,
+                            contentDescription = null,
+                            colorFilter = ColorFilter.tint(contentColor)
+                        )
+                    }
                 }
             }
         },
@@ -85,7 +102,7 @@ fun TopBar(
         } else {
             Text(
                 text = title,
-                color = titleColor,
+                color = contentColor,
                 fontSize = titleSize,
                 fontWeight = titleWeight,
                 maxLines = 1
