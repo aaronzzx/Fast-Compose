@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.aaron.compose.base.BaseComposeActivity
 import com.aaron.compose.ktx.requireActivity
 import com.aaron.compose.ui.TopBar
-import com.aaron.fastcompose.theme.ComposeTheme
+import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 class MainActivity : BaseComposeActivity() {
@@ -36,7 +36,7 @@ class MainActivity : BaseComposeActivity() {
         BackHandler {
             finish()
         }
-        ComposeTheme() {
+        FastComposeTheme() {
             Surface(
                 modifier = Modifier
                     .fillMaxSize(),
