@@ -1,5 +1,6 @@
 package com.aaron.fastcompose
 
+import android.os.Bundle
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,11 @@ import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 class MainActivity : BaseComposeActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        SecondActivity.start(this)
+    }
 
     @Composable
     override fun Content() {
