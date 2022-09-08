@@ -1,7 +1,7 @@
 package com.aaron.fastcompose
 
 /**
- * @author DS-Z
+ * @author aaronzzxup@gmail.com
  * @since 2022/8/2
  */
 data class HelloEvent(val text: String)

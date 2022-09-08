@@ -29,7 +29,6 @@ fun NonRippleTab(
     unselectedContentColor: Color = selectedContentColor.copy(alpha = ContentAlpha.medium),
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val rippleTheme = LocalRippleTheme.current
     CompositionLocalProvider(LocalRippleTheme provides NoRippleTheme) {
         Tab(
             selected = selected,
@@ -38,12 +37,9 @@ fun NonRippleTab(
             enabled = enabled,
             interactionSource = interactionSource,
             selectedContentColor = selectedContentColor,
-            unselectedContentColor = unselectedContentColor
-        ) {
-            CompositionLocalProvider(LocalRippleTheme provides rippleTheme) {
-                content()
-            }
-        }
+            unselectedContentColor = unselectedContentColor,
+            content = content
+        )
     }
 }
 

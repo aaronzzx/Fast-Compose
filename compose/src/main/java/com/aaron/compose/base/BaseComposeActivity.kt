@@ -16,9 +16,7 @@ abstract class BaseComposeActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         init(savedInstanceState)
         setContent {
-            PreContent {
-                Content()
-            }
+            MainContent()
         }
     }
 
@@ -27,8 +25,8 @@ abstract class BaseComposeActivity : FragmentActivity() {
     }
 
     @Composable
-    protected open fun PreContent(content: @Composable () -> Unit) {
-        content()
+    protected open fun MainContent() {
+        Content()
     }
 
     @Composable

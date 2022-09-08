@@ -42,7 +42,7 @@ fun CircularProgress(
     backgroundColor: Color = Color.Unspecified,
     activeColor: Color = MaterialTheme.colors.primary,
     staticColor: Color = activeColor.copy(alpha = IndicatorBackgroundOpacity),
-    startAngle: Float = 270f,
+    startAngle: Float = -90f,
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
     smoothProgress: Boolean = true,
     smoothProgressSpec: AnimationSpec<Float> = tween(),

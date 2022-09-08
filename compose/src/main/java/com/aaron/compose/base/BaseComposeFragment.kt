@@ -25,9 +25,7 @@ abstract class BaseComposeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         init(savedInstanceState)
         (view as ComposeView).setContent {
-            PreContent {
-                Content()
-            }
+            MainContent()
         }
     }
 
@@ -35,8 +33,8 @@ abstract class BaseComposeFragment : Fragment() {
     }
 
     @Composable
-    protected open fun PreContent(content: @Composable () -> Unit) {
-        content()
+    protected open fun MainContent() {
+        Content()
     }
 
     @Composable
