@@ -26,6 +26,7 @@ import kotlin.math.min
 /**
  * 带水波纹点击事件
  *
+ * @param enabled 是否启用点击
  * @param enableRipple 是否支持水波纹效果
  * @param rippleColor 水波纹颜色
  * @param rippleBounded 如果为真，波纹会被目标布局的边界截断。无界波纹总是从目标布局中心开始动画，有界波纹总是从触摸位置开始动画
@@ -33,6 +34,7 @@ import kotlin.math.min
  * @param onClick 点击回调
  */
 fun Modifier.onClick(
+    enabled: Boolean = true,
     enableRipple: Boolean = true,
     rippleColor: Color = Color.Unspecified,
     rippleBounded: Boolean = true,
@@ -40,11 +42,11 @@ fun Modifier.onClick(
     onClick: () -> Unit
 ) = composed {
     clickable(
+        enabled = enabled,
         interactionSource = remember { MutableInteractionSource() },
-        indication = if (enableRipple) rememberRipple(rippleBounded, rippleRadius, rippleColor) else null
-    ) {
-        onClick()
-    }
+        indication = if (enableRipple) rememberRipple(rippleBounded, rippleRadius, rippleColor) else null,
+        onClick = onClick
+    )
 }
 
 /**
