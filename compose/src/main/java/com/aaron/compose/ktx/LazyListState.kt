@@ -1,7 +1,6 @@
 package com.aaron.compose.ktx
 
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.grid.LazyGridState
 
 /**
  * 最后一个条目的索引
