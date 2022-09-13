@@ -2,8 +2,6 @@ package com.aaron.compose.ui
 
 import android.content.Context
 import android.view.View
-import androidx.compose.foundation.LocalOverscrollConfiguration
-import androidx.compose.foundation.OverscrollConfiguration
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.ScrollableDefaults
@@ -24,7 +22,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +34,7 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.aaron.compose.R
+import com.aaron.compose.utils.OverScrollHandler
 import com.aaron.compose.ktx.canScrollVertical
 import com.scwang.smart.refresh.footer.ClassicsFooter
 import com.scwang.smart.refresh.header.ClassicsHeader
@@ -76,10 +74,7 @@ fun SmartRefreshList(
         header = header,
         footer = footer
     ) {
-        val overScroll = if (!refreshEnabled && !loadMoreEnabled) OverscrollConfiguration() else null
-        CompositionLocalProvider(
-            LocalOverscrollConfiguration provides overScroll
-        ) {
+        OverScrollHandler(enabled = !refreshEnabled && !loadMoreEnabled) {
             LazyColumn(
                 modifier = listConfig.modifier,
                 state = listState,
@@ -128,10 +123,7 @@ fun SmartRefreshGrid(
         header = header,
         footer = footer
     ) {
-        val overScroll = if (!refreshEnabled && !loadMoreEnabled) OverscrollConfiguration() else null
-        CompositionLocalProvider(
-            LocalOverscrollConfiguration provides overScroll
-        ) {
+        OverScrollHandler(enabled = !refreshEnabled && !loadMoreEnabled) {
             LazyVerticalGrid(
                 columns = columns,
                 modifier = listConfig.modifier,
@@ -180,10 +172,7 @@ fun SmartRefresh(
         header = header,
         footer = footer
     ) {
-        val overScroll = if (!refreshEnabled && !loadMoreEnabled) OverscrollConfiguration() else null
-        CompositionLocalProvider(
-            LocalOverscrollConfiguration provides overScroll
-        ) {
+        OverScrollHandler(enabled = !refreshEnabled && !loadMoreEnabled) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()

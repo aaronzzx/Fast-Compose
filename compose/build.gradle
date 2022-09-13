@@ -37,6 +37,7 @@ android {
                 "-Xskip-prerelease-check",
                 "-Xuse-experimental=kotlinx.coroutines.ExperimentalCoroutinesApi",
                 "-Xuse-experimental=androidx.compose.animation.ExperimentalAnimationApi",
+                "-Xopt-in=dev.chrisbanes.snapper.ExperimentalSnapperApi",
                 "-Xopt-in=androidx.compose.ui.ExperimentalComposeUiApi",
                 "-Xopt-in=androidx.compose.foundation.ExperimentalFoundationApi",
                 "-Xopt-in=androidx.compose.material.ExperimentalMaterialApi",
