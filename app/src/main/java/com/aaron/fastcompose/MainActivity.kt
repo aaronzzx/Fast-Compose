@@ -2,6 +2,7 @@ package com.aaron.fastcompose
 
 import android.os.Bundle
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,9 +14,18 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.LocalContentColor
@@ -25,6 +35,9 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +53,7 @@ import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ktx.requireActivity
 import com.aaron.compose.ui.LazyGridConfig
 import com.aaron.compose.ui.LazyListConfig
+import com.aaron.compose.ui.ScrollConfig
 import com.aaron.compose.ui.SmartRefresh
 import com.aaron.compose.ui.SmartRefreshGrid
 import com.aaron.compose.ui.SmartRefreshList
@@ -47,6 +61,7 @@ import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.rememberSmartRefreshState
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import com.blankj.utilcode.util.ToastUtils
+import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -88,9 +103,7 @@ class MainActivity : BaseComposeActivity() {
                             }
                         }
                     )
-//                    SmartRefreshList()
-                    SmartRefreshGrid()
-//                    SmartRefresh()
+                    MyPager()
                 }
             }
         }
@@ -125,15 +138,39 @@ private fun TopBarTitle() {
 }
 
 @Composable
-private fun SmartRefreshList() {
+private fun MyPager() {
+    val lazyListState = rememberLazyListState()
+    val lazyGridState = rememberLazyGridState()
+    val scrollState = rememberScrollState()
+    val userScrollEnabled by remember {
+        derivedStateOf {
+            !lazyListState.isScrollInProgress
+                    && !lazyGridState.isScrollInProgress
+                    && !scrollState.isScrollInProgress
+        }
+    }
+    HorizontalPager(
+        count = 3,
+        userScrollEnabled = userScrollEnabled
+    ) { page ->
+        when (page) {
+            0 -> SmartRefreshList(lazyListState)/*JustList()*/
+            1 -> SmartRefreshGrid(lazyGridState)/*JustGrid()*/
+            else -> /*SmartRefresh(scrollState)*/JustScroll()
+        }
+    }
+}
+
+@Composable
+private fun SmartRefreshList(listState: LazyListState) {
+    val refreshState = rememberSmartRefreshState(isRefreshing = false)
     SmartRefreshList(
-        onRefresh = { /*TODO*/ },
-        loadMoreEnabled = true,
-        modifier = Modifier
-            .background(color = Color(0xFFF0F0F0)),
+        onRefresh = { refreshState.finishRefresh(true) },
+        refreshState = refreshState,
+        modifier = Modifier.background(color = Color(0xFFF0F0F0)),
+        listState = listState,
         listConfig = LazyListConfig(
-            modifier = Modifier
-                .background(color = Color(0xFFF0F0F0)),
+            modifier = Modifier.background(color = Color(0xFFF0F0F0)),
             contentPadding = PaddingValues(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         )
@@ -168,7 +205,43 @@ private fun SmartRefreshList() {
 }
 
 @Composable
-private fun SmartRefreshGrid() {
+private fun JustList() {
+    LazyColumn(
+        modifier = Modifier.background(color = Color(0xFFF0F0F0)),
+        contentPadding = PaddingValues(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(21) {
+            Box(
+                modifier = Modifier
+                    .clipToBackground(
+                        color = Color.White,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .onClick(
+                        enableRipple = true,
+                        rippleColor = Color.Red.copy(0.1f),
+                        rippleBounded = true
+                    ) {
+                        ToastUtils.showShort("Happy everyday")
+                    }
+                    .fillMaxWidth()
+                    .height(200.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "$it",
+                    color = Color(0xFF333333),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 56.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SmartRefreshGrid(listState: LazyGridState) {
     val state = rememberSmartRefreshState(isRefreshing = false)
     val scope = rememberCoroutineScope()
     SmartRefreshGrid(
@@ -179,14 +252,9 @@ private fun SmartRefreshGrid() {
                 state.finishRefresh(Random(System.currentTimeMillis()).nextBoolean())
             }
         },
-        onLoadMore = {
-            scope.launch {
-                delay(1000)
-                state.finishLoadMore(Random(System.currentTimeMillis()).nextBoolean())
-            }
-        },
-        state = state,
+        refreshState = state,
         modifier = Modifier.background(color = Color(0xFFF0F0F0)),
+        listState = listState,
         listConfig = LazyGridConfig(
             modifier = Modifier.background(color = Color(0xFFF0F0F0)),
             contentPadding = PaddingValues(8.dp),
@@ -224,7 +292,45 @@ private fun SmartRefreshGrid() {
 }
 
 @Composable
-private fun SmartRefresh() {
+private fun JustGrid() {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3),
+        modifier = Modifier.background(color = Color(0xFFF0F0F0)),
+        contentPadding = PaddingValues(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(36) {
+            Box(
+                modifier = Modifier
+                    .clipToBackground(
+                        color = Color.White,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .onClick(
+                        enableRipple = true,
+                        rippleColor = Color.Red.copy(0.1f),
+                        rippleBounded = true
+                    ) {
+                        ToastUtils.showShort("Happy everyday")
+                    }
+                    .fillMaxWidth()
+                    .height(200.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "$it",
+                    color = Color(0xFF333333),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 56.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SmartRefresh(listState: ScrollState) {
     val state = rememberSmartRefreshState(isRefreshing = false)
     val scope = rememberCoroutineScope()
     SmartRefresh(
@@ -234,15 +340,52 @@ private fun SmartRefresh() {
                 state.finishRefresh(Random(System.currentTimeMillis()).nextBoolean())
             }
         },
-//        onLoadMore = {
-//            scope.launch {
-//                delay(1000)
-//                state.finishLoadMore(true)
-//            }
-//        },
-        state = state,
+        refreshState = state,
         modifier = Modifier.background(color = Color(0xFFF0F0F0)),
-        contentPadding = PaddingValues(8.dp)
+        listState = listState,
+        listConfig = remember { ScrollConfig(contentPadding = PaddingValues(8.dp)) },
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            repeat(20) {
+                Box(
+                    modifier = Modifier
+                        .clipToBackground(
+                            color = Color.White,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .onClick(
+                            enableRipple = true,
+                            rippleColor = Color.Red.copy(0.1f),
+                            rippleBounded = true
+                        ) {
+                            ToastUtils.showShort("Happy everyday")
+                        }
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "$it",
+                        color = Color(0xFF333333),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 56.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun JustScroll() {
+    Box(
+        modifier = Modifier
+            .background(color = Color(0xFFF0F0F0))
+            .fillMaxSize()
+            .verticalScroll(state = rememberScrollState())
+            .padding(PaddingValues(8.dp))
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp)

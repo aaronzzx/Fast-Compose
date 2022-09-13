@@ -33,9 +33,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.aaron.compose.R
@@ -47,22 +45,11 @@ import com.scwang.smart.refresh.layout.api.RefreshFooter
 import com.scwang.smart.refresh.layout.api.RefreshHeader
 import com.scwang.smart.refresh.layout.listener.ScrollBoundaryDecider
 
-object SmartRefreshDefaults {
-
-    val defaultHeader: (Context) -> RefreshHeader = { context: Context -> ClassicsHeader(context) }
-    val defaultFooter: (Context) -> RefreshFooter = { context: Context -> ClassicsFooter(context) }
-}
-
-@Composable
-fun rememberSmartRefreshState(isRefreshing: Boolean): SmartRefreshState = remember {
-    SmartRefreshState(isRefreshing)
-}
-
 @Composable
 fun SmartRefreshList(
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
-    state: SmartRefreshState = rememberSmartRefreshState(false),
+    refreshState: SmartRefreshState = rememberSmartRefreshState(false),
     refreshEnabled: Boolean = true,
     onLoadMore: (() -> Unit)? = null,
     loadMoreEnabled: Boolean = onLoadMore != null,
@@ -79,7 +66,7 @@ fun SmartRefreshList(
             refreshEnabled && !listState.canScrollVertical(-1)
         },
         modifier = modifier,
-        state = state,
+        refreshState = refreshState,
         refreshEnabled = refreshEnabled,
         loadMoreEnabled = loadMoreEnabled,
         onLoadMore = onLoadMore,
@@ -114,7 +101,7 @@ fun SmartRefreshGrid(
     columns: GridCells,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
-    state: SmartRefreshState = rememberSmartRefreshState(false),
+    refreshState: SmartRefreshState = rememberSmartRefreshState(false),
     refreshEnabled: Boolean = true,
     onLoadMore: (() -> Unit)? = null,
     loadMoreEnabled: Boolean = onLoadMore != null,
@@ -131,7 +118,7 @@ fun SmartRefreshGrid(
             refreshEnabled && !listState.canScrollVertical(-1)
         },
         modifier = modifier,
-        state = state,
+        refreshState = refreshState,
         refreshEnabled = refreshEnabled,
         loadMoreEnabled = loadMoreEnabled,
         onLoadMore = onLoadMore,
@@ -166,7 +153,7 @@ fun SmartRefreshGrid(
 fun SmartRefresh(
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
-    state: SmartRefreshState = rememberSmartRefreshState(false),
+    refreshState: SmartRefreshState = rememberSmartRefreshState(false),
     refreshEnabled: Boolean = true,
     onLoadMore: (() -> Unit)? = null,
     loadMoreEnabled: Boolean = onLoadMore != null,
@@ -175,7 +162,6 @@ fun SmartRefresh(
     listConfig: ScrollConfig = remember { ScrollConfig() },
     listState: ScrollState = rememberScrollState(),
     flingBehavior: FlingBehavior? = null,
-    contentPadding: PaddingValues = PaddingValues(0.dp),
     content: @Composable () -> Unit
 ) {
     BaseSmartRefresh(
@@ -184,7 +170,7 @@ fun SmartRefresh(
             refreshEnabled && listState.value == 0
         },
         modifier = modifier,
-        state = state,
+        refreshState = refreshState,
         refreshEnabled = refreshEnabled,
         loadMoreEnabled = loadMoreEnabled,
         onLoadMore = onLoadMore,
@@ -207,7 +193,7 @@ fun SmartRefresh(
                         flingBehavior = flingBehavior,
                         reverseScrolling = listConfig.reverseScrolling
                     )
-                    .padding(contentPadding)
+                    .padding(listConfig.contentPadding)
             ) {
                 content()
             }
@@ -220,7 +206,7 @@ private fun BaseSmartRefresh(
     onRefresh: () -> Unit,
     canRefresh: () -> Boolean,
     modifier: Modifier = Modifier,
-    state: SmartRefreshState = rememberSmartRefreshState(false),
+    refreshState: SmartRefreshState = rememberSmartRefreshState(false),
     refreshEnabled: Boolean = true,
     loadMoreEnabled: Boolean = false,
     onLoadMore: (() -> Unit)? = null,
@@ -242,11 +228,11 @@ private fun BaseSmartRefresh(
                 setRefreshHeader(curHeader(context))
                 setRefreshFooter(curFooter(context))
                 setOnRefreshListener {
-                    state.isRefreshing = true
+                    refreshState.isRefreshing = true
                     curOnRefresh()
                 }
                 setOnLoadMoreListener {
-                    state.isLoading = true
+                    refreshState.isLoading = true
                     curOnLoadMore?.invoke()
                 }
                 setScrollBoundaryDecider(object : ScrollBoundaryDecider {
@@ -263,7 +249,7 @@ private fun BaseSmartRefresh(
     ) { refreshLayout ->
         refreshLayout.setEnableRefresh(refreshEnabled)
         refreshLayout.setEnableLoadMore(loadMoreEnabled)
-        with(state) {
+        with(refreshState) {
             autoRefresh?.also {
                 if (it.recycled) return@also
                 if (it.animateOnly) {
@@ -313,6 +299,19 @@ private fun getOrCreateComposeView(refreshLayout: SmartRefreshLayout): ComposeVi
         refreshLayout.setRefreshContent(composeView)
     }
     return composeView
+}
+
+object SmartRefreshDefaults {
+
+    val defaultHeader: (Context) -> RefreshHeader = { context: Context -> ClassicsHeader(context) }
+    val defaultFooter: (Context) -> RefreshFooter = { context: Context -> ClassicsFooter(context) }
+}
+
+@Composable
+fun rememberSmartRefreshState(
+    isRefreshing: Boolean
+): SmartRefreshState = remember {
+    SmartRefreshState(isRefreshing)
 }
 
 @Stable
@@ -409,5 +408,6 @@ class LazyGridConfig(
 @Stable
 class ScrollConfig(
     val enabled: Boolean = true,
-    val reverseScrolling: Boolean = false
+    val reverseScrolling: Boolean = false,
+    val contentPadding: PaddingValues = PaddingValues(0.dp)
 )
