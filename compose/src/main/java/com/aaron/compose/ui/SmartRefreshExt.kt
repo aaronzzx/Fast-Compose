@@ -84,13 +84,13 @@ fun SmartHorizontalPager(
             container
         }
     ) {
+        it.scrollable = userScrollEnabled
         val vp = it.vp
-        vp.isUserInputEnabled = userScrollEnabled
         vp.offscreenPageLimit = when {
             offscreenPageLimit < 1 -> ViewPager2.OFFSCREEN_PAGE_LIMIT_DEFAULT
             else -> offscreenPageLimit
         }
-        it.setPadding(
+        vp.setPadding(
             with(density) { contentPadding.calculateStartPadding(layoutDirection).roundToPx() },
             with(density) { contentPadding.calculateTopPadding().roundToPx() },
             with(density) { contentPadding.calculateEndPadding(layoutDirection).roundToPx() },
@@ -138,22 +138,19 @@ private class NestedViewPager2Host @JvmOverloads constructor(
 
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
 
-    private var isUserInputEnabledCache = false
-
     private var lastMotionX = 0f
     private var lastMotionY = 0f
 
     val vp: ViewPager2
         get() = getChildAt(0) as ViewPager2
 
+    var scrollable = true
+
     override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
         if (vp.orientation == ViewPager2.ORIENTATION_HORIZONTAL) {
             val x = ev.x
             val y = ev.y
             when (ev.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
-                    isUserInputEnabledCache = vp.isUserInputEnabled
-                }
                 MotionEvent.ACTION_MOVE -> {
                     val deltaX = abs(lastMotionX - x)
                     val deltaY = abs(lastMotionY - y)
@@ -163,8 +160,8 @@ private class NestedViewPager2Host @JvmOverloads constructor(
                         }
                     }
                 }
-                MotionEvent.ACTION_UP -> {
-                    vp.isUserInputEnabled = isUserInputEnabledCache
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    vp.isUserInputEnabled = scrollable
                 }
             }
             lastMotionX = x
