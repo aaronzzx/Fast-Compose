@@ -1,5 +1,6 @@
 package com.aaron.compose.base
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
@@ -22,6 +23,7 @@ abstract class BaseComposeActivity : FragmentActivity() {
 
     protected open fun init(savedInstanceState: Bundle?) {
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = Color.TRANSPARENT
     }
 
     @Composable
