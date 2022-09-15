@@ -12,26 +12,36 @@ import androidx.compose.ui.unit.Density
  * 控制 OverScroll 是否显示
  */
 @Composable
-fun OverScrollHandler(enabled: Boolean, content: @Composable () -> Unit) {
-    CompositionLocalProvider(
-        LocalOverscrollConfiguration provides if (enabled) OverscrollConfiguration() else null
-    ) {
-        content()
+fun OverScrollHandler(
+    enabled: Boolean,
+    defaultFactory: @Composable () -> OverscrollConfiguration = { OverscrollConfiguration() },
+    content: @Composable () -> Unit
+) {
+    val provided = when (enabled) {
+        true -> defaultFactory()
+        else -> null
     }
+    CompositionLocalProvider(
+        LocalOverscrollConfiguration provides provided,
+        content = content,
+    )
 }
 
 /**
  * 控制系统级字体缩放
  */
 @Composable
-fun SystemFontScaleHandler(enabled: Boolean, content: @Composable () -> Unit) {
-    val density = LocalDensity.current.density
-    val fontScale = LocalContext.current.resources.configuration.fontScale
+fun SystemFontScaleHandler(
+    enabled: Boolean,
+    defaultFactory: @Composable () -> Density = { createDefaultDensity() },
+    content: @Composable () -> Unit
+) {
+    val provided = when (enabled) {
+        true -> defaultFactory()
+        else -> Density(density = LocalDensity.current.density, fontScale = 1f)
+    }
     CompositionLocalProvider(
-        LocalDensity provides Density(
-            density = density,
-            fontScale = if (enabled) fontScale else 1f
-        ),
+        LocalDensity provides provided,
         content = content
     )
 }
@@ -42,19 +52,31 @@ fun SystemFontScaleHandler(enabled: Boolean, content: @Composable () -> Unit) {
  * @param adaptWidth 需要适配的屏幕宽度，一般拿设计稿上的屏幕宽度，传小于等于 0 的值为取消适配
  */
 @Composable
-fun FitScreenHandler(adaptWidth: Int, content: @Composable () -> Unit) {
-    val metrics = LocalContext.current.resources.displayMetrics
-    val density = metrics.density
+fun FitScreenHandler(
+    adaptWidth: Int,
+    defaultFactory: @Composable () -> Density = { createDefaultDensity() },
+    content: @Composable () -> Unit
+) {
     val fontScale = LocalDensity.current.fontScale
-    val widthPixels = metrics.widthPixels
-    CompositionLocalProvider(
-        LocalDensity provides Density(
-            density = if (adaptWidth > 0) widthPixels / adaptWidth.toFloat() else density,
+    val widthPixels = LocalContext.current.resources.displayMetrics.widthPixels
+    val provided = when {
+        adaptWidth > 0 -> Density(
+            density = widthPixels / adaptWidth.toFloat(),
             fontScale = fontScale
-        ),
+        )
+        else -> defaultFactory()
+    }
+    CompositionLocalProvider(
+        LocalDensity provides provided,
         content = content
     )
 }
+
+@Composable
+private fun createDefaultDensity() = Density(
+    density = LocalDensity.current.density,
+    fontScale = LocalContext.current.resources.configuration.fontScale
+)
 
 /**
  * 用于 CompositionLocal
