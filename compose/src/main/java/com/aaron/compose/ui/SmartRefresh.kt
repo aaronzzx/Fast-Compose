@@ -36,6 +36,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.aaron.compose.R
 import com.aaron.compose.utils.OverScrollHandler
 import com.aaron.compose.ktx.canScrollVertical
+import com.aaron.compose.ui.SmartRefreshState.AutoLoadMore
+import com.aaron.compose.ui.SmartRefreshState.AutoRefresh
+import com.aaron.compose.ui.SmartRefreshState.FinishLoadMore
+import com.aaron.compose.ui.SmartRefreshState.FinishRefresh
+import com.aaron.compose.ui.SmartRefreshState.ResetNoMoreData
 import com.scwang.smart.refresh.footer.ClassicsFooter
 import com.scwang.smart.refresh.header.ClassicsHeader
 import com.scwang.smart.refresh.layout.SmartRefreshLayout
@@ -213,7 +218,7 @@ private fun BaseSmartRefresh(
     AndroidView(
         modifier = modifier.fillMaxSize(),
         factory = { context ->
-            SmartRefreshLayout(context).apply {
+            ComposeNestedRefreshLayout(context).apply {
                 setRefreshHeader(curHeader(context))
                 setRefreshFooter(curFooter(context))
                 setOnRefreshListener {
@@ -238,56 +243,31 @@ private fun BaseSmartRefresh(
     ) { refreshLayout ->
         refreshLayout.setEnableRefresh(refreshEnabled)
         refreshLayout.setEnableLoadMore(loadMoreEnabled)
-        with(refreshState) {
-            autoRefresh?.also {
-                if (it.recycled) return@also
-                if (it.animateOnly) {
+        refreshState.action?.use {
+            when (it) {
+                is AutoRefresh -> if (it.animateOnly) {
                     refreshLayout.autoRefreshAnimationOnly()
                 } else {
                     refreshLayout.autoRefresh()
                 }
-                it.recycled = true
-            }
-            autoLoadMore?.also {
-                if (it.recycled) return@also
-                if (it.animateOnly) {
+                is AutoLoadMore -> if (it.animateOnly) {
                     refreshLayout.autoRefreshAnimationOnly()
                 } else {
                     refreshLayout.autoRefresh()
                 }
-                it.recycled = true
-            }
-            finishRefresh?.also {
-                if (it.recycled) return@also
-                isRefreshing = false
-                refreshLayout.finishRefresh(it.delayed, it.success, it.noMoreData)
-                it.recycled = true
-            }
-            finishLoadMore?.also {
-                if (it.recycled) return@also
-                isLoading = false
-                refreshLayout.finishLoadMore(it.delayed, it.success, it.noMoreData)
-                it.recycled = true
-            }
-            resetNoMoreData?.also {
-                if (it.recycled) return@also
-                refreshLayout.resetNoMoreData()
-                it.recycled = true
+                is FinishRefresh -> {
+                    refreshState.isRefreshing = false
+                    refreshLayout.finishRefresh(it.delayed, it.success, it.noMoreData)
+                }
+                is FinishLoadMore -> {
+                    refreshState.isLoading = false
+                    refreshLayout.finishLoadMore(it.delayed, it.success, it.noMoreData)
+                }
+                is ResetNoMoreData -> refreshLayout.resetNoMoreData()
             }
         }
-        getOrCreateComposeView(refreshLayout).setContent(content)
+        refreshLayout.setContent(content)
     }
-}
-
-private fun getOrCreateComposeView(refreshLayout: SmartRefreshLayout): ComposeView {
-    var composeView = refreshLayout.findViewById<ComposeView>(R.id.refresh_layout_compose_view)
-    if (composeView == null) {
-        composeView = ComposeView(refreshLayout.context).also {
-            it.id = R.id.refresh_layout_compose_view
-        }
-        refreshLayout.setRefreshContent(composeView)
-    }
-    return composeView
 }
 
 object SmartRefreshDefaults {
@@ -312,11 +292,7 @@ class SmartRefreshState(isRefreshing: Boolean) {
     var isLoading: Boolean by mutableStateOf(false)
         internal set
 
-    internal var autoRefresh: AutoRefresh? by mutableStateOf(null)
-    internal var autoLoadMore: AutoLoadMore? by mutableStateOf(null)
-    internal var finishRefresh: FinishRefresh? by mutableStateOf(null)
-    internal var finishLoadMore: FinishLoadMore? by mutableStateOf(null)
-    internal var resetNoMoreData: ResetNoMoreData? by mutableStateOf(null)
+    internal var action: Action? by mutableStateOf(null)
 
     init {
         if (isRefreshing) {
@@ -326,36 +302,43 @@ class SmartRefreshState(isRefreshing: Boolean) {
 
     fun autoRefresh(animateOnly: Boolean = false) {
         if (!isRefreshing && !isLoading) {
-            autoRefresh = AutoRefresh(animateOnly)
+            action = AutoRefresh(animateOnly)
         }
     }
 
     fun autoLoadMore(animateOnly: Boolean = false) {
         if (!isRefreshing && !isLoading) {
-            autoLoadMore = AutoLoadMore(animateOnly)
+            action = AutoLoadMore(animateOnly)
         }
     }
 
     fun finishRefresh(success: Boolean, noMoreData: Boolean = false, delayed: Int = 0) {
         if (isRefreshing) {
-            finishRefresh = FinishRefresh(success, noMoreData, delayed)
+            action = FinishRefresh(success, noMoreData, delayed)
         }
     }
 
     fun finishLoadMore(success: Boolean, noMoreData: Boolean = false, delayed: Int = 0) {
         if (isLoading) {
-            finishLoadMore = FinishLoadMore(success, noMoreData, delayed)
+            action = FinishLoadMore(success, noMoreData, delayed)
         }
     }
 
     fun resetNoMoreData() {
-        resetNoMoreData = ResetNoMoreData()
+        action = ResetNoMoreData()
     }
 
     @Stable
     internal sealed class Action {
 
-        internal var recycled = false
+        private var used = false
+
+        inline fun use(block: (Action) -> Unit) {
+            if (!used) {
+                block(this)
+                used = true
+            }
+        }
     }
 
     @Stable
@@ -375,7 +358,7 @@ class SmartRefreshState(isRefreshing: Boolean) {
 }
 
 @Stable
-class LazyListConfig(
+data class LazyListConfig(
     val modifier: Modifier = Modifier,
     val contentPadding: PaddingValues = PaddingValues(0.dp),
     val reverseLayout: Boolean = false,
@@ -385,7 +368,7 @@ class LazyListConfig(
 )
 
 @Stable
-class LazyGridConfig(
+data class LazyGridConfig(
     val modifier: Modifier = Modifier,
     val contentPadding: PaddingValues = PaddingValues(0.dp),
     val reverseLayout: Boolean = false,
@@ -395,7 +378,7 @@ class LazyGridConfig(
 )
 
 @Stable
-class ScrollConfig(
+data class ScrollConfig(
     val enabled: Boolean = true,
     val reverseScrolling: Boolean = false,
     val contentPadding: PaddingValues = PaddingValues(0.dp)
