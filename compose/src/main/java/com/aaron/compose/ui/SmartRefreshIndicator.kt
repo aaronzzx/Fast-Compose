@@ -116,17 +116,17 @@ fun ClassicSmartRefreshIndicator(
             ) {
                 if (state.isRefreshing) {
                     Image(
-                        painter = rememberDrawablePainter(
+                        painter = rememberDrawablePainter(remember {
                             ProgressDrawable().apply { setColor(contentColor.toArgb()) }
-                        ),
+                        }),
                         contentDescription = null,
                         modifier = Modifier.size(20.dp)
                     )
                 } else if (state.isIdle) {
                     Image(
-                        painter = rememberDrawablePainter(
+                        painter = rememberDrawablePainter(remember {
                             ArrowDrawable().apply { setColor(contentColor.toArgb()) }
-                        ),
+                        }),
                         contentDescription = null,
                         modifier = Modifier
                             .size(20.dp)
