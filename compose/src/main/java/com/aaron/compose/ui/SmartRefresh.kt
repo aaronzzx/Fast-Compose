@@ -1,385 +1,430 @@
 package com.aaron.compose.ui
 
-import android.content.Context
-import android.view.View
-import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.gestures.FlingBehavior
-import androidx.compose.foundation.gestures.ScrollableDefaults
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.MutatePriority
+import androidx.compose.foundation.MutatorMutex
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyGridScope
-import androidx.compose.foundation.lazy.grid.LazyGridState
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import com.aaron.compose.R
-import com.aaron.compose.utils.OverScrollHandler
-import com.aaron.compose.ktx.canScrollVertical
-import com.aaron.compose.ui.SmartRefreshState.AutoLoadMore
-import com.aaron.compose.ui.SmartRefreshState.AutoRefresh
-import com.aaron.compose.ui.SmartRefreshState.FinishLoadMore
-import com.aaron.compose.ui.SmartRefreshState.FinishRefresh
-import com.aaron.compose.ui.SmartRefreshState.ResetNoMoreData
-import com.scwang.smart.refresh.footer.ClassicsFooter
-import com.scwang.smart.refresh.header.ClassicsHeader
-import com.scwang.smart.refresh.layout.SmartRefreshLayout
-import com.scwang.smart.refresh.layout.api.RefreshFooter
-import com.scwang.smart.refresh.layout.api.RefreshHeader
-import com.scwang.smart.refresh.layout.listener.ScrollBoundaryDecider
+import com.aaron.compose.ui.SmartRefreshType.Failure
+import com.aaron.compose.ui.SmartRefreshType.FinishRefresh
+import com.aaron.compose.ui.SmartRefreshType.Idle
+import com.aaron.compose.ui.SmartRefreshType.Refreshing
+import com.aaron.compose.ui.SmartRefreshType.Success
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.absoluteValue
+import kotlin.math.roundToInt
 
-@Composable
-fun SmartRefreshList(
-    onRefresh: () -> Unit,
-    modifier: Modifier = Modifier,
-    refreshState: SmartRefreshState = rememberSmartRefreshState(false),
-    refreshEnabled: Boolean = true,
-    onLoadMore: (() -> Unit)? = null,
-    loadMoreEnabled: Boolean = onLoadMore != null,
-    header: (Context) -> RefreshHeader = SmartRefreshDefaults.defaultHeader,
-    footer: (Context) -> RefreshFooter = SmartRefreshDefaults.defaultFooter,
-    listConfig: LazyListConfig = remember { LazyListConfig() },
-    listState: LazyListState = rememberLazyListState(),
-    flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
-    content: LazyListScope.() -> Unit
-) {
-    BaseSmartRefresh(
-        onRefresh = onRefresh,
-        canRefresh = {
-            refreshEnabled && !listState.canScrollVertical(-1)
-        },
-        modifier = modifier,
-        refreshState = refreshState,
-        refreshEnabled = refreshEnabled,
-        loadMoreEnabled = loadMoreEnabled,
-        onLoadMore = onLoadMore,
-        canLoadMore = {
-            loadMoreEnabled && !listState.canScrollVertical(1)
-        },
-        header = header,
-        footer = footer
-    ) {
-        OverScrollHandler(enabled = !refreshEnabled && !loadMoreEnabled) {
-            LazyColumn(
-                modifier = listConfig.modifier,
-                state = listState,
-                contentPadding = listConfig.contentPadding,
-                reverseLayout = listConfig.reverseLayout,
-                verticalArrangement = listConfig.verticalArrangement,
-                horizontalAlignment = listConfig.horizontalAlignment,
-                flingBehavior = flingBehavior,
-                userScrollEnabled = listConfig.userScrollEnabled
-            ) {
-                content()
-            }
-        }
-    }
-}
+private const val DragMultiplier = 0.5f
 
-@Composable
-fun SmartRefreshGrid(
-    columns: GridCells,
-    onRefresh: () -> Unit,
-    modifier: Modifier = Modifier,
-    refreshState: SmartRefreshState = rememberSmartRefreshState(false),
-    refreshEnabled: Boolean = true,
-    onLoadMore: (() -> Unit)? = null,
-    loadMoreEnabled: Boolean = onLoadMore != null,
-    header: (Context) -> RefreshHeader = SmartRefreshDefaults.defaultHeader,
-    footer: (Context) -> RefreshFooter = SmartRefreshDefaults.defaultFooter,
-    listConfig: LazyGridConfig = remember { LazyGridConfig() },
-    listState: LazyGridState = rememberLazyGridState(),
-    flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
-    content: LazyGridScope.() -> Unit
-) {
-    BaseSmartRefresh(
-        onRefresh = onRefresh,
-        canRefresh = {
-            refreshEnabled && !listState.canScrollVertical(-1)
-        },
-        modifier = modifier,
-        refreshState = refreshState,
-        refreshEnabled = refreshEnabled,
-        loadMoreEnabled = loadMoreEnabled,
-        onLoadMore = onLoadMore,
-        canLoadMore = {
-            loadMoreEnabled && !listState.canScrollVertical(1)
-        },
-        header = header,
-        footer = footer
-    ) {
-        OverScrollHandler(enabled = !refreshEnabled && !loadMoreEnabled) {
-            LazyVerticalGrid(
-                columns = columns,
-                modifier = listConfig.modifier,
-                state = listState,
-                contentPadding = listConfig.contentPadding,
-                reverseLayout = listConfig.reverseLayout,
-                verticalArrangement = listConfig.verticalArrangement,
-                horizontalArrangement = listConfig.horizontalArrangement,
-                flingBehavior = flingBehavior,
-                userScrollEnabled = listConfig.userScrollEnabled
-            ) {
-                content()
-            }
-        }
-    }
-}
-
-@Composable
-fun SmartRefresh(
-    onRefresh: () -> Unit,
-    modifier: Modifier = Modifier,
-    refreshState: SmartRefreshState = rememberSmartRefreshState(false),
-    refreshEnabled: Boolean = true,
-    onLoadMore: (() -> Unit)? = null,
-    loadMoreEnabled: Boolean = onLoadMore != null,
-    header: (Context) -> RefreshHeader = SmartRefreshDefaults.defaultHeader,
-    footer: (Context) -> RefreshFooter = SmartRefreshDefaults.defaultFooter,
-    listConfig: ScrollConfig = remember { ScrollConfig() },
-    listState: ScrollState = rememberScrollState(),
-    flingBehavior: FlingBehavior? = null,
-    content: @Composable () -> Unit
-) {
-    BaseSmartRefresh(
-        onRefresh = onRefresh,
-        canRefresh = {
-            refreshEnabled && listState.value == 0
-        },
-        modifier = modifier,
-        refreshState = refreshState,
-        refreshEnabled = refreshEnabled,
-        loadMoreEnabled = loadMoreEnabled,
-        onLoadMore = onLoadMore,
-        canLoadMore = {
-            loadMoreEnabled && listState.value == listState.maxValue
-        },
-        header = header,
-        footer = footer
-    ) {
-        OverScrollHandler(enabled = !refreshEnabled && !loadMoreEnabled) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(
-                        state = listState,
-                        enabled = listConfig.enabled,
-                        flingBehavior = flingBehavior,
-                        reverseScrolling = listConfig.reverseScrolling
-                    )
-                    .padding(listConfig.contentPadding)
-            ) {
-                content()
-            }
-        }
-    }
-}
-
-@Composable
-private fun BaseSmartRefresh(
-    onRefresh: () -> Unit,
-    canRefresh: () -> Boolean,
-    modifier: Modifier = Modifier,
-    refreshState: SmartRefreshState = rememberSmartRefreshState(false),
-    refreshEnabled: Boolean = true,
-    loadMoreEnabled: Boolean = false,
-    onLoadMore: (() -> Unit)? = null,
-    canLoadMore: (() -> Boolean)? = null,
-    header: (Context) -> RefreshHeader = SmartRefreshDefaults.defaultHeader,
-    footer: (Context) -> RefreshFooter = SmartRefreshDefaults.defaultFooter,
-    content: @Composable () -> Unit
-) {
-    val curOnRefresh by rememberUpdatedState(onRefresh)
-    val curOnLoadMore by rememberUpdatedState(onLoadMore)
-    val curCanRefresh by rememberUpdatedState(canRefresh)
-    val curCanLoadMore by rememberUpdatedState(canLoadMore)
-    val curHeader by rememberUpdatedState(header)
-    val curFooter by rememberUpdatedState(footer)
-    AndroidView(
-        modifier = modifier.fillMaxSize(),
-        factory = { context ->
-            ComposeNestedRefreshLayout(context).apply {
-                setRefreshHeader(curHeader(context))
-                setRefreshFooter(curFooter(context))
-                setOnRefreshListener {
-                    refreshState.isRefreshing = true
-                    curOnRefresh()
-                }
-                setOnLoadMoreListener {
-                    refreshState.isLoading = true
-                    curOnLoadMore?.invoke()
-                }
-                setScrollBoundaryDecider(object : ScrollBoundaryDecider {
-                    override fun canRefresh(content: View): Boolean {
-                        return curCanRefresh()
-                    }
-
-                    override fun canLoadMore(content: View): Boolean {
-                        return curCanLoadMore?.invoke() ?: false
-                    }
-                })
-            }
-        }
-    ) { refreshLayout ->
-        refreshLayout.setEnableRefresh(refreshEnabled)
-        refreshLayout.setEnableLoadMore(loadMoreEnabled)
-        refreshState.action?.use {
-            when (it) {
-                is AutoRefresh -> if (it.animateOnly) {
-                    refreshLayout.autoRefreshAnimationOnly()
-                } else {
-                    refreshLayout.autoRefresh()
-                }
-                is AutoLoadMore -> if (it.animateOnly) {
-                    refreshLayout.autoRefreshAnimationOnly()
-                } else {
-                    refreshLayout.autoRefresh()
-                }
-                is FinishRefresh -> {
-                    refreshState.isRefreshing = false
-                    refreshLayout.finishRefresh(it.delayed, it.success, it.noMoreData)
-                }
-                is FinishLoadMore -> {
-                    refreshState.isLoading = false
-                    refreshLayout.finishLoadMore(it.delayed, it.success, it.noMoreData)
-                }
-                is ResetNoMoreData -> refreshLayout.resetNoMoreData()
-            }
-        }
-        refreshLayout.setContent(content)
-    }
-}
-
-object SmartRefreshDefaults {
-
-    val defaultHeader: (Context) -> RefreshHeader = { context: Context -> ClassicsHeader(context) }
-    val defaultFooter: (Context) -> RefreshFooter = { context: Context -> ClassicsFooter(context) }
-}
-
+/**
+ * Creates a [SmartRefreshState] that is remembered across compositions.
+ *
+ * Changes to [isRefreshing] will result in the [SmartRefreshState] being updated.
+ *
+ * @param isRefreshing the value for [SmartRefreshState.isRefreshing]
+ */
 @Composable
 fun rememberSmartRefreshState(
     isRefreshing: Boolean
 ): SmartRefreshState = remember {
-    SmartRefreshState(isRefreshing)
+    SmartRefreshState(isRefreshing = isRefreshing)
+}.apply {
+    if (isRefreshing) {
+        autoRefresh()
+    } else {
+        snapToIdle()
+    }
 }
 
+sealed class SmartRefreshType {
+
+    object Idle : SmartRefreshType()
+    object Refreshing : SmartRefreshType()
+
+    sealed class FinishRefresh(val delayMillis: Long) : SmartRefreshType()
+    class Success(delayMillis: Long) : FinishRefresh(delayMillis)
+    class Failure(delayMillis: Long) : FinishRefresh(delayMillis)
+}
+
+/**
+ * A state object that can be hoisted to control and observe changes for [SmartRefresh].
+ *
+ * In most cases, this will be created via [rememberSmartRefreshState].
+ *
+ * @param isRefreshing the initial value for [SmartRefreshState.isRefreshing]
+ */
 @Stable
-class SmartRefreshState(isRefreshing: Boolean) {
+class SmartRefreshState(
+    isRefreshing: Boolean,
+) {
+    private val _indicatorOffset = Animatable(0f)
+    private val mutatorMutex = MutatorMutex()
 
-    var isRefreshing: Boolean by mutableStateOf(false)
+    var type: SmartRefreshType by mutableStateOf(if (isRefreshing) Refreshing else Idle)
+        private set
+
+    val isIdle: Boolean by derivedStateOf { type == Idle }
+
+    /**
+     * Whether this [SmartRefreshState] is currently refreshing or not.
+     */
+    val isRefreshing: Boolean by derivedStateOf { type == Refreshing }
+
+    /**
+     * Whether a swipe/drag is currently in progress.
+     */
+    var isSwipeInProgress: Boolean by mutableStateOf(false)
         internal set
 
-    var isLoading: Boolean by mutableStateOf(false)
-        internal set
+    /**
+     * The current offset for the indicator, in pixels.
+     */
+    val indicatorOffset: Float get() = _indicatorOffset.value
 
-    internal var action: Action? by mutableStateOf(null)
+    fun snapToIdle() {
+        type = Idle
+    }
 
-    init {
-        if (isRefreshing) {
-            autoRefresh()
+    fun autoRefresh() {
+        type = Refreshing
+    }
+
+    fun finishRefresh(success: Boolean, delayMillis: Long = 0) {
+        type = if (success) Success(delayMillis) else Failure(delayMillis)
+    }
+
+    internal suspend fun animateOffsetTo(
+        offset: Float,
+        animationSpec: AnimationSpec<Float> = SpringSpec(visibilityThreshold = null)
+    ) {
+        mutatorMutex.mutate {
+            _indicatorOffset.animateTo(offset, animationSpec = animationSpec)
         }
     }
 
-    fun autoRefresh(animateOnly: Boolean = false) {
-        if (!isRefreshing && !isLoading) {
-            action = AutoRefresh(animateOnly)
+    /**
+     * Dispatch scroll delta in pixels from touch events.
+     */
+    internal suspend fun dispatchScrollDelta(delta: Float) {
+        mutatorMutex.mutate(MutatePriority.UserInput) {
+            _indicatorOffset.snapTo(_indicatorOffset.value + delta)
+        }
+    }
+}
+
+private class SmartRefreshNestedScrollConnection(
+    private val state: SmartRefreshState,
+    private val coroutineScope: CoroutineScope,
+    private val onRefresh: () -> Unit,
+) : NestedScrollConnection {
+
+    var enabled: Boolean = false
+    var refreshTrigger: Float = 0f
+    var maxIndicatorOffset: Float = 0f
+
+    override fun onPreScroll(
+        available: Offset,
+        source: NestedScrollSource
+    ): Offset {
+        val state = state
+        if (source == NestedScrollSource.Fling
+            && !state.isIdle
+            && available.y < 0
+            && state.indicatorOffset != 0f
+        ) {
+            // 惯性滑动且非空闲且向下滚动，把 header 移回去
+            if (abs(available.y) < abs(state.indicatorOffset)) {
+                // 可用没当前偏移多，直接全部消费掉
+                coroutineScope.launch {
+                    state.dispatchScrollDelta(available.y)
+                }
+                return available
+            } else {
+                // 可用比当前偏移多，消费当前偏移即可
+                coroutineScope.launch {
+                    state.dispatchScrollDelta(-state.indicatorOffset)
+                }
+                return Offset(x = 0f, y = -state.indicatorOffset)
+            }
+        }
+
+        return when {
+            // If swiping isn't enabled, return zero
+            !enabled -> Offset.Zero
+            // If we're refreshing, return zero
+//        state.isRefreshing -> Offset.Zero
+            // If the user is swiping up, handle it
+            source == NestedScrollSource.Drag && available.y < 0 -> onScroll(available)
+            else -> Offset.Zero
         }
     }
 
-    fun autoLoadMore(animateOnly: Boolean = false) {
-        if (!isRefreshing && !isLoading) {
-            action = AutoLoadMore(animateOnly)
+    override fun onPostScroll(
+        consumed: Offset,
+        available: Offset,
+        source: NestedScrollSource
+    ): Offset {
+//        val state = state
+//        if (!state.isIdle
+//            && available.y > 0
+//            && state.indicatorOffset != refreshTrigger
+//        ) {
+//            // 非空闲且向上滚动，把 header 移出来
+//            val needConsumed = available.y.coerceAtMost(refreshTrigger)
+//            if (source == NestedScrollSource.Drag) {
+//                coroutineScope.launch {
+//                    state.dispatchScrollDelta(needConsumed)
+//                }
+//                return available
+//            } else if (source == NestedScrollSource.Fling) {
+//                coroutineScope.launch {
+//                    state.animateOffsetTo(needConsumed)
+//                }
+//                return Offset(x = 0f, y = needConsumed)
+//            }
+//        }
+
+        return when {
+            // If swiping isn't enabled, return zero
+            !enabled -> Offset.Zero
+            // If we're refreshing, return zero
+//        state.isRefreshing -> Offset.Zero
+            // If the user is swiping down and there's y remaining, handle it
+            source == NestedScrollSource.Drag && available.y > 0 -> onScroll(available)
+            else -> Offset.Zero
         }
     }
 
-    fun finishRefresh(success: Boolean, noMoreData: Boolean = false, delayed: Int = 0) {
-        if (isRefreshing) {
-            action = FinishRefresh(success, noMoreData, delayed)
+    private fun onScroll(available: Offset): Offset {
+        val state = state
+        if (state.indicatorOffset.roundToInt() != 0) {
+            state.isSwipeInProgress = true
+        } else if (state.indicatorOffset.roundToInt() == 0) {
+            state.isSwipeInProgress = false
+        }
+
+        // 禁止非空闲状态向下滚动
+        if (!state.isIdle && available.y > 0) {
+            return Offset.Zero
+        }
+
+        val indicatorOffset = state.indicatorOffset
+        val dragMultiplier = when {
+            available.y > 0 && indicatorOffset > refreshTrigger -> {
+                val delta = indicatorOffset - refreshTrigger
+                val decayDragMultiplier = DragMultiplier - delta / maxIndicatorOffset
+                decayDragMultiplier.coerceAtLeast(0.01f)
+            }
+            else -> DragMultiplier
+        }
+        val newOffset = (available.y * dragMultiplier + indicatorOffset).coerceAtLeast(0f)
+        val dragConsumed = newOffset - state.indicatorOffset
+
+        return if (dragConsumed.absoluteValue >= 0.5f) {
+            coroutineScope.launch {
+                state.dispatchScrollDelta(dragConsumed)
+            }
+            // Return the consumed Y
+            Offset(x = 0f, y = dragConsumed / dragMultiplier)
+        } else {
+            Offset.Zero
         }
     }
 
-    fun finishLoadMore(success: Boolean, noMoreData: Boolean = false, delayed: Int = 0) {
-        if (isLoading) {
-            action = FinishLoadMore(success, noMoreData, delayed)
+    override suspend fun onPreFling(available: Velocity): Velocity {
+        val state = state
+
+        // If we're dragging, not currently refreshing and scrolled
+        // past the trigger point, refresh!
+        if (state.isIdle && state.indicatorOffset >= refreshTrigger) {
+            onRefresh()
+        }
+
+        // Reset the drag in progress state
+        state.isSwipeInProgress = false
+
+        // Don't consume any velocity, to allow the scrolling layout to fling
+        return Velocity.Zero
+    }
+}
+
+/**
+ * A layout which implements the swipe-to-refresh pattern, allowing the user to refresh content via
+ * a vertical swipe gesture.
+ *
+ * This layout requires its content to be scrollable so that it receives vertical swipe events.
+ * The scrollable content does not need to be a direct descendant though. Layouts such as
+ * [androidx.compose.foundation.lazy.LazyColumn] are automatically scrollable, but others such as
+ * [androidx.compose.foundation.layout.Column] require you to provide the
+ * [androidx.compose.foundation.verticalScroll] modifier to that content.
+ *
+ * Apps should provide a [onRefresh] block to be notified each time a swipe to refresh gesture
+ * is completed. That block is responsible for updating the [state] as appropriately,
+ * typically by setting [SmartRefreshState.isRefreshing] to `true` once a 'refresh' has been
+ * started. Once a refresh has completed, the app should then set
+ * [SmartRefreshState.isRefreshing] to `false`.
+ *
+ * If an app wishes to show the progress animation outside of a swipe gesture, it can
+ * set [SmartRefreshState.isRefreshing] as required.
+ *
+ * This layout does not clip any of it's contents, including the indicator. If clipping
+ * is required, apps can provide the [androidx.compose.ui.draw.clipToBounds] modifier.
+ *
+ * @sample com.google.accompanist.sample.swiperefresh.SwipeRefreshSample
+ *
+ * @param state the state object to be used to control or observe the [SwipeRefreshLayout] state.
+ * @param onRefresh Lambda which is invoked when a swipe to refresh gesture is completed.
+ * @param modifier the modifier to apply to this layout.
+ * @param swipeEnabled Whether the the layout should react to swipe gestures or not.
+ * @param indicator the indicator that represents the current state. By default this
+ * will use a [OfficialSwipeRefreshIndicator].
+ * @param clipIndicatorToPadding Whether to clip the indicator to [indicatorPadding]. If false is
+ * provided the indicator will be clipped to the [content] bounds. Defaults to true.
+ * @param content The content containing a scroll composable.
+ */
+@Composable
+fun SmartRefresh(
+    refreshState: SmartRefreshState,
+    onRefresh: () -> Unit,
+    onIdle: () -> Unit,
+    modifier: Modifier = Modifier,
+    swipeEnabled: Boolean = true,
+    refreshTriggerRatio: Float = 1f,
+    maxDragRatio: Float = 2f,
+    indicatorHeight: Dp = 80.dp,
+    indicator: @Composable (
+        state: SmartRefreshState,
+        refreshTriggerPx: Float,
+        maxDragPx: Float,
+        height: Dp
+    ) -> Unit = { state, trigger, maxDrag, height ->
+        ClassicSmartRefreshIndicator(
+            state = state,
+            refreshTriggerPx = trigger,
+            maxDragPx = maxDrag,
+            height = height
+        )
+    },
+    content: @Composable () -> Unit,
+) {
+    val coroutineScope = rememberCoroutineScope()
+    val updatedOnRefresh = rememberUpdatedState(onRefresh)
+    val indicatorHeightPx = with(LocalDensity.current) { indicatorHeight.toPx() }
+    val refreshTriggerPx = indicatorHeightPx * refreshTriggerRatio
+    val maxDragPx = indicatorHeightPx * maxDragRatio
+
+    // Our LaunchedEffect, which animates the indicator to its resting position
+    if (swipeEnabled) {
+        HandleSmartIndicatorOffset(refreshState, indicatorHeightPx, onIdle)
+    }
+
+    // Our nested scroll connection, which updates our state.
+    val nestedScrollConnection = remember(refreshState, coroutineScope) {
+        SmartRefreshNestedScrollConnection(refreshState, coroutineScope) {
+            // On refresh, re-dispatch to the update onRefresh block
+            updatedOnRefresh.value.invoke()
+        }
+    }.apply {
+        this.enabled = swipeEnabled
+        this.refreshTrigger = refreshTriggerPx
+        this.maxIndicatorOffset = maxDragPx
+    }
+
+    Box(modifier.nestedScroll(connection = nestedScrollConnection)) {
+        Box(
+            Modifier.align(Alignment.TopCenter)
+                .let {
+                    if (isHeaderNeedClip(
+                            refreshState,
+                            indicatorHeightPx
+                        )
+                    ) it.clipToBounds() else it
+                }
+        ) {
+            indicator(refreshState, refreshTriggerPx, maxDragPx, indicatorHeight)
+        }
+
+        Box(
+            modifier = Modifier
+                .offset {
+                    IntOffset(
+                        0,
+                        refreshState.indicatorOffset.roundToInt().coerceAtMost(maxDragPx.roundToInt())
+                    )
+                }
+        ) {
+            content()
         }
     }
+}
 
-    fun resetNoMoreData() {
-        action = ResetNoMoreData()
-    }
+private fun isHeaderNeedClip(state: SmartRefreshState, indicatorHeight: Float): Boolean {
+    return state.indicatorOffset < indicatorHeight
+}
 
-    @Stable
-    internal sealed class Action {
-
-        private var used = false
-
-        inline fun use(block: (Action) -> Unit) {
-            if (!used) {
-                block(this)
-                used = true
+@Composable
+private fun HandleSmartIndicatorOffset(
+    state: SmartRefreshState,
+    indicatorHeightPx: Float,
+    onIdle: () -> Unit
+) {
+    val refreshType = state.type
+    LaunchedEffect(state.isSwipeInProgress, refreshType) {
+        when (refreshType) {
+            Refreshing -> {
+                if (state.indicatorOffset > indicatorHeightPx) {
+                    state.animateOffsetTo(indicatorHeightPx)
+                }
+            }
+            Idle -> {
+                if (state.indicatorOffset != 0f) {
+                    state.animateOffsetTo(0f)
+                }
+            }
+            is FinishRefresh -> {
+//                if (state.indicatorOffset > indicatorHeightPx) {
+//                    state.animateOffsetTo(indicatorHeightPx)
+//                }
+                // 保证最少有 300 毫秒悬挂，不然效果不佳
+                delay(refreshType.delayMillis.coerceAtLeast(300))
+                // 回调 onIdle 之前先 snap 回去，不然会瞥到 Idle 状态的 UI
+                state.animateOffsetTo(0f)
+                onIdle.invoke()
             }
         }
     }
-
-    @Stable
-    internal class AutoRefresh(val animateOnly: Boolean) : Action()
-
-    @Stable
-    internal class AutoLoadMore(val animateOnly: Boolean) : Action()
-
-    @Stable
-    internal class FinishRefresh(val success: Boolean, val noMoreData: Boolean, val delayed: Int) : Action()
-
-    @Stable
-    internal class FinishLoadMore(val success: Boolean, val noMoreData: Boolean, val delayed: Int) : Action()
-
-    @Stable
-    internal class ResetNoMoreData : Action()
 }
-
-@Stable
-data class LazyListConfig(
-    val modifier: Modifier = Modifier,
-    val contentPadding: PaddingValues = PaddingValues(0.dp),
-    val reverseLayout: Boolean = false,
-    val verticalArrangement: Arrangement.Vertical = if (!reverseLayout) Arrangement.Top else Arrangement.Bottom,
-    val horizontalAlignment: Alignment.Horizontal = Alignment.Start,
-    val userScrollEnabled: Boolean = true
-)
-
-@Stable
-data class LazyGridConfig(
-    val modifier: Modifier = Modifier,
-    val contentPadding: PaddingValues = PaddingValues(0.dp),
-    val reverseLayout: Boolean = false,
-    val verticalArrangement: Arrangement.Vertical = if (!reverseLayout) Arrangement.Top else Arrangement.Bottom,
-    val horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
-    val userScrollEnabled: Boolean = true
-)
-
-@Stable
-data class ScrollConfig(
-    val enabled: Boolean = true,
-    val reverseScrolling: Boolean = false,
-    val contentPadding: PaddingValues = PaddingValues(0.dp)
-)
