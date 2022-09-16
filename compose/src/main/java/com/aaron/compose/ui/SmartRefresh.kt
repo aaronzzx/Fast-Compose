@@ -2,14 +2,8 @@ package com.aaron.compose.ui
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationSpec
-import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.MutatorMutex
 import androidx.compose.foundation.layout.Box
@@ -44,8 +38,7 @@ import com.aaron.compose.ui.SmartRefreshType.Success
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.abs
-import kotlin.math.absoluteValue
+import kotlin.math.max
 import kotlin.math.roundToInt
 
 private const val DragMultiplier = 0.5f
@@ -88,9 +81,7 @@ sealed class SmartRefreshType {
  * @param isRefreshing the initial value for [SmartRefreshState.isRefreshing]
  */
 @Stable
-class SmartRefreshState(
-    isRefreshing: Boolean,
-) {
+class SmartRefreshState(isRefreshing: Boolean) {
     private val _indicatorOffset = Animatable(0f)
     private val mutatorMutex = MutatorMutex()
 
@@ -120,16 +111,20 @@ class SmartRefreshState(
     }
 
     fun autoRefresh() {
-        type = Refreshing
+        if (!isRefreshing) {
+            type = Refreshing
+        }
     }
 
     fun finishRefresh(success: Boolean, delayMillis: Long = 0) {
-        type = if (success) Success(delayMillis) else Failure(delayMillis)
+        if (isRefreshing) {
+            type = if (success) Success(delayMillis) else Failure(delayMillis)
+        }
     }
 
     internal suspend fun animateOffsetTo(
         offset: Float,
-        animationSpec: AnimationSpec<Float> = SpringSpec(visibilityThreshold = null)
+        animationSpec: AnimationSpec<Float> = spring()
     ) {
         mutatorMutex.mutate {
             _indicatorOffset.animateTo(offset, animationSpec = animationSpec)
@@ -156,37 +151,34 @@ private class SmartRefreshNestedScrollConnection(
     var refreshTrigger: Float = 0f
     var maxIndicatorOffset: Float = 0f
 
+    private var isHeaderSnapping = false
+
     override fun onPreScroll(
         available: Offset,
         source: NestedScrollSource
     ): Offset {
         val state = state
-        if (source == NestedScrollSource.Fling
-            && !state.isIdle
+        if (!isHeaderSnapping
+            && source == NestedScrollSource.Fling
             && available.y < 0
-            && state.indicatorOffset != 0f
+            && state.indicatorOffset > 0f
         ) {
-            // 惯性滑动且非空闲且向下滚动，把 header 移回去
-            if (abs(available.y) < abs(state.indicatorOffset)) {
-                // 可用没当前偏移多，直接全部消费掉
+            if (state.indicatorOffset < refreshTrigger) {
+                isHeaderSnapping = true
                 coroutineScope.launch {
-                    state.dispatchScrollDelta(available.y)
+                    state.animateOffsetTo(0f)
+                }.invokeOnCompletion {
+                    isHeaderSnapping = false
                 }
-                return available
-            } else {
-                // 可用比当前偏移多，消费当前偏移即可
-                coroutineScope.launch {
-                    state.dispatchScrollDelta(-state.indicatorOffset)
-                }
-                return Offset(x = 0f, y = -state.indicatorOffset)
             }
+            return available
         }
 
         return when {
             // If swiping isn't enabled, return zero
             !enabled -> Offset.Zero
             // If we're refreshing, return zero
-//        state.isRefreshing -> Offset.Zero
+//            !state.isIdle -> Offset.Zero
             // If the user is swiping up, handle it
             source == NestedScrollSource.Drag && available.y < 0 -> onScroll(available)
             else -> Offset.Zero
@@ -198,31 +190,34 @@ private class SmartRefreshNestedScrollConnection(
         available: Offset,
         source: NestedScrollSource
     ): Offset {
-//        val state = state
-//        if (!state.isIdle
-//            && available.y > 0
-//            && state.indicatorOffset != refreshTrigger
-//        ) {
-//            // 非空闲且向上滚动，把 header 移出来
-//            val needConsumed = available.y.coerceAtMost(refreshTrigger)
-//            if (source == NestedScrollSource.Drag) {
-//                coroutineScope.launch {
-//                    state.dispatchScrollDelta(needConsumed)
-//                }
-//                return available
-//            } else if (source == NestedScrollSource.Fling) {
-//                coroutineScope.launch {
-//                    state.animateOffsetTo(needConsumed)
-//                }
-//                return Offset(x = 0f, y = needConsumed)
-//            }
-//        }
+        val state = state
+        val coroutineScope = coroutineScope
+        val refreshTrigger = refreshTrigger
+        if (source == NestedScrollSource.Fling
+            && available.y > 0
+            && state.indicatorOffset <= refreshTrigger
+        ) {
+            val coerceMax = when (state.isIdle) {
+                true -> refreshTrigger - 1f
+                else -> refreshTrigger
+            }
+            val needConsumed = available.y.coerceAtMost(coerceMax)
+            coroutineScope.launch {
+                if (state.isIdle) {
+                    state.dispatchScrollDelta(needConsumed)
+                    state.animateOffsetTo(0f, spring(stiffness = Spring.StiffnessLow / 2))
+                } else {
+                    state.animateOffsetTo(refreshTrigger)
+                }
+            }
+            return Offset(x = 0f, y = needConsumed)
+        }
 
         return when {
             // If swiping isn't enabled, return zero
             !enabled -> Offset.Zero
             // If we're refreshing, return zero
-//        state.isRefreshing -> Offset.Zero
+//            !state.isIdle -> Offset.Zero
             // If the user is swiping down and there's y remaining, handle it
             source == NestedScrollSource.Drag && available.y > 0 -> onScroll(available)
             else -> Offset.Zero
@@ -231,37 +226,43 @@ private class SmartRefreshNestedScrollConnection(
 
     private fun onScroll(available: Offset): Offset {
         val state = state
-        if (state.indicatorOffset.roundToInt() != 0) {
-            state.isSwipeInProgress = true
-        } else if (state.indicatorOffset.roundToInt() == 0) {
-            state.isSwipeInProgress = false
-        }
+        val refreshTrigger = refreshTrigger
+        val maxIndicatorOffset = maxIndicatorOffset
+        val indicatorOffset = state.indicatorOffset
+        val defaultDragMultiplier = DragMultiplier
+
+        state.isSwipeInProgress = true
 
         // 禁止非空闲状态向下滚动
-        if (!state.isIdle && available.y > 0) {
-            return Offset.Zero
+        if (indicatorOffset >= refreshTrigger && !state.isIdle && available.y > 0) {
+            return available
         }
 
-        val indicatorOffset = state.indicatorOffset
         val dragMultiplier = when {
+            !state.isIdle -> 1f
             available.y > 0 && indicatorOffset > refreshTrigger -> {
                 val delta = indicatorOffset - refreshTrigger
-                val decayDragMultiplier = DragMultiplier - delta / maxIndicatorOffset
+                val decayDragMultiplier = defaultDragMultiplier - delta / max(refreshTrigger, maxIndicatorOffset)
                 decayDragMultiplier.coerceAtLeast(0.01f)
             }
-            else -> DragMultiplier
+            else -> defaultDragMultiplier
         }
-        val newOffset = (available.y * dragMultiplier + indicatorOffset).coerceAtLeast(0f)
-        val dragConsumed = newOffset - state.indicatorOffset
 
-        return if (dragConsumed.absoluteValue >= 0.5f) {
+        val coerceMax = if (state.isIdle) maxIndicatorOffset else refreshTrigger
+        val newOffset = (available.y * dragMultiplier + indicatorOffset).coerceIn(0f, coerceMax)
+        val dragConsumed = newOffset - indicatorOffset
+
+        if (indicatorOffset <= maxIndicatorOffset) {
             coroutineScope.launch {
                 state.dispatchScrollDelta(dragConsumed)
             }
-            // Return the consumed Y
-            Offset(x = 0f, y = dragConsumed / dragMultiplier)
-        } else {
-            Offset.Zero
+        }
+        if (available.y > 0) {
+            return available
+        }
+        return when (indicatorOffset) {
+            0f -> Offset.Zero
+            else -> available
         }
     }
 
@@ -277,8 +278,10 @@ private class SmartRefreshNestedScrollConnection(
         // Reset the drag in progress state
         state.isSwipeInProgress = false
 
-        // Don't consume any velocity, to allow the scrolling layout to fling
-        return Velocity.Zero
+        return when {
+            state.indicatorOffset > 0f && available.y > 0f -> available
+            else -> Velocity.Zero
+        }
     }
 }
 
@@ -318,43 +321,43 @@ private class SmartRefreshNestedScrollConnection(
  */
 @Composable
 fun SmartRefresh(
-    refreshState: SmartRefreshState,
+    state: SmartRefreshState,
     onRefresh: () -> Unit,
-    onIdle: () -> Unit,
     modifier: Modifier = Modifier,
+    onIdle: () -> Unit = { state.snapToIdle() },
     swipeEnabled: Boolean = true,
-    refreshTriggerRatio: Float = 1f,
+    triggerRatio: Float = 1f,
     maxDragRatio: Float = 2f,
     indicatorHeight: Dp = 80.dp,
     indicator: @Composable (
-        state: SmartRefreshState,
-        refreshTriggerPx: Float,
+        refreshState: SmartRefreshState,
+        triggerPx: Float,
         maxDragPx: Float,
-        height: Dp
-    ) -> Unit = { state, trigger, maxDrag, height ->
+        indicatorHeight: Dp
+    ) -> Unit = { refreshState, triggerPx, maxDragPx, height ->
         ClassicSmartRefreshIndicator(
-            state = state,
-            refreshTriggerPx = trigger,
-            maxDragPx = maxDrag,
+            state = refreshState,
+            triggerPx = triggerPx,
+            maxDragPx = maxDragPx,
             height = height
         )
     },
-    content: @Composable () -> Unit,
+    content: @Composable () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
     val updatedOnRefresh = rememberUpdatedState(onRefresh)
     val indicatorHeightPx = with(LocalDensity.current) { indicatorHeight.toPx() }
-    val refreshTriggerPx = indicatorHeightPx * refreshTriggerRatio
+    val refreshTriggerPx = indicatorHeightPx * triggerRatio
     val maxDragPx = indicatorHeightPx * maxDragRatio
 
     // Our LaunchedEffect, which animates the indicator to its resting position
     if (swipeEnabled) {
-        HandleSmartIndicatorOffset(refreshState, indicatorHeightPx, onIdle)
+        HandleSmartIndicatorOffset(state, indicatorHeightPx, onIdle)
     }
 
     // Our nested scroll connection, which updates our state.
-    val nestedScrollConnection = remember(refreshState, coroutineScope) {
-        SmartRefreshNestedScrollConnection(refreshState, coroutineScope) {
+    val nestedScrollConnection = remember(state, coroutineScope) {
+        SmartRefreshNestedScrollConnection(state, coroutineScope) {
             // On refresh, re-dispatch to the update onRefresh block
             updatedOnRefresh.value.invoke()
         }
@@ -369,13 +372,13 @@ fun SmartRefresh(
             Modifier.align(Alignment.TopCenter)
                 .let {
                     if (isHeaderNeedClip(
-                            refreshState,
+                            state,
                             indicatorHeightPx
                         )
                     ) it.clipToBounds() else it
                 }
         ) {
-            indicator(refreshState, refreshTriggerPx, maxDragPx, indicatorHeight)
+            indicator(state, refreshTriggerPx, maxDragPx, indicatorHeight)
         }
 
         Box(
@@ -383,7 +386,7 @@ fun SmartRefresh(
                 .offset {
                     IntOffset(
                         0,
-                        refreshState.indicatorOffset.roundToInt().coerceAtMost(maxDragPx.roundToInt())
+                        state.indicatorOffset.roundToInt().coerceAtMost(maxDragPx.roundToInt())
                     )
                 }
         ) {

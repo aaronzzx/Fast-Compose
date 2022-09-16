@@ -58,7 +58,7 @@ data class ClassicSmartRefreshIndicatorText(
 @Composable
 fun ClassicSmartRefreshIndicator(
     state: SmartRefreshState,
-    refreshTriggerPx: Float,
+    triggerPx: Float,
     maxDragPx: Float,
     height: Dp,
     showLastRefreshTime: Boolean = true,
@@ -81,7 +81,7 @@ fun ClassicSmartRefreshIndicator(
     val indicatorHeight = height.toPx()
     val offset = (maxDragPx - indicatorHeight).coerceAtMost(state.indicatorOffset - indicatorHeight)
 
-    val releaseToRefresh = offset > refreshTriggerPx - indicatorHeight
+    val releaseToRefresh = offset > triggerPx - indicatorHeight
 
     val refreshStatusText = when (state.type) {
         Idle -> if (releaseToRefresh) text.releaseToRefreshText else text.pullToRefreshText

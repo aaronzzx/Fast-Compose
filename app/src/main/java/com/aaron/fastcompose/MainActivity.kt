@@ -24,16 +24,11 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -148,18 +143,14 @@ private fun SmartRefreshList() {
     val refreshState = rememberSmartRefreshState(isRefreshing = false)
     val scope = rememberCoroutineScope()
     SmartRefresh(
-        refreshState = refreshState,
+        state = refreshState,
         onRefresh = {
             refreshState.autoRefresh()
-            scope.launch {
-                delay(10000)
-                val success = Random(System.currentTimeMillis()).nextBoolean()
-                if (Random(System.currentTimeMillis()).nextBoolean()) {
-                    refreshState.finishRefresh(success, 1000)
-                } else {
-                    refreshState.finishRefresh(success)
-                }
-            }
+//            scope.launch {
+//                delay(1000)
+//                val success = Random(System.currentTimeMillis()).nextBoolean()
+//                refreshState.finishRefresh(success)
+//            }
         },
         onIdle = {
             refreshState.snapToIdle()
@@ -206,7 +197,7 @@ private fun SmartRefreshList() {
                                             rippleColor = Color.Red.copy(0.1f),
                                             rippleBounded = true
                                         ) {
-                                            ToastUtils.showShort("Happy row everyday")
+                                            refreshState.finishRefresh(true)
                                         }
                                         .width(100.dp)
                                         .fillMaxHeight(),
