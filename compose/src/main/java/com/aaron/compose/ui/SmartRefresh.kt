@@ -7,7 +7,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.MutatorMutex
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -21,61 +20,81 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
+import com.aaron.compose.ktx.toPx
 import com.aaron.compose.ui.SmartRefreshType.FinishRefresh
 import com.aaron.compose.ui.SmartRefreshType.Idle
-import com.aaron.compose.ui.SmartRefreshType.Refresh
+import com.aaron.compose.ui.SmartRefreshType.Refreshing
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.max
-import kotlin.math.roundToInt
 
+/**
+ * 刷新阻尼
+ */
 private const val DragMultiplier = 0.5f
 
 /**
- * Creates a [SmartRefreshState] that is remembered across compositions.
- *
- * Changes to [isRefreshing] will result in the [SmartRefreshState] being updated.
- *
- * @param isRefreshing the value for [SmartRefreshState.isRefreshing]
+ * 刷新状态
  */
-@Composable
-fun rememberSmartRefreshState(
-    type: SmartRefreshType = Idle()
-): SmartRefreshState = remember {
-    SmartRefreshState(type = type)
-}.apply {
-    this.type = type
-}
-
+@Stable
 sealed class SmartRefreshType {
 
-    class Idle : SmartRefreshType()
-    class Refresh : SmartRefreshType()
+    class Idle : SmartRefreshType() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+            return true
+        }
 
+        override fun hashCode(): Int {
+            return javaClass.hashCode()
+        }
+    }
+    class Refreshing : SmartRefreshType() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return javaClass.hashCode()
+        }
+    }
+
+    /**
+     * 结束刷新状态， [dismissDelayMillis] 表示要悬挂多久
+     */
     sealed class FinishRefresh(val dismissDelayMillis: Long) : SmartRefreshType()
-    class Success(dismissDelayMillis: Long = 0) : FinishRefresh(dismissDelayMillis)
-    class Failure(dismissDelayMillis: Long = 0) : FinishRefresh(dismissDelayMillis)
+    class Success(dismissDelayMillis: Long = 300) : FinishRefresh(dismissDelayMillis)
+    class Failure(dismissDelayMillis: Long = 300) : FinishRefresh(dismissDelayMillis)
 }
 
 /**
- * A state object that can be hoisted to control and observe changes for [SmartRefresh].
+ * 维护刷新期间各种状态，使用时应该将之维护在 [androidx.lifecycle.ViewModel] 中，
+ * 因为 Compose 生命周期缘故，可能会频繁进入、退出 Composition ，导致状态被反复创建，
+ * 例如在 [com.google.accompanist.pager.HorizontalPager] 中使用时，Pager 基于
+ * [androidx.compose.foundation.lazy.LazyList] 构造而来，在切页时会出现回收的情况，
+ * 因此状态将变得不明确。
  *
- * In most cases, this will be created via [rememberSmartRefreshState].
- *
- * @param isRefreshing the initial value for [SmartRefreshState.isRefreshing]
+ * @param type 初始刷新状态
  */
 @Stable
 class SmartRefreshState(type: SmartRefreshType) {
+
+    /**
+     * 刷新的偏移量
+     */
     private val _indicatorOffset = Animatable(0f)
+
     private val mutatorMutex = MutatorMutex()
 
     var type: SmartRefreshType by mutableStateOf(type)
@@ -85,7 +104,7 @@ class SmartRefreshState(type: SmartRefreshType) {
     /**
      * Whether this [SmartRefreshState] is currently refreshing or not.
      */
-    val isRefreshing: Boolean get() = type is Refresh
+    val isRefreshing: Boolean get() = type is Refreshing
 
     /**
      * Whether a swipe/drag is currently in progress.
@@ -97,6 +116,11 @@ class SmartRefreshState(type: SmartRefreshType) {
      * The current offset for the indicator, in pixels.
      */
     val indicatorOffset: Float get() = _indicatorOffset.value
+
+    /**
+     * 刷新布局是否滚动到顶部了
+     */
+    internal var isContentArriveTop = true
 
     internal suspend fun animateOffsetTo(
         offset: Float,
@@ -124,7 +148,7 @@ private class SmartRefreshNestedScrollConnection(
 ) : NestedScrollConnection {
 
     var enabled: Boolean = false
-    var refreshTrigger: Float = 0f
+    var refreshTriggerOffset: Float = 0f
     var maxIndicatorOffset: Float = 0f
 
     private var isHeaderSnapping = false
@@ -139,7 +163,7 @@ private class SmartRefreshNestedScrollConnection(
             && available.y < 0
             && state.indicatorOffset > 0f
         ) {
-            if (state.indicatorOffset < refreshTrigger) {
+            if (state.indicatorOffset < refreshTriggerOffset) {
                 isHeaderSnapping = true
                 coroutineScope.launch {
                     state.animateOffsetTo(0f)
@@ -153,8 +177,6 @@ private class SmartRefreshNestedScrollConnection(
         return when {
             // If swiping isn't enabled, return zero
             !enabled -> Offset.Zero
-            // If we're refreshing, return zero
-//            !state.isIdle -> Offset.Zero
             // If the user is swiping up, handle it
             source == NestedScrollSource.Drag && available.y < 0 -> onScroll(available)
             else -> Offset.Zero
@@ -166,9 +188,11 @@ private class SmartRefreshNestedScrollConnection(
         available: Offset,
         source: NestedScrollSource
     ): Offset {
+        state.isContentArriveTop = available.y > 0
+
         val state = state
         val coroutineScope = coroutineScope
-        val refreshTrigger = refreshTrigger
+        val refreshTrigger = refreshTriggerOffset
         if (source == NestedScrollSource.Fling
             && available.y > 0
             && state.indicatorOffset <= refreshTrigger
@@ -192,8 +216,6 @@ private class SmartRefreshNestedScrollConnection(
         return when {
             // If swiping isn't enabled, return zero
             !enabled -> Offset.Zero
-            // If we're refreshing, return zero
-//            !state.isIdle -> Offset.Zero
             // If the user is swiping down and there's y remaining, handle it
             source == NestedScrollSource.Drag && available.y > 0 -> onScroll(available)
             else -> Offset.Zero
@@ -202,7 +224,7 @@ private class SmartRefreshNestedScrollConnection(
 
     private fun onScroll(available: Offset): Offset {
         val state = state
-        val refreshTrigger = refreshTrigger
+        val refreshTriggerOffset = refreshTriggerOffset
         val maxIndicatorOffset = maxIndicatorOffset
         val indicatorOffset = state.indicatorOffset
         val defaultDragMultiplier = DragMultiplier
@@ -210,21 +232,21 @@ private class SmartRefreshNestedScrollConnection(
         state.isSwipeInProgress = true
 
         // 禁止非空闲状态向下滚动
-        if (indicatorOffset >= refreshTrigger && !state.isIdle && available.y > 0) {
+        if (indicatorOffset >= refreshTriggerOffset && !state.isIdle && available.y > 0) {
             return available
         }
 
         val dragMultiplier = when {
             !state.isIdle -> 1f
-            available.y > 0 && indicatorOffset > refreshTrigger -> {
-                val delta = indicatorOffset - refreshTrigger
-                val decayDragMultiplier = defaultDragMultiplier - delta / max(refreshTrigger, maxIndicatorOffset)
+            available.y > 0 && indicatorOffset > refreshTriggerOffset -> {
+                val delta = indicatorOffset - refreshTriggerOffset
+                val decayDragMultiplier = defaultDragMultiplier - delta / max(refreshTriggerOffset, maxIndicatorOffset)
                 decayDragMultiplier.coerceAtLeast(0.01f)
             }
             else -> defaultDragMultiplier
         }
 
-        val coerceMax = if (state.isIdle) maxIndicatorOffset else refreshTrigger
+        val coerceMax = if (state.isIdle) maxIndicatorOffset else refreshTriggerOffset
         val newOffset = (available.y * dragMultiplier + indicatorOffset).coerceIn(0f, coerceMax)
         val dragConsumed = newOffset - indicatorOffset
 
@@ -247,7 +269,7 @@ private class SmartRefreshNestedScrollConnection(
 
         // If we're dragging, not currently refreshing and scrolled
         // past the trigger point, refresh!
-        if (state.isIdle && state.indicatorOffset >= refreshTrigger) {
+        if (state.isIdle && state.indicatorOffset >= refreshTriggerOffset) {
             onRefresh()
         }
 
@@ -262,38 +284,18 @@ private class SmartRefreshNestedScrollConnection(
 }
 
 /**
- * A layout which implements the swipe-to-refresh pattern, allowing the user to refresh content via
- * a vertical swipe gesture.
+ * 刷新组件，通过官方 [com.google.accompanist.swiperefresh.SwipeRefresh] 改造而来
  *
- * This layout requires its content to be scrollable so that it receives vertical swipe events.
- * The scrollable content does not need to be a direct descendant though. Layouts such as
- * [androidx.compose.foundation.lazy.LazyColumn] are automatically scrollable, but others such as
- * [androidx.compose.foundation.layout.Column] require you to provide the
- * [androidx.compose.foundation.verticalScroll] modifier to that content.
- *
- * Apps should provide a [onRefresh] block to be notified each time a swipe to refresh gesture
- * is completed. That block is responsible for updating the [state] as appropriately,
- * typically by setting [SmartRefreshState.isRefreshing] to `true` once a 'refresh' has been
- * started. Once a refresh has completed, the app should then set
- * [SmartRefreshState.isRefreshing] to `false`.
- *
- * If an app wishes to show the progress animation outside of a swipe gesture, it can
- * set [SmartRefreshState.isRefreshing] as required.
- *
- * This layout does not clip any of it's contents, including the indicator. If clipping
- * is required, apps can provide the [androidx.compose.ui.draw.clipToBounds] modifier.
- *
- * @sample com.google.accompanist.sample.swiperefresh.SwipeRefreshSample
- *
- * @param state the state object to be used to control or observe the [SwipeRefreshLayout] state.
- * @param onRefresh Lambda which is invoked when a swipe to refresh gesture is completed.
- * @param modifier the modifier to apply to this layout.
- * @param swipeEnabled Whether the the layout should react to swipe gestures or not.
- * @param indicator the indicator that represents the current state. By default this
- * will use a [OfficialSwipeRefreshIndicator].
- * @param clipIndicatorToPadding Whether to clip the indicator to [indicatorPadding]. If false is
- * provided the indicator will be clipped to the [content] bounds. Defaults to true.
- * @param content The content containing a scroll composable.
+ * @param state 刷新状态容器
+ * @param onRefresh 触发刷新时的回调
+ * @param onIdle 触发空闲状态的回调，在刷新操作完成后会回调
+ * @param modifier 修饰符
+ * @param swipeEnabled 是否启用刷新
+ * @param triggerRatio 触发刷新的占比，基于 [indicatorHeight]
+ * @param maxDragRatio 最大拖拽占比，基于 [indicatorHeight]
+ * @param indicatorHeight 刷新头的高度
+ * @param indicator 刷新头
+ * @param content 需要使用刷新的布局
  */
 @Composable
 fun SmartRefresh(
@@ -311,7 +313,7 @@ fun SmartRefresh(
         maxDragPx: Float,
         indicatorHeight: Dp
     ) -> Unit = { refreshState, triggerPx, maxDragPx, height ->
-        ClassicSmartRefreshIndicator(
+        SmartRefreshIndicator(
             state = refreshState,
             triggerPx = triggerPx,
             maxDragPx = maxDragPx,
@@ -322,7 +324,7 @@ fun SmartRefresh(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val updatedOnRefresh = rememberUpdatedState(onRefresh)
-    val indicatorHeightPx = with(LocalDensity.current) { indicatorHeight.toPx() }
+    val indicatorHeightPx = indicatorHeight.toPx()
     val refreshTriggerPx = indicatorHeightPx * triggerRatio
     val maxDragPx = indicatorHeightPx * maxDragRatio
 
@@ -339,7 +341,7 @@ fun SmartRefresh(
         }
     }.apply {
         this.enabled = swipeEnabled
-        this.refreshTrigger = refreshTriggerPx
+        this.refreshTriggerOffset = refreshTriggerPx
         this.maxIndicatorOffset = maxDragPx
     }
 
@@ -354,16 +356,21 @@ fun SmartRefresh(
                     ) it.clipToBounds() else it
                 }
         ) {
+            LaunchedEffect(key1 = state) {
+                if (state.isRefreshing
+                    && state.indicatorOffset == 0f
+                    && state.isContentArriveTop
+                ) {
+                    state.animateOffsetTo(refreshTriggerPx)
+                }
+            }
             indicator(state, refreshTriggerPx, maxDragPx, indicatorHeight)
         }
 
         Box(
             modifier = Modifier
-                .offset {
-                    IntOffset(
-                        0,
-                        state.indicatorOffset.roundToInt().coerceAtMost(maxDragPx.roundToInt())
-                    )
+                .graphicsLayer {
+                    translationY = state.indicatorOffset.coerceAtMost(maxDragPx)
                 }
         ) {
             content()
@@ -389,17 +396,13 @@ private fun HandleSmartIndicatorOffset(
                     state.animateOffsetTo(0f)
                 }
             }
-            is Refresh -> {
+            is Refreshing -> {
                 if (state.indicatorOffset > indicatorHeightPx) {
                     state.animateOffsetTo(indicatorHeightPx)
                 }
             }
             is FinishRefresh -> {
-//                if (state.indicatorOffset > indicatorHeightPx) {
-//                    state.animateOffsetTo(indicatorHeightPx)
-//                }
-                // 保证最少有 300 毫秒悬挂，不然效果不佳
-                delay(refreshType.dismissDelayMillis.coerceAtLeast(300))
+                delay(refreshType.dismissDelayMillis.coerceAtLeast(0))
                 // 回调 onIdle 之前先 snap 回去，不然会瞥到 Idle 状态的 UI
                 state.animateOffsetTo(0f)
                 onIdle.invoke()

@@ -1,9 +1,7 @@
 package com.aaron.fastcompose
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import com.aaron.compose.ui.SmartRefreshState
 import com.aaron.compose.ui.SmartRefreshType
 
 /**
@@ -12,5 +10,5 @@ import com.aaron.compose.ui.SmartRefreshType
  */
 class MainViewModel : ViewModel() {
 
-    var refreshType: SmartRefreshType by mutableStateOf(SmartRefreshType.Refresh())
+    val refreshState = SmartRefreshState(SmartRefreshType.Refreshing())
 }

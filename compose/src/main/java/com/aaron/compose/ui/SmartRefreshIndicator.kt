@@ -39,24 +39,36 @@ import com.aaron.compose.drawable.ProgressDrawable
 import com.aaron.compose.ktx.toPx
 import com.aaron.compose.ui.SmartRefreshType.Failure
 import com.aaron.compose.ui.SmartRefreshType.Idle
-import com.aaron.compose.ui.SmartRefreshType.Refresh
+import com.aaron.compose.ui.SmartRefreshType.Refreshing
 import com.aaron.compose.ui.SmartRefreshType.Success
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * 刷新文案
+ */
 @Stable
-data class ClassicSmartRefreshIndicatorText(
+data class SmartRefreshIndicatorText(
+    /** 下拉时的文案 */
     val pullToRefreshText: String,
+    /** 可以松手刷新的文案 */
     val releaseToRefreshText: String,
+    /** 刷新中的文案 */
     val refreshingText: String,
+    /** 刷新成功的文案 */
     val refreshSucceedText: String,
+    /** 刷新失败的文案 */
     val refreshFailedText: String,
+    /** 显示最后一次更新时间那个位置的文案，例如想在这个位置显示别的文案 */
     val lastRefreshTime: String? = null
 )
 
+/**
+ * 默认刷新头
+ */
 @Composable
-fun ClassicSmartRefreshIndicator(
+fun SmartRefreshIndicator(
     state: SmartRefreshState,
     triggerPx: Float,
     maxDragPx: Float,
@@ -70,7 +82,7 @@ fun ClassicSmartRefreshIndicator(
             curContentColor
         }
     },
-    text: ClassicSmartRefreshIndicatorText = ClassicSmartRefreshIndicatorText(
+    text: SmartRefreshIndicatorText = SmartRefreshIndicatorText(
         pullToRefreshText = "下拉可以刷新",
         releaseToRefreshText = "释放立即刷新",
         refreshingText = "正在刷新...",
@@ -85,7 +97,7 @@ fun ClassicSmartRefreshIndicator(
 
     val refreshStatusText = when (state.type) {
         is Idle -> if (releaseToRefresh) text.releaseToRefreshText else text.pullToRefreshText
-        is Refresh -> text.refreshingText
+        is Refreshing -> text.refreshingText
         is Success -> text.refreshSucceedText
         is Failure -> text.refreshFailedText
     }

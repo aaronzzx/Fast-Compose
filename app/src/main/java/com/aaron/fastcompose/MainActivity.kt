@@ -18,12 +18,13 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,12 +34,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aaron.compose.base.BaseComposeActivity
+import com.aaron.compose.ktx.canScrollVertical
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.onClick
+import com.aaron.compose.ktx.recomposeHighlighter
 import com.aaron.compose.ui.SmartRefresh
 import com.aaron.compose.ui.SmartRefreshType
 import com.aaron.compose.ui.TopBar
-import com.aaron.compose.ui.rememberSmartRefreshState
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import com.blankj.utilcode.util.ToastUtils
 import com.google.accompanist.pager.ExperimentalPagerApi
@@ -127,19 +129,14 @@ private fun MyPager() {
 
 @Composable
 private fun SmartRefreshList(vm: MainViewModel) {
-    val refreshState = rememberSmartRefreshState(type = vm.refreshType)
-    DisposableEffect(key1 = Unit) {
-        onDispose {
-            vm.refreshType = SmartRefreshType.Idle()
-        }
-    }
+    val refreshState = vm.refreshState
     SmartRefresh(
         state = refreshState,
         onRefresh = {
-            vm.refreshType = SmartRefreshType.Refresh()
+            refreshState.type = SmartRefreshType.Refreshing()
         },
         onIdle = {
-            vm.refreshType = SmartRefreshType.Idle()
+            refreshState.type = SmartRefreshType.Idle()
         },
         modifier = Modifier.background(color = Color(0xFFF0F0F0))
     ) {
@@ -185,7 +182,7 @@ private fun SmartRefreshList(vm: MainViewModel) {
                                         ) {
                                             val success =
                                                 Random(System.currentTimeMillis()).nextBoolean()
-                                            vm.refreshType = when (success) {
+                                            refreshState.type = when (success) {
                                                 true -> SmartRefreshType.Success()
                                                 else -> SmartRefreshType.Failure()
                                             }
