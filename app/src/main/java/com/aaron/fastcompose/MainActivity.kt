@@ -23,20 +23,20 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aaron.compose.base.BaseComposeActivity
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ui.SmartRefresh
+import com.aaron.compose.ui.SmartRefreshType
 import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.rememberSmartRefreshState
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
@@ -45,6 +45,7 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import kotlin.random.Random
 
 class MainActivity : BaseComposeActivity() {
 
@@ -94,7 +95,7 @@ private fun MyPager() {
     ) { page ->
         when (page) {
             0 -> {
-                SmartRefreshList()
+                SmartRefreshList(viewModel())
             }
             1 -> {
 //                SmartRefreshGrid()
@@ -124,24 +125,21 @@ private fun MyPager() {
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
-@Preview
 @Composable
-private fun SmartRefreshList() {
-    val refreshState = rememberSmartRefreshState(isRefreshing = false)
-    val scope = rememberCoroutineScope()
+private fun SmartRefreshList(vm: MainViewModel) {
+    val refreshState = rememberSmartRefreshState(type = vm.refreshType)
+    DisposableEffect(key1 = Unit) {
+        onDispose {
+            vm.refreshType = SmartRefreshType.Idle()
+        }
+    }
     SmartRefresh(
         state = refreshState,
         onRefresh = {
-            refreshState.autoRefresh()
-//            scope.launch {
-//                delay(1000)
-//                val success = Random(System.currentTimeMillis()).nextBoolean()
-//                refreshState.finishRefresh(success)
-//            }
+            vm.refreshType = SmartRefreshType.Refresh()
         },
         onIdle = {
-            refreshState.snapToIdle()
+            vm.refreshType = SmartRefreshType.Idle()
         },
         modifier = Modifier.background(color = Color(0xFFF0F0F0))
     ) {
@@ -185,7 +183,12 @@ private fun SmartRefreshList() {
                                             rippleColor = Color.Red.copy(0.1f),
                                             rippleBounded = true
                                         ) {
-                                            refreshState.finishRefresh(true)
+                                            val success =
+                                                Random(System.currentTimeMillis()).nextBoolean()
+                                            vm.refreshType = when (success) {
+                                                true -> SmartRefreshType.Success()
+                                                else -> SmartRefreshType.Failure()
+                                            }
                                         }
                                         .width(100.dp)
                                         .fillMaxHeight(),

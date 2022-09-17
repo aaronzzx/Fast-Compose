@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,11 +29,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
-import com.aaron.compose.ui.SmartRefreshType.Failure
 import com.aaron.compose.ui.SmartRefreshType.FinishRefresh
 import com.aaron.compose.ui.SmartRefreshType.Idle
-import com.aaron.compose.ui.SmartRefreshType.Refreshing
-import com.aaron.compose.ui.SmartRefreshType.Success
+import com.aaron.compose.ui.SmartRefreshType.Refresh
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -52,25 +49,21 @@ private const val DragMultiplier = 0.5f
  */
 @Composable
 fun rememberSmartRefreshState(
-    isRefreshing: Boolean
+    type: SmartRefreshType = Idle()
 ): SmartRefreshState = remember {
-    SmartRefreshState(isRefreshing = isRefreshing)
+    SmartRefreshState(type = type)
 }.apply {
-    if (isRefreshing) {
-        autoRefresh()
-    } else {
-        snapToIdle()
-    }
+    this.type = type
 }
 
 sealed class SmartRefreshType {
 
-    object Idle : SmartRefreshType()
-    object Refreshing : SmartRefreshType()
+    class Idle : SmartRefreshType()
+    class Refresh : SmartRefreshType()
 
-    sealed class FinishRefresh(val delayMillis: Long) : SmartRefreshType()
-    class Success(delayMillis: Long) : FinishRefresh(delayMillis)
-    class Failure(delayMillis: Long) : FinishRefresh(delayMillis)
+    sealed class FinishRefresh(val dismissDelayMillis: Long) : SmartRefreshType()
+    class Success(dismissDelayMillis: Long = 0) : FinishRefresh(dismissDelayMillis)
+    class Failure(dismissDelayMillis: Long = 0) : FinishRefresh(dismissDelayMillis)
 }
 
 /**
@@ -81,19 +74,18 @@ sealed class SmartRefreshType {
  * @param isRefreshing the initial value for [SmartRefreshState.isRefreshing]
  */
 @Stable
-class SmartRefreshState(isRefreshing: Boolean) {
+class SmartRefreshState(type: SmartRefreshType) {
     private val _indicatorOffset = Animatable(0f)
     private val mutatorMutex = MutatorMutex()
 
-    var type: SmartRefreshType by mutableStateOf(if (isRefreshing) Refreshing else Idle)
-        private set
+    var type: SmartRefreshType by mutableStateOf(type)
 
-    val isIdle: Boolean by derivedStateOf { type == Idle }
+    val isIdle: Boolean get() = type is Idle
 
     /**
      * Whether this [SmartRefreshState] is currently refreshing or not.
      */
-    val isRefreshing: Boolean by derivedStateOf { type == Refreshing }
+    val isRefreshing: Boolean get() = type is Refresh
 
     /**
      * Whether a swipe/drag is currently in progress.
@@ -105,22 +97,6 @@ class SmartRefreshState(isRefreshing: Boolean) {
      * The current offset for the indicator, in pixels.
      */
     val indicatorOffset: Float get() = _indicatorOffset.value
-
-    fun snapToIdle() {
-        type = Idle
-    }
-
-    fun autoRefresh() {
-        if (!isRefreshing) {
-            type = Refreshing
-        }
-    }
-
-    fun finishRefresh(success: Boolean, delayMillis: Long = 0) {
-        if (isRefreshing) {
-            type = if (success) Success(delayMillis) else Failure(delayMillis)
-        }
-    }
 
     internal suspend fun animateOffsetTo(
         offset: Float,
@@ -323,8 +299,8 @@ private class SmartRefreshNestedScrollConnection(
 fun SmartRefresh(
     state: SmartRefreshState,
     onRefresh: () -> Unit,
+    onIdle: () -> Unit,
     modifier: Modifier = Modifier,
-    onIdle: () -> Unit = { state.snapToIdle() },
     swipeEnabled: Boolean = true,
     triggerRatio: Float = 1f,
     maxDragRatio: Float = 2f,
@@ -408,14 +384,14 @@ private fun HandleSmartIndicatorOffset(
     val refreshType = state.type
     LaunchedEffect(state.isSwipeInProgress, refreshType) {
         when (refreshType) {
-            Refreshing -> {
-                if (state.indicatorOffset > indicatorHeightPx) {
-                    state.animateOffsetTo(indicatorHeightPx)
-                }
-            }
-            Idle -> {
+            is Idle -> {
                 if (state.indicatorOffset != 0f) {
                     state.animateOffsetTo(0f)
+                }
+            }
+            is Refresh -> {
+                if (state.indicatorOffset > indicatorHeightPx) {
+                    state.animateOffsetTo(indicatorHeightPx)
                 }
             }
             is FinishRefresh -> {
@@ -423,7 +399,7 @@ private fun HandleSmartIndicatorOffset(
 //                    state.animateOffsetTo(indicatorHeightPx)
 //                }
                 // 保证最少有 300 毫秒悬挂，不然效果不佳
-                delay(refreshType.delayMillis.coerceAtLeast(300))
+                delay(refreshType.dismissDelayMillis.coerceAtLeast(300))
                 // 回调 onIdle 之前先 snap 回去，不然会瞥到 Idle 状态的 UI
                 state.animateOffsetTo(0f)
                 onIdle.invoke()

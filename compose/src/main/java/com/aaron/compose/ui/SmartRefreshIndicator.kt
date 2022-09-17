@@ -39,7 +39,7 @@ import com.aaron.compose.drawable.ProgressDrawable
 import com.aaron.compose.ktx.toPx
 import com.aaron.compose.ui.SmartRefreshType.Failure
 import com.aaron.compose.ui.SmartRefreshType.Idle
-import com.aaron.compose.ui.SmartRefreshType.Refreshing
+import com.aaron.compose.ui.SmartRefreshType.Refresh
 import com.aaron.compose.ui.SmartRefreshType.Success
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import java.text.SimpleDateFormat
@@ -84,8 +84,8 @@ fun ClassicSmartRefreshIndicator(
     val releaseToRefresh = offset > triggerPx - indicatorHeight
 
     val refreshStatusText = when (state.type) {
-        Idle -> if (releaseToRefresh) text.releaseToRefreshText else text.pullToRefreshText
-        Refreshing -> text.refreshingText
+        is Idle -> if (releaseToRefresh) text.releaseToRefreshText else text.pullToRefreshText
+        is Refresh -> text.refreshingText
         is Success -> text.refreshSucceedText
         is Failure -> text.refreshFailedText
     }
