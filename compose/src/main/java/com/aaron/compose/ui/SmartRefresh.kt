@@ -34,6 +34,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import com.aaron.compose.ktx.toPx
+import com.aaron.compose.ui.SmartRefreshType.Companion.Idle
+import com.aaron.compose.ui.SmartRefreshType.Companion.Refreshing
 import com.aaron.compose.ui.SmartRefreshType.Failure
 import com.aaron.compose.ui.SmartRefreshType.FinishRefresh
 import com.aaron.compose.ui.SmartRefreshType.FinishRefresh.Companion.DismissDelayMillis
@@ -54,6 +56,11 @@ private const val DragMultiplier = 0.5f
  */
 @Stable
 sealed class SmartRefreshType {
+
+    companion object {
+        internal val Idle: Idle = Idle()
+        internal val Refreshing: Refreshing = Refreshing()
+    }
 
     class Idle : SmartRefreshType() {
         override fun equals(other: Any?): Boolean {
@@ -97,10 +104,10 @@ sealed class SmartRefreshType {
  * [androidx.compose.foundation.lazy.LazyList] 构造而来，在切页时会出现回收的情况，
  * 因此状态将变得不明确。
  *
- * @param type 初始刷新状态
+ * @param isRefreshing 初始刷新状态
  */
 @Stable
-class SmartRefreshState(type: SmartRefreshType) {
+class SmartRefreshState(isRefreshing: Boolean) {
 
     /**
      * 刷新的偏移量
@@ -109,7 +116,7 @@ class SmartRefreshState(type: SmartRefreshType) {
 
     private val mutatorMutex = MutatorMutex()
 
-    var type: SmartRefreshType by mutableStateOf(type)
+    var type: SmartRefreshType by mutableStateOf(if (isRefreshing) Refreshing else Idle)
         private set
 
     val isIdle: Boolean get() = type is Idle
@@ -139,13 +146,13 @@ class SmartRefreshState(type: SmartRefreshType) {
 
     fun idle() {
         if (!isIdle) {
-            type = Idle()
+            type = Idle
         }
     }
 
     fun refreshing() {
         if (!isRefreshing) {
-            type = Refreshing()
+            type = Refreshing
         }
     }
 

@@ -12,5 +12,5 @@ import com.aaron.compose.ui.SmartRefreshType
 @Stable
 class MainVM : ViewModel() {
 
-    val refreshState = SmartRefreshState(SmartRefreshType.Idle())
+    val refreshState = SmartRefreshState(false)
 }

@@ -166,13 +166,15 @@ private fun MyIndicator(
         modifier = Modifier
             .fillMaxWidth()
             .height(height)
-            .offset { IntOffset(x = 0, y = offset.roundToInt()) },
+            .graphicsLayer {
+                translationY = offset
+            },
         contentAlignment = Alignment.Center
     ) {
         if (refreshState.isIdle) {
             Icon(
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(36.dp)
                     .graphicsLayer {
                         rotationZ = arrowRotation.value
                     },
@@ -180,7 +182,9 @@ private fun MyIndicator(
                 contentDescription = null
             )
         } else {
-            CircularProgressIndicator()
+            CircularProgressIndicator(
+                modifier = Modifier.size(36.dp)
+            )
         }
     }
 }
