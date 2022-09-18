@@ -1,8 +1,14 @@
 package com.aaron.compose.ui
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationEndReason.BoundReached
+import androidx.compose.animation.core.AnimationEndReason.Finished
+import androidx.compose.animation.core.AnimationResult
 import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.AnimationVector1D
+import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.MutatorMutex
@@ -28,13 +34,15 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import com.aaron.compose.ktx.toPx
+import com.aaron.compose.ui.SmartRefreshType.Failure
 import com.aaron.compose.ui.SmartRefreshType.FinishRefresh
+import com.aaron.compose.ui.SmartRefreshType.FinishRefresh.Companion.DismissDelayMillis
 import com.aaron.compose.ui.SmartRefreshType.Idle
 import com.aaron.compose.ui.SmartRefreshType.Refreshing
+import com.aaron.compose.ui.SmartRefreshType.Success
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.max
 
 /**
  * 刷新阻尼
@@ -73,9 +81,13 @@ sealed class SmartRefreshType {
     /**
      * 结束刷新状态， [dismissDelayMillis] 表示要悬挂多久
      */
-    sealed class FinishRefresh(val dismissDelayMillis: Long) : SmartRefreshType()
-    class Success(dismissDelayMillis: Long = 300) : FinishRefresh(dismissDelayMillis)
-    class Failure(dismissDelayMillis: Long = 300) : FinishRefresh(dismissDelayMillis)
+    sealed class FinishRefresh(val dismissDelayMillis: Long) : SmartRefreshType() {
+        companion object {
+            const val DismissDelayMillis = 300L
+        }
+    }
+    class Success(dismissDelayMillis: Long = DismissDelayMillis) : FinishRefresh(dismissDelayMillis)
+    class Failure(dismissDelayMillis: Long = DismissDelayMillis) : FinishRefresh(dismissDelayMillis)
 }
 
 /**
@@ -98,6 +110,7 @@ class SmartRefreshState(type: SmartRefreshType) {
     private val mutatorMutex = MutatorMutex()
 
     var type: SmartRefreshType by mutableStateOf(type)
+        private set
 
     val isIdle: Boolean get() = type is Idle
 
@@ -122,6 +135,32 @@ class SmartRefreshState(type: SmartRefreshType) {
      */
     internal var isContentArriveTop = true
 
+    internal val isAnimating: Boolean get() = _indicatorOffset.isRunning
+
+    fun idle() {
+        if (!isIdle) {
+            type = Idle()
+        }
+    }
+
+    fun refreshing() {
+        if (!isRefreshing) {
+            type = Refreshing()
+        }
+    }
+
+    fun success(dismissDelayMillis: Long = DismissDelayMillis) {
+        if (isRefreshing) {
+            type = Success(dismissDelayMillis)
+        }
+    }
+
+    fun failure(dismissDelayMillis: Long = DismissDelayMillis) {
+        if (isRefreshing) {
+            type = Failure(dismissDelayMillis)
+        }
+    }
+
     internal suspend fun animateOffsetTo(
         offset: Float,
         animationSpec: AnimationSpec<Float> = spring()
@@ -131,6 +170,14 @@ class SmartRefreshState(type: SmartRefreshType) {
         }
     }
 
+    internal suspend fun animateOffsetDecay(
+        initialVelocity: Float,
+        animationSpec: DecayAnimationSpec<Float> = exponentialDecay(),
+        block: (Animatable<Float, AnimationVector1D>.() -> Unit)? = null
+    ): AnimationResult<Float, AnimationVector1D> = mutatorMutex.mutate {
+        _indicatorOffset.animateDecay(initialVelocity, animationSpec, block)
+    }
+
     /**
      * Dispatch scroll delta in pixels from touch events.
      */
@@ -138,6 +185,13 @@ class SmartRefreshState(type: SmartRefreshType) {
         mutatorMutex.mutate(MutatePriority.UserInput) {
             _indicatorOffset.snapTo(_indicatorOffset.value + delta)
         }
+    }
+
+    internal fun updateScrollBounds(
+        lowerBound: Float? = _indicatorOffset.lowerBound,
+        upperBound: Float? = _indicatorOffset.upperBound
+    ) {
+        _indicatorOffset.updateBounds(lowerBound = lowerBound, upperBound = upperBound)
     }
 }
 
@@ -151,29 +205,12 @@ private class SmartRefreshNestedScrollConnection(
     var refreshTriggerOffset: Float = 0f
     var maxIndicatorOffset: Float = 0f
 
-    private var isHeaderSnapping = false
-
     override fun onPreScroll(
         available: Offset,
         source: NestedScrollSource
     ): Offset {
-        val state = state
-        if (!isHeaderSnapping
-            && source == NestedScrollSource.Fling
-            && available.y < 0
-            && state.indicatorOffset > 0f
-        ) {
-            if (state.indicatorOffset < refreshTriggerOffset) {
-                isHeaderSnapping = true
-                coroutineScope.launch {
-                    state.animateOffsetTo(0f)
-                }.invokeOnCompletion {
-                    isHeaderSnapping = false
-                }
-            }
-            return available
-        }
-
+        // 保证滑动时默认最大距离
+        state.updateScrollBounds(upperBound = maxIndicatorOffset)
         return when {
             // If swiping isn't enabled, return zero
             !enabled -> Offset.Zero
@@ -188,29 +225,24 @@ private class SmartRefreshNestedScrollConnection(
         available: Offset,
         source: NestedScrollSource
     ): Offset {
+        val state = state
+
         state.isContentArriveTop = available.y > 0
 
-        val state = state
         val coroutineScope = coroutineScope
         val refreshTrigger = refreshTriggerOffset
-        if (source == NestedScrollSource.Fling
+        if (state.isIdle
+            && source == NestedScrollSource.Fling
             && available.y > 0
-            && state.indicatorOffset <= refreshTrigger
+            && state.indicatorOffset in 0f..refreshTrigger
+            && consumed.y > 0f
         ) {
-            val coerceMax = when (state.isIdle) {
-                true -> refreshTrigger - 1f
-                else -> refreshTrigger
-            }
-            val needConsumed = available.y.coerceAtMost(coerceMax)
+            val needConsumed = (consumed.y + available.y).coerceAtMost(refreshTrigger)
             coroutineScope.launch {
-                if (state.isIdle) {
-                    state.dispatchScrollDelta(needConsumed)
-                    state.animateOffsetTo(0f, spring(stiffness = Spring.StiffnessLow / 2))
-                } else {
-                    state.animateOffsetTo(refreshTrigger)
-                }
+                state.animateOffsetTo(needConsumed, spring(stiffness = Spring.StiffnessHigh))
+                state.animateOffsetTo(0f, spring(stiffness = Spring.StiffnessLow))
             }
-            return Offset(x = 0f, y = needConsumed)
+            return Offset(x = 0f, y = available.y)
         }
 
         return when {
@@ -231,23 +263,22 @@ private class SmartRefreshNestedScrollConnection(
 
         state.isSwipeInProgress = true
 
-        // 禁止非空闲状态向下滚动
-        if (indicatorOffset >= refreshTriggerOffset && !state.isIdle && available.y > 0) {
-            return available
-        }
-
         val dragMultiplier = when {
-            !state.isIdle -> 1f
+            state.isRefreshing && indicatorOffset <= refreshTriggerOffset -> 1f
             available.y > 0 && indicatorOffset > refreshTriggerOffset -> {
+                // 最大偏移量减去触发偏移量得出
+                val residueOffset = maxIndicatorOffset - refreshTriggerOffset
                 val delta = indicatorOffset - refreshTriggerOffset
-                val decayDragMultiplier = defaultDragMultiplier - delta / max(refreshTriggerOffset, maxIndicatorOffset)
+                val ratio = delta / residueOffset * defaultDragMultiplier
+                val decayDragMultiplier = defaultDragMultiplier - ratio
                 decayDragMultiplier.coerceAtLeast(0.01f)
             }
             else -> defaultDragMultiplier
         }
 
-        val coerceMax = if (state.isIdle) maxIndicatorOffset else refreshTriggerOffset
-        val newOffset = (available.y * dragMultiplier + indicatorOffset).coerceIn(0f, coerceMax)
+        val coerceMax = maxIndicatorOffset
+        val availableOffset = available.y * dragMultiplier
+        val newOffset = (indicatorOffset + availableOffset).coerceIn(0f, coerceMax)
         val dragConsumed = newOffset - indicatorOffset
 
         if (indicatorOffset <= maxIndicatorOffset) {
@@ -257,11 +288,10 @@ private class SmartRefreshNestedScrollConnection(
         }
         if (available.y > 0) {
             return available
+        } else if (indicatorOffset != 0f) {
+            return available
         }
-        return when (indicatorOffset) {
-            0f -> Offset.Zero
-            else -> available
-        }
+        return Offset.Zero
     }
 
     override suspend fun onPreFling(available: Velocity): Velocity {
@@ -276,8 +306,54 @@ private class SmartRefreshNestedScrollConnection(
         // Reset the drag in progress state
         state.isSwipeInProgress = false
 
+        // 刷新头有露出来时缩回去
+        if (state.indicatorOffset > 0f && available.y < 0f) {
+            val animationResult = state.animateOffsetDecay(available.y) {
+                updateBounds(lowerBound = 0f)
+            }
+            val endState = animationResult.endState
+            return when (animationResult.endReason) {
+                // 触达边界，只消费部分速度
+                BoundReached -> {
+                    // 剩下的速度
+                    val residue = endState.velocity
+                    val consumed = available.y - residue
+                    Velocity(x = 0f, y = consumed)
+                }
+                // 正常结束动画，全部消费掉
+                Finished -> available
+            }
+        }
+
+        return Velocity.Zero
+    }
+
+    override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+        val state = state
+        val initialOffset = state.indicatorOffset
+        val triggerOffset = refreshTriggerOffset
+        val maxOffset = maxIndicatorOffset
+        // 触达顶部边界或者刷新头出来了且是向上滚动
+        if (initialOffset >= 0f && available.y > 0f) {
+            if (!state.isIdle && !state.isAnimating && state.indicatorOffset < triggerOffset) {
+                // 非空闲状态直接使用衰减动画
+                // 非空闲的话不给太多回弹，一点足够
+                val upperBound = when {
+                    available.y < 3000f -> triggerOffset
+                    else -> triggerOffset * 1.2f
+                }
+                state.updateScrollBounds(upperBound = upperBound)
+                state.animateOffsetDecay(available.y)
+                state.updateScrollBounds(upperBound = maxOffset)
+                if (state.indicatorOffset > triggerOffset) {
+                    state.animateOffsetTo(triggerOffset, spring(stiffness = Spring.StiffnessLow))
+                }
+                return available
+            }
+        }
         return when {
-            state.indicatorOffset > 0f && available.y > 0f -> available
+            // 如果刷新头出来了，拦截掉
+            initialOffset >= 0f && available.y > 0f -> available
             else -> Velocity.Zero
         }
     }
@@ -330,7 +406,7 @@ fun SmartRefresh(
 
     // Our LaunchedEffect, which animates the indicator to its resting position
     if (swipeEnabled) {
-        HandleSmartIndicatorOffset(state, indicatorHeightPx, onIdle)
+        HandleSmartIndicatorOffset(state, refreshTriggerPx, onIdle)
     }
 
     // Our nested scroll connection, which updates our state.
@@ -345,7 +421,11 @@ fun SmartRefresh(
         this.maxIndicatorOffset = maxDragPx
     }
 
-    Box(modifier.nestedScroll(connection = nestedScrollConnection)) {
+
+    Box(
+        modifier = modifier
+            .nestedScroll(connection = nestedScrollConnection)
+    ) {
         Box(
             Modifier.align(Alignment.TopCenter)
                 .let {
@@ -385,11 +465,16 @@ private fun isHeaderNeedClip(state: SmartRefreshState, indicatorHeight: Float): 
 @Composable
 private fun HandleSmartIndicatorOffset(
     state: SmartRefreshState,
-    indicatorHeightPx: Float,
+    refreshTriggerPx: Float,
     onIdle: () -> Unit
 ) {
     val refreshType = state.type
+    var isPrevTypeFinishRefresh by remember {
+        mutableStateOf(refreshType is FinishRefresh)
+    }
     LaunchedEffect(state.isSwipeInProgress, refreshType) {
+        val _isPrevTypeFinishRefresh = isPrevTypeFinishRefresh
+        isPrevTypeFinishRefresh = refreshType is FinishRefresh
         when (refreshType) {
             is Idle -> {
                 if (state.indicatorOffset != 0f) {
@@ -397,12 +482,16 @@ private fun HandleSmartIndicatorOffset(
                 }
             }
             is Refreshing -> {
-                if (state.indicatorOffset > indicatorHeightPx) {
-                    state.animateOffsetTo(indicatorHeightPx)
+                if (state.indicatorOffset > refreshTriggerPx) {
+                    state.animateOffsetTo(refreshTriggerPx)
                 }
             }
             is FinishRefresh -> {
-                delay(refreshType.dismissDelayMillis.coerceAtLeast(0))
+                // 如果上一个状态也是 FinishRefresh ，就不要悬挂了
+                // 这种情况一般是刷新完成时用户进行交互
+                if (!_isPrevTypeFinishRefresh) {
+                    delay(refreshType.dismissDelayMillis.coerceAtLeast(0))
+                }
                 // 回调 onIdle 之前先 snap 回去，不然会瞥到 Idle 状态的 UI
                 state.animateOffsetTo(0f)
                 onIdle.invoke()

@@ -9,22 +9,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,15 +29,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aaron.compose.base.BaseComposeActivity
-import com.aaron.compose.ktx.canScrollVertical
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.onClick
-import com.aaron.compose.ktx.recomposeHighlighter
 import com.aaron.compose.ui.SmartRefresh
-import com.aaron.compose.ui.SmartRefreshType
 import com.aaron.compose.ui.TopBar
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
-import com.blankj.utilcode.util.ToastUtils
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
@@ -97,7 +88,7 @@ private fun MyPager() {
     ) { page ->
         when (page) {
             0 -> {
-                SmartRefreshList(viewModel())
+                SmartRefreshList()
             }
             1 -> {
 //                SmartRefreshGrid()
@@ -128,16 +119,18 @@ private fun MyPager() {
 }
 
 @Composable
-private fun SmartRefreshList(vm: MainViewModel) {
+private fun SmartRefreshList(vm: MainVM = viewModel()) {
     val refreshState = vm.refreshState
     SmartRefresh(
         state = refreshState,
         onRefresh = {
-            refreshState.type = SmartRefreshType.Refreshing()
+            refreshState.refreshing()
         },
         onIdle = {
-            refreshState.type = SmartRefreshType.Idle()
+            refreshState.idle()
         },
+        triggerRatio = 1f,
+        maxDragRatio = 2f,
         modifier = Modifier.background(color = Color(0xFFF0F0F0))
     ) {
         LazyColumn(
@@ -156,58 +149,21 @@ private fun SmartRefreshList(vm: MainViewModel) {
                             rippleColor = Color.Red.copy(0.1f),
                             rippleBounded = true
                         ) {
-                            ToastUtils.showShort("Happy everyday")
+                            when (Random(System.currentTimeMillis()).nextBoolean()) {
+                                true -> refreshState.success()
+                                else -> refreshState.failure()
+                            }
                         }
                         .fillMaxWidth()
                         .height(200.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (index == 0) {
-                        LazyRow(
-                            modifier = Modifier
-                                .fillMaxSize(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(21) { rowIndex ->
-                                Box(
-                                    modifier = Modifier
-                                        .clipToBackground(
-                                            color = Color.Black.copy(0.1f),
-                                            shape = RoundedCornerShape(8.dp)
-                                        )
-                                        .onClick(
-                                            enableRipple = true,
-                                            rippleColor = Color.Red.copy(0.1f),
-                                            rippleBounded = true
-                                        ) {
-                                            val success =
-                                                Random(System.currentTimeMillis()).nextBoolean()
-                                            refreshState.type = when (success) {
-                                                true -> SmartRefreshType.Success()
-                                                else -> SmartRefreshType.Failure()
-                                            }
-                                        }
-                                        .width(100.dp)
-                                        .fillMaxHeight(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "$index-$rowIndex",
-                                        color = Color(0xFF333333),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 36.sp
-                                    )
-                                }
-                            }
-                        }
-                    } else {
-                        Text(
-                            text = "$index",
-                            color = Color(0xFF333333),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 56.sp
-                        )
-                    }
+                    Text(
+                        text = "$index",
+                        color = Color(0xFF333333),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 56.sp
+                    )
                 }
             }
         }

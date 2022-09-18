@@ -18,6 +18,7 @@
     </com.google.android.material.appbar.AppBarLayout>
 
     <com.scwang.smart.refresh.layout.SmartRefreshLayout
+        android:id="@+id/refresh_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#F2F2F2"

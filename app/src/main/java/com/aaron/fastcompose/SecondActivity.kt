@@ -63,6 +63,10 @@ class SecondActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
 
+        binding.refreshLayout.setOnRefreshListener {
+
+        }
+
         val rv = binding.rv
         rv.layoutManager = LinearLayoutManager(this)
         rv.addItemDecoration(object : RecyclerView.ItemDecoration() {
@@ -80,6 +84,9 @@ class SecondActivity : AppCompatActivity() {
                 }
             }
         })
+        adapter.setOnItemClickListener { _, _, _ ->
+            binding.refreshLayout.finishRefresh(true)
+        }
         rv.adapter = adapter
 
         adapter.addAll(fillData())
