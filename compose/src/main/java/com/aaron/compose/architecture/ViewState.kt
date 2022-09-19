@@ -29,6 +29,8 @@ sealed class ViewState<out T> {
 
 typealias ViewStateFlow<T> = SafeStateFlow<ViewState<T>>
 
-fun <T> ViewStateFlow(value: ViewState<T>): ViewStateFlow<T> {
-    return SafeStateFlow(value)
+inline fun <T> viewStateFlow(
+    crossinline initial: () -> ViewState<T> = { ViewState.Initial() }
+): Lazy<ViewStateFlow<T>> {
+    return lazy { SafeStateFlow(initial()) }
 }

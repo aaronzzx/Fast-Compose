@@ -3,8 +3,7 @@ package com.aaron.fastcompose
 import androidx.compose.runtime.Stable
 import com.aaron.compose.architecture.BaseResult
 import com.aaron.compose.architecture.BaseViewStateVM
-import com.aaron.compose.architecture.ViewState
-import com.aaron.compose.architecture.ViewStateFlow
+import com.aaron.compose.architecture.viewStateFlow
 import com.aaron.compose.ui.SmartRefreshState
 
 /**
@@ -16,7 +15,7 @@ class MainVM : BaseViewStateVM() {
 
     val refreshState = SmartRefreshState(false)
 
-    val articlesEntity = ViewStateFlow<ArticlesEntity>(ViewState.Initial())
+    val articlesEntity by viewStateFlow<ArticlesEntity>()
 
     init {
         launch(articlesEntity) {

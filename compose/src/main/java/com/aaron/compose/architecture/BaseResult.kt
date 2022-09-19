@@ -13,10 +13,3 @@ interface BaseResult {
 
     val msg: String?
 }
-
-@Stable
-data class LocalResult<T>(
-    override val code: Int,
-    override val msg: String?,
-    val data: T
-) : BaseResult
