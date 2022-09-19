@@ -200,9 +200,11 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
         onIdle = {
             refreshState.idle()
         },
-//        indicator = { _refreshState, triggerPx, maxDragPx, height ->
+        indicator = { _refreshState, triggerPx, maxDragPx, height ->
 //            MyIndicator(_refreshState, triggerPx, maxDragPx, height)
-//        },
+            JialaiIndicator(_refreshState, triggerPx, maxDragPx, height)
+        },
+        indicatorHeight = 100.dp,
         modifier = Modifier.background(color = Color(0xFFF0F0F0))
     ) {
         LazyColumn(
