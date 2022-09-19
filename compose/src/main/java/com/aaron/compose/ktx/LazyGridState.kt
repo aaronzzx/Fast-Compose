@@ -20,7 +20,7 @@ fun LazyGridState.canScrollVertical(direction: Int): Boolean {
     } else if (direction > 0) {
         val viewportEndOffset = layoutInfo.viewportEndOffset
         val paddingBottom = layoutInfo.afterContentPadding
-        val lastItem = layoutInfo.visibleItemsInfo.last()
+        val lastItem = layoutInfo.visibleItemsInfo.lastOrNull() ?: return false
         val lastItemOffset = lastItem.offset.y + lastItem.size.height + paddingBottom
         val arriveBottom = lastItem.index == lastIndex
                 && lastItemOffset == viewportEndOffset
@@ -41,7 +41,7 @@ fun LazyGridState.canScrollHorizontal(direction: Int): Boolean {
     } else if (direction > 0) {
         val viewportEndOffset = layoutInfo.viewportEndOffset
         val paddingEnd = layoutInfo.afterContentPadding
-        val lastItem = layoutInfo.visibleItemsInfo.last()
+        val lastItem = layoutInfo.visibleItemsInfo.lastOrNull() ?: return false
         val lastItemOffset = lastItem.offset.x + lastItem.size.width + paddingEnd
         val arriveEnd = lastItem.index == lastIndex
                 && lastItemOffset == viewportEndOffset

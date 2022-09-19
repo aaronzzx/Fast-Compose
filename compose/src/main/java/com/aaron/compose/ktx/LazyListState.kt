@@ -20,7 +20,7 @@ fun LazyListState.canScrollVertical(direction: Int): Boolean {
     } else if (direction > 0) {
         val viewportEndOffset = layoutInfo.viewportEndOffset
         val paddingBottom = layoutInfo.afterContentPadding
-        val lastItem = layoutInfo.visibleItemsInfo.last()
+        val lastItem = layoutInfo.visibleItemsInfo.lastOrNull() ?: return false
         val arriveBottom = lastItem.index == lastIndex
                 && (lastItem.offset + lastItem.size + paddingBottom) == viewportEndOffset
         return !arriveBottom
@@ -40,7 +40,7 @@ fun LazyListState.canScrollHorizontal(direction: Int): Boolean {
     } else if (direction > 0) {
         val viewportEndOffset = layoutInfo.viewportEndOffset
         val paddingEnd = layoutInfo.afterContentPadding
-        val lastItem = layoutInfo.visibleItemsInfo.last()
+        val lastItem = layoutInfo.visibleItemsInfo.lastOrNull() ?: return false
         val arriveEnd = lastItem.index == lastIndex
                 && (lastItem.offset + lastItem.size + paddingEnd) == viewportEndOffset
         return !arriveEnd
