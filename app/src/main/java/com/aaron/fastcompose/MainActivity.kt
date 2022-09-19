@@ -1,7 +1,6 @@
 package com.aaron.fastcompose
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -19,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
@@ -30,18 +28,9 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -52,9 +41,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.aaron.compose.architecture.ViewState
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.items
 import com.aaron.compose.base.BaseComposeActivity
-import com.aaron.compose.ktx.canScrollVertical
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ktx.toPx
@@ -62,12 +52,10 @@ import com.aaron.compose.ui.SmartRefresh
 import com.aaron.compose.ui.SmartRefreshState
 import com.aaron.compose.ui.TopBar
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
-import com.blankj.utilcode.util.ToastUtils
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
-import kotlinx.coroutines.flow.filter
 
 class MainActivity : BaseComposeActivity() {
 
@@ -199,20 +187,30 @@ private fun MyIndicator(
 @Composable
 private fun SmartRefreshList(vm: MainVM = viewModel()) {
     val refreshState = vm.refreshState
+    val lazyArticles = vm.articles.collectAsLazyPagingItems()
+    val loadState = lazyArticles.loadState
+
+    if (refreshState.isRefreshing) {
+        when (loadState.refresh) {
+            is LoadState.NotLoading -> refreshState.success()
+            is LoadState.Error -> refreshState.failure()
+            else -> Unit
+        }
+    }
     SmartRefresh(
         state = refreshState,
         onRefresh = {
             refreshState.refreshing()
-            vm.refresh()
+            lazyArticles.refresh()
         },
         onIdle = {
             refreshState.idle()
         },
-        indicator = { _refreshState, triggerPx, maxDragPx, height ->
+        indicator = { smartRefreshState, triggerPixels, maxDragPixels, height ->
             JialaiIndicator(
-                refreshState = _refreshState,
-                triggerPx = triggerPx,
-                maxDragPx = maxDragPx,
+                refreshState = smartRefreshState,
+                triggerPixels = triggerPixels,
+                maxDragPixels = maxDragPixels,
                 height = height,
                 modifier = Modifier
             )
@@ -226,52 +224,14 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            val viewState by vm.articlesEntity.collectAsState()
-            Log.d("zzx", "$viewState")
-
-            var noMoreData by remember { mutableStateOf(false) }
-            val listData = remember { mutableStateListOf<String>() }
             val listState = rememberLazyListState()
-            if (viewState is ViewState.Success) {
-                val text = (viewState as ViewState.Success).data.text
-                if (text.isNotEmpty()) {
-                    if (refreshState.isRefreshing) {
-                        LaunchedEffect(key1 = Unit) {
-                            listState.scrollToItem(0)
-                        }
-                        listData.clear()
-                        listData.addAll(text)
-                    } else if (!listData.containsAll(text)) {
-                        listData.addAll(text)
-                    }
-                    noMoreData = false
-                } else {
-                    noMoreData = true
-                }
-            }
-            if (viewState is ViewState.Success) {
-                refreshState.success()
-            } else if (viewState is ViewState.Failure) {
-                refreshState.failure()
-            }
-
-            LaunchedEffect(key1 = listState) {
-                snapshotFlow { !listState.canScrollVertical(1) }
-                    .filter {
-                        Log.d("zzx", "$it, $viewState")
-                        it && viewState is ViewState.Success
-                    }
-                    .collect {
-                        if (!noMoreData && it) vm.loadMore()
-                    }
-            }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 state = listState,
                 contentPadding = PaddingValues(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(listData, key = { it }) { article ->
+                items(lazyArticles, key = { it }) { article ->
                     Box(
                         modifier = Modifier
                             .clipToBackground(
@@ -283,41 +243,57 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = article,
+                            text = article ?: "Unknown",
                             color = Color(0xFF333333),
                             fontWeight = FontWeight.Bold,
                             fontSize = 56.sp
                         )
                     }
                 }
-                if (listData.isNotEmpty()) {
-                    item {
-                        val isFailure = viewState is ViewState.Failure || viewState is ViewState.Error
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .onClick(enabled = isFailure) {
-                                    vm.loadMore()
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (viewState is ViewState.Success) {
-                                Text(
-                                    text = if (noMoreData) "已经到底啦" else "加载更多",
-                                    fontSize = 12.sp,
-                                    color = Color(0xFF666666),
-                                    modifier = Modifier.padding(16.dp)
-                                )
-                            } else if (viewState is ViewState.Loading) {
+
+                when {
+                    loadState.append is LoadState.Loading -> {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Text(
                                     text = "加载中...",
                                     fontSize = 12.sp,
                                     color = Color(0xFF666666),
                                     modifier = Modifier.padding(16.dp)
                                 )
-                            } else {
+                            }
+                        }
+                    }
+                    loadState.append is LoadState.Error -> {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .onClick(enableRipple = false) {
+                                        lazyArticles.retry()
+                                    }
+                                    .fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Text(
                                     text = "加载失败，点我重试",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF666666),
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                            }
+                        }
+                    }
+                    loadState.append.endOfPaginationReached -> {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "已经到底啦",
                                     fontSize = 12.sp,
                                     color = Color(0xFF666666),
                                     modifier = Modifier.padding(16.dp)
@@ -328,44 +304,28 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
                 }
             }
 
-            when {
-                viewState is ViewState.Loading && listData.isEmpty() -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                viewState is ViewState.Success && listData.isEmpty() -> {
-                    Icon(
-                        modifier = Modifier.size(60.dp),
-                        imageVector = Icons.Default.Home,
-                        contentDescription = null
-                    )
-                }
-                viewState is ViewState.Failure -> {
-                    SideEffect {
-                        ToastUtils.showShort((viewState as ViewState.Failure).msg)
+            if (lazyArticles.itemCount == 0) {
+                if (loadState.refresh is LoadState.Loading) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center)
+                        )
                     }
-                    if (listData.isEmpty()) {
+                } else if (loadState.refresh is LoadState.Error) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Icon(
                             modifier = Modifier.size(60.dp),
-                            imageVector = Icons.Default.Warning,
+                            imageVector = Icons.Filled.Home,
                             contentDescription = null
                         )
                     }
                 }
-                viewState is ViewState.Error -> {
-                    SideEffect {
-                        ToastUtils.showShort((viewState as ViewState.Error).exception.message)
-                    }
-                    if (listData.isEmpty()) {
-                        Icon(
-                            modifier = Modifier.size(60.dp),
-                            imageVector = Icons.Default.ThumbUp,
-                            contentDescription = null
-                        )
-                    }
-                }
-                else -> Unit
             }
         }
     }

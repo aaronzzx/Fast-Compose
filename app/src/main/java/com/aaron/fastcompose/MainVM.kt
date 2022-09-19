@@ -1,10 +1,10 @@
 package com.aaron.fastcompose
 
-import android.util.Log
 import androidx.compose.runtime.Stable
 import com.aaron.compose.architecture.BaseResult
 import com.aaron.compose.architecture.BaseViewStateVM
-import com.aaron.compose.architecture.viewStateFlow
+import com.aaron.compose.ktx.buildPager
+import com.aaron.compose.paging.PagerConfigDefaults
 import com.aaron.compose.ui.SmartRefreshState
 import kotlinx.coroutines.delay
 import kotlin.random.Random
@@ -16,43 +16,27 @@ import kotlin.random.Random
 @Stable
 class MainVM : BaseViewStateVM() {
 
+    companion object {
+        init {
+            PagerConfigDefaults.DefaultPrefetchDistance = 1
+            PagerConfigDefaults.DefaultInitialSize = 10
+            PagerConfigDefaults.DefaultPageSize = 10
+            PagerConfigDefaults.DefaultMaxPage = 3
+            PagerConfigDefaults.DefaultRequestTimeMillis = 500
+        }
+    }
+
     val refreshState = SmartRefreshState(false)
 
-    val articlesEntity by viewStateFlow<ArticlesEntity>()
-
-    private var page = 1
-
-    init {
-        requestData(false)
-    }
-
-    fun refresh() {
-        page = 1
-        requestData(false)
-    }
-
-    fun loadMore() {
-        page++
-        requestData(true)
-    }
-
-    private fun requestData(triggerByLoadMore: Boolean) {
-        emit(articlesEntity) {
-            Log.d("zzx", "page: $page")
-            val articles = MockData.loadArticles(page)
-            delay(1000)
-            val type = Random(System.currentTimeMillis()).nextInt(0, 10)
-            if (triggerByLoadMore) {
-                if (type == 0 || type == 1) {
-                    // failure
-                    page--
-                }
-            }
-            when (type) {
-                0 -> ArticlesEntity(500, "Network error.", emptyList())
-                1 -> error("Internal error.")
-                else -> ArticlesEntity(200, "OK", articles)
-            }
+    val articles = buildPager(
+        onTransform = {
+            it?.text
+        }
+    ) { page, pageSize ->
+        when (Random(System.currentTimeMillis()).nextInt(0, 10)) {
+            0 -> ArticlesEntity(404, "Not Found", emptyList())
+            1 -> throw IllegalStateException("Internal Error")
+            else -> ArticlesEntity(200, "OK", MockData.loadArticles(page, pageSize))
         }
     }
 }
@@ -65,14 +49,12 @@ data class ArticlesEntity(
 
 object MockData {
 
-    fun loadArticles(page: Int): List<String> {
+    suspend fun loadArticles(page: Int, pageSize: Int): List<String> {
+        delay(Random(System.currentTimeMillis()).nextLong(0, 2000))
         val list = arrayListOf<String>()
-        when (page) {
-            1 -> list.addAll((1..10).map { "$it" })
-            2 -> list.addAll((11..20).map { "$it" })
-            3 -> list.addAll((21..30).map { "$it" })
-            4 -> list.addAll((31..40).map { "$it" })
-            5 -> list.addAll((41..50).map { "$it" })
+        val random = Random(System.currentTimeMillis()).nextInt(1, 100000)
+        repeat(pageSize) {
+            list.add("$page-$it-$random")
         }
         return list
     }

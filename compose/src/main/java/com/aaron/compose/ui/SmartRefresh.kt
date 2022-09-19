@@ -364,15 +364,15 @@ fun SmartRefresh(
     maxDragRatio: Float = 2f,
     indicatorHeight: Dp = 80.dp,
     indicator: @Composable (
-        refreshState: SmartRefreshState,
-        triggerPx: Float,
-        maxDragPx: Float,
+        smartRefreshState: SmartRefreshState,
+        triggerPixels: Float,
+        maxDragPixels: Float,
         indicatorHeight: Dp
-    ) -> Unit = { refreshState, triggerPx, maxDragPx, height ->
+    ) -> Unit = { smartRefreshState, triggerPixels, maxDragPixels, height ->
         SmartRefreshIndicator(
-            state = refreshState,
-            triggerPx = triggerPx,
-            maxDragPx = maxDragPx,
+            state = smartRefreshState,
+            triggerPx = triggerPixels,
+            maxDragPx = maxDragPixels,
             height = height
         )
     },
