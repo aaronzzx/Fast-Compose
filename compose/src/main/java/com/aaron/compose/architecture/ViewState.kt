@@ -6,21 +6,7 @@ package com.aaron.compose.architecture
  */
 sealed class ViewState<out T> {
 
-    class Loading : ViewState<Nothing>() {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-            return true
-        }
-
-        override fun hashCode(): Int {
-            return javaClass.hashCode()
-        }
-
-        override fun toString(): String {
-            return "Loading"
-        }
-    }
+    object Loading : ViewState<Nothing>()
 
     data class Success<T>(val data: T) : ViewState<T>()
 
@@ -32,7 +18,7 @@ sealed class ViewState<out T> {
 typealias ViewStateFlow<T> = SafeStateFlow<ViewState<T>>
 
 inline fun <T> viewStateFlow(
-    crossinline initial: () -> ViewState<T> = { ViewState.Loading() }
+    crossinline initial: () -> ViewState<T> = { ViewState.Loading }
 ): Lazy<ViewStateFlow<T>> {
     return lazy { SafeStateFlow(initial()) }
 }

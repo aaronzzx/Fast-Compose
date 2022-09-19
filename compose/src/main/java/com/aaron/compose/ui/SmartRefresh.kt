@@ -34,8 +34,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import com.aaron.compose.ktx.toPx
-import com.aaron.compose.ui.SmartRefreshType.Companion.Idle
-import com.aaron.compose.ui.SmartRefreshType.Companion.Refreshing
 import com.aaron.compose.ui.SmartRefreshType.Failure
 import com.aaron.compose.ui.SmartRefreshType.FinishRefresh
 import com.aaron.compose.ui.SmartRefreshType.FinishRefresh.Companion.DismissDelayMillis
@@ -57,33 +55,8 @@ private const val DragMultiplier = 0.5f
 @Stable
 sealed class SmartRefreshType {
 
-    companion object {
-        internal val Idle: Idle = Idle()
-        internal val Refreshing: Refreshing = Refreshing()
-    }
-
-    class Idle : SmartRefreshType() {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-            return true
-        }
-
-        override fun hashCode(): Int {
-            return javaClass.hashCode()
-        }
-    }
-    class Refreshing : SmartRefreshType() {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-            return true
-        }
-
-        override fun hashCode(): Int {
-            return javaClass.hashCode()
-        }
-    }
+    object Idle : SmartRefreshType()
+    object Refreshing : SmartRefreshType()
 
     /**
      * 结束刷新状态， [dismissDelayMillis] 表示要悬挂多久
