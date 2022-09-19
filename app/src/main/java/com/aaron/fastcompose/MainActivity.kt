@@ -202,7 +202,18 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
         },
         indicator = { _refreshState, triggerPx, maxDragPx, height ->
 //            MyIndicator(_refreshState, triggerPx, maxDragPx, height)
-            JialaiIndicator(_refreshState, triggerPx, maxDragPx, height)
+            JialaiIndicator(
+                refreshState = _refreshState,
+                triggerPx = triggerPx,
+                maxDragPx = maxDragPx,
+                height = height,
+                modifier = Modifier
+                    .padding(16.dp)
+                    .background(
+                        color = Color.Green.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+            )
         },
         indicatorHeight = 100.dp,
         modifier = Modifier.background(color = Color(0xFFF0F0F0))

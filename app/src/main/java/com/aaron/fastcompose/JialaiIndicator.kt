@@ -47,6 +47,7 @@ fun JialaiIndicator(
     triggerPx: Float,
     maxDragPx: Float,
     height: Dp,
+    modifier: Modifier = Modifier,
     drawableColor: Color = Color(0xFFF25924),
     textColor: Color = Color(0xFF666666)
 ) {
@@ -78,7 +79,8 @@ fun JialaiIndicator(
             .height(height)
             .graphicsLayer {
                 translationY = offset
-            },
+            }
+            .then(modifier),
         contentAlignment = Alignment.Center
     ) {
         Column(

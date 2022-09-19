@@ -73,6 +73,7 @@ fun SmartRefreshIndicator(
     triggerPx: Float,
     maxDragPx: Float,
     height: Dp,
+    modifier: Modifier = Modifier,
     showLastRefreshTime: Boolean = true,
     contentColor: Color = run {
         val curContentColor = LocalContentColor.current
@@ -116,6 +117,7 @@ fun SmartRefreshIndicator(
             .fillMaxWidth()
             .height(height)
             .offset { IntOffset(0, offset.toInt()) }
+            .then(modifier)
     ) {
         val (refreshText, icon) = createRefs()
         if (state.isRefreshing || state.isIdle) {
