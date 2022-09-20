@@ -51,6 +51,7 @@ android {
                 "-Xopt-in=androidx.compose.material.ExperimentalMaterialApi",
                 "-Xopt-in=com.google.accompanist.pager.ExperimentalPagerApi",
                 "-Xopt-in=kotlin.RequiresOptIn",
+                "-Xopt-in=androidx.paging.ExperimentalPagingApi"
         ]
     }
     composeOptions {

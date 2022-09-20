@@ -13,3 +13,9 @@ interface BaseResult {
 
     val msg: String?
 }
+
+@Stable
+interface BasePagingResult<E> : BaseResult {
+
+    val data: List<E>
+}

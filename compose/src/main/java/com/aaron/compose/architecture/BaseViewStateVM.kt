@@ -14,11 +14,9 @@ abstract class BaseViewStateVM : ViewModel() {
         var DefaultSuccessCode = 200
     }
 
-    open val successCode: Int = DefaultSuccessCode
-
     protected fun <T : BaseResult> emit(
         observer: ViewStateFlow<T>,
-        successCode: Int = this.successCode,
+        successCode: Int = DefaultSuccessCode,
         request: suspend () -> T
     ) {
         viewModelScope.launch {

@@ -1,10 +1,13 @@
 package com.aaron.fastcompose
 
 import androidx.compose.runtime.Stable
-import com.aaron.compose.architecture.BaseResult
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.aaron.compose.architecture.BasePagingResult
 import com.aaron.compose.architecture.BaseViewStateVM
-import com.aaron.compose.ktx.buildPager
-import com.aaron.compose.paging.PagerConfigDefaults
+import com.aaron.compose.ktx.buildPagingFlow
+import com.aaron.compose.paging.PagingConfigDefaults
 import com.aaron.compose.ui.SmartRefreshState
 import kotlinx.coroutines.delay
 import kotlin.random.Random
@@ -18,25 +21,32 @@ class MainVM : BaseViewStateVM() {
 
     companion object {
         init {
-            PagerConfigDefaults.DefaultPrefetchDistance = 1
-            PagerConfigDefaults.DefaultInitialSize = 10
-            PagerConfigDefaults.DefaultPageSize = 10
-            PagerConfigDefaults.DefaultMaxPage = 3
-            PagerConfigDefaults.DefaultRequestTimeMillis = 500
+            with(PagingConfigDefaults) {
+                DefaultPrefetchDistance = 1
+                DefaultInitialSize = 10
+                DefaultPageSize = 10
+                DefaultMaxPage = 5
+                DefaultRequestTimeMillis = 500
+            }
         }
     }
 
+    var init by mutableStateOf(true)
+
     val refreshState = SmartRefreshState(false)
 
-    val articles = buildPager(
-        onTransform = {
-            it?.text
-        }
-    ) { page, pageSize ->
+    val articles = buildPagingFlow { page, pageSize ->
         when (Random(System.currentTimeMillis()).nextInt(0, 10)) {
-            0 -> ArticlesEntity(404, "Not Found", emptyList())
-            1 -> throw IllegalStateException("Internal Error")
-            else -> ArticlesEntity(200, "OK", MockData.loadArticles(page, pageSize))
+            0 -> {
+                ArticlesEntity(404, "Not Found", emptyList())
+            }
+            1 -> {
+                throw IllegalStateException("Internal Error")
+            }
+            else -> {
+                val list = MockData.loadArticles(page, pageSize)
+                ArticlesEntity(200, "OK", list)
+            }
         }
     }
 }
@@ -44,15 +54,15 @@ class MainVM : BaseViewStateVM() {
 data class ArticlesEntity(
     override val code: Int,
     override val msg: String?,
-    val text: List<String>
-) : BaseResult
+    override val data: List<String>
+) : BasePagingResult<String>
 
 object MockData {
 
     suspend fun loadArticles(page: Int, pageSize: Int): List<String> {
         delay(Random(System.currentTimeMillis()).nextLong(0, 2000))
         val list = arrayListOf<String>()
-        val random = Random(System.currentTimeMillis()).nextInt(1, 100000)
+        val random = Random(System.currentTimeMillis()).nextInt(1, 100)
         repeat(pageSize) {
             list.add("$page-$it-$random")
         }

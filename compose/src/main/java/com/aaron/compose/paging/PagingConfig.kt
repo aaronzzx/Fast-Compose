@@ -1,18 +1,18 @@
 package com.aaron.compose.paging
 
-import com.aaron.compose.paging.PagerConfigDefaults.DefaultEnableLoadMore
-import com.aaron.compose.paging.PagerConfigDefaults.DefaultEnablePlaceholders
-import com.aaron.compose.paging.PagerConfigDefaults.DefaultInitialSize
-import com.aaron.compose.paging.PagerConfigDefaults.DefaultMaxPage
-import com.aaron.compose.paging.PagerConfigDefaults.DefaultMaxSize
-import com.aaron.compose.paging.PagerConfigDefaults.DefaultPageSize
-import com.aaron.compose.paging.PagerConfigDefaults.DefaultPrefetchDistance
-import com.aaron.compose.paging.PagerConfigDefaults.DefaultRequestTimeMillis
+import com.aaron.compose.paging.PagingConfigDefaults.DefaultEnableLoadMore
+import com.aaron.compose.paging.PagingConfigDefaults.DefaultEnablePlaceholders
+import com.aaron.compose.paging.PagingConfigDefaults.DefaultInitialSize
+import com.aaron.compose.paging.PagingConfigDefaults.DefaultMaxPage
+import com.aaron.compose.paging.PagingConfigDefaults.DefaultMaxSize
+import com.aaron.compose.paging.PagingConfigDefaults.DefaultPageSize
+import com.aaron.compose.paging.PagingConfigDefaults.DefaultPrefetchDistance
+import com.aaron.compose.paging.PagingConfigDefaults.DefaultRequestTimeMillis
 
 /**
  * 默认 Paging 配置
  */
-object PagerConfigDefaults {
+object PagingConfigDefaults {
 
     /** 默认每页个数 */
     var DefaultPageSize = 15
@@ -29,20 +29,20 @@ object PagerConfigDefaults {
     /** 默认 Paging 最多可以加载多少 */
     var DefaultMaxSize = Int.MAX_VALUE
 
-    /** 默认是否提前显示占位图，在真实数据还没返回时可以用假数据进行显示占位 */
+    /** 默认是否提前显示占位图 */
     var DefaultEnablePlaceholders = false
 
     /** 默认是否开启加载更多 */
     var DefaultEnableLoadMore = true
 
-    /** 默认请求周期，防抖 */
+    /** 默认最小请求时间 */
     var DefaultRequestTimeMillis = 500L
 }
 
 /**
  * 通用 Paging 配置，加入了自定义字段，更具体说明可以查看 [androidx.paging.PagingConfig]
  */
-data class PagerConfig(
+data class AppPagingConfig(
     /** 每页个数 */
     val pageSize: Int = DefaultPageSize,
 
@@ -58,12 +58,12 @@ data class PagerConfig(
     /** Paging 最多可以加载多少 */
     val maxSize:Int = DefaultMaxSize,
 
-    /** 提前显示占位图，在真实数据还没返回时可以用假数据进行显示占位 */
+    /** 提前显示空占位图，在数量已知的情况下 */
     val enablePlaceholders:Boolean = DefaultEnablePlaceholders,
 
     /** 是否开启加载更多 */
     val enableLoadMore: Boolean = DefaultEnableLoadMore,
 
-    /** 请求周期，设置最小需要多少毫秒才能完成一次 Page 请求 */
+    /** 设置最小需要多少毫秒才能完成一次请求 */
     val minRequestTimeMillis: Long = DefaultRequestTimeMillis
 )

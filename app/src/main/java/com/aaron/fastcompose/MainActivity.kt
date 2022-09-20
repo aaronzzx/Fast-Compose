@@ -190,21 +190,25 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
     val lazyArticles = vm.articles.collectAsLazyPagingItems()
     val loadState = lazyArticles.loadState
 
+    val loadStateRefresh = loadState.refresh
     if (refreshState.isRefreshing) {
-        when (loadState.refresh) {
-            is LoadState.NotLoading -> refreshState.success()
-            is LoadState.Error -> refreshState.failure()
-            else -> Unit
+        if (loadStateRefresh is LoadState.NotLoading) {
+            refreshState.success()
+        } else if (loadStateRefresh is LoadState.Error) {
+            refreshState.failure()
         }
+    } else if (loadStateRefresh is LoadState.Loading && !vm.init) {
+        refreshState.refresh()
     }
+
+    if (vm.init) {
+        vm.init = false
+    }
+
     SmartRefresh(
         state = refreshState,
         onRefresh = {
-            refreshState.refreshing()
             lazyArticles.refresh()
-        },
-        onIdle = {
-            refreshState.idle()
         },
         indicator = { smartRefreshState, triggerPixels, maxDragPixels, height ->
             JialaiIndicator(

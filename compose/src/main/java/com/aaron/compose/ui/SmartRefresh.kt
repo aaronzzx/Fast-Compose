@@ -123,7 +123,7 @@ class SmartRefreshState(isRefreshing: Boolean) {
         }
     }
 
-    fun refreshing() {
+    fun refresh() {
         if (!isRefreshing) {
             type = Refreshing
         }
@@ -357,8 +357,8 @@ private class SmartRefreshNestedScrollConnection(
 fun SmartRefresh(
     state: SmartRefreshState,
     onRefresh: () -> Unit,
-    onIdle: () -> Unit,
     modifier: Modifier = Modifier,
+    onIdle: () -> Unit = { state.idle() },
     swipeEnabled: Boolean = true,
     triggerRatio: Float = 1f,
     maxDragRatio: Float = 2f,
