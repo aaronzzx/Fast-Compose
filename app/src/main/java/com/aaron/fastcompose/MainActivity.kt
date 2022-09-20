@@ -41,9 +41,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.paging.LoadState
-import androidx.paging.compose.collectAsLazyPagingItems
-import androidx.paging.compose.items
+import com.aaron.compose.architecture.paging.LoadState
+import com.aaron.compose.architecture.paging.items
+import com.aaron.compose.architecture.paging.itemsIndexed
 import com.aaron.compose.base.BaseComposeActivity
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.onClick
@@ -187,12 +187,12 @@ private fun MyIndicator(
 @Composable
 private fun SmartRefreshList(vm: MainVM = viewModel()) {
     val refreshState = vm.refreshState
-    val lazyArticles = vm.articles.collectAsLazyPagingItems()
-    val loadState = lazyArticles.loadState
+    val articles = vm.articles
+    val loadState = articles.loadState
 
     val loadStateRefresh = loadState.refresh
     if (refreshState.isRefreshing) {
-        if (loadStateRefresh is LoadState.NotLoading) {
+        if (loadStateRefresh is LoadState.Idle) {
             refreshState.success()
         } else if (loadStateRefresh is LoadState.Error) {
             refreshState.failure()
@@ -208,7 +208,7 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
     SmartRefresh(
         state = refreshState,
         onRefresh = {
-            lazyArticles.refresh()
+            articles.refresh()
         },
         indicator = { smartRefreshState, triggerPixels, maxDragPixels, height ->
             JialaiIndicator(
@@ -235,19 +235,22 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
                 contentPadding = PaddingValues(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(lazyArticles, key = { it }) { article ->
+                itemsIndexed(articles, key = { index, _ -> index }) { index, article ->
                     Box(
                         modifier = Modifier
                             .clipToBackground(
                                 color = Color.White,
                                 shape = RoundedCornerShape(8.dp)
                             )
+                            .onClick {
+                                articles.data.removeAt(index)
+                            }
                             .fillMaxWidth()
                             .height(200.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = article ?: "Unknown",
+                            text = article,
                             color = Color(0xFF333333),
                             fontWeight = FontWeight.Bold,
                             fontSize = 56.sp
@@ -256,7 +259,7 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
                 }
 
                 when {
-                    loadState.append is LoadState.Loading -> {
+                    loadState.loadMore is LoadState.Loading -> {
                         item {
                             Box(
                                 modifier = Modifier.fillMaxWidth(),
@@ -271,12 +274,12 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
                             }
                         }
                     }
-                    loadState.append is LoadState.Error -> {
+                    loadState.loadMore is LoadState.Error -> {
                         item {
                             Box(
                                 modifier = Modifier
                                     .onClick(enableRipple = false) {
-                                        lazyArticles.retry()
+                                        articles.retry()
                                     }
                                     .fillMaxWidth(),
                                 contentAlignment = Alignment.Center
@@ -290,7 +293,7 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
                             }
                         }
                     }
-                    loadState.append.endOfPaginationReached -> {
+                    loadState.loadMore.noMoreData -> {
                         item {
                             Box(
                                 modifier = Modifier.fillMaxWidth(),
@@ -308,7 +311,7 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
                 }
             }
 
-            if (lazyArticles.itemCount == 0) {
+            if (articles.count == 0) {
                 if (loadState.refresh is LoadState.Loading) {
                     Box(
                         modifier = Modifier.fillMaxSize(),

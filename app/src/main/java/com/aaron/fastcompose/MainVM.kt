@@ -6,8 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.aaron.compose.architecture.BasePagingResult
 import com.aaron.compose.architecture.BaseViewStateVM
-import com.aaron.compose.ktx.buildPagingFlow
-import com.aaron.compose.paging.PagingConfigDefaults
+import com.aaron.compose.architecture.paging.PagingConfigDefaults
 import com.aaron.compose.ui.SmartRefreshState
 import kotlinx.coroutines.delay
 import kotlin.random.Random
@@ -35,7 +34,7 @@ class MainVM : BaseViewStateVM() {
 
     val refreshState = SmartRefreshState(false)
 
-    val articles = buildPagingFlow { page, pageSize ->
+    val articles = buildPager(1) { page, pageSize ->
         when (Random(System.currentTimeMillis()).nextInt(0, 10)) {
             0 -> {
                 ArticlesEntity(404, "Not Found", emptyList())

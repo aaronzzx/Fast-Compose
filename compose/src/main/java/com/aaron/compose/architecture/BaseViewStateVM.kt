@@ -2,6 +2,10 @@ package com.aaron.compose.architecture
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aaron.compose.architecture.paging.LoadResult
+import com.aaron.compose.architecture.paging.PagingConfig
+import com.aaron.compose.architecture.paging.PagingData
+import com.aaron.compose.architecture.paging.PagingException
 import kotlinx.coroutines.launch
 
 /**
@@ -32,6 +36,41 @@ abstract class BaseViewStateVM : ViewModel() {
             }.onFailure { exception ->
                 observer.emit(ViewState.Error(exception))
             }
+        }
+    }
+
+    protected fun <V> buildPager(
+        initialPage: Int,
+        spanCount: Int = 1,
+        successCode: Int = DefaultSuccessCode,
+        pagingConfig: PagingConfig = PagingConfig(),
+        onRequest: suspend (page: Int, pageSize: Int) -> BasePagingResult<V>
+    ): PagingData<Int, V> = PagingData(
+        coroutineScope = viewModelScope,
+        config = pagingConfig
+    ) { page, config ->
+        val pageSize = config.pageSize
+        val initialSize = config.initialSize
+
+        val curPage = page ?: initialPage
+        val curPageSize = if (curPage == initialPage) initialSize else pageSize
+
+        val result = onRequest(curPage, curPageSize)
+        if (result.code == successCode) {
+            val dataList = result.data
+            var nextPage: Int? = when (curPage == initialPage) {
+                true -> (initialSize / pageSize).plus(1)
+                else -> curPage.plus(1)
+            }
+            if (dataList.size * spanCount < pageSize
+                || !config.enableLoadMore
+                || curPage >= config.maxPage
+            ) {
+                nextPage = null
+            }
+            LoadResult.Page(dataList, nextPage)
+        } else {
+            LoadResult.Error(PagingException(result.code, result.msg))
         }
     }
 }
