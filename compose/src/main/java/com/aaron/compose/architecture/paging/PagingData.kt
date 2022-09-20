@@ -48,11 +48,15 @@ class PagingData<K, V>(
 
     val count: Int get() = data.size
 
+    val lastIndex: Int get() = count - 1
+
+    val isEmpty: Boolean get() = count <= 0
+
+    val isNotEmpty: Boolean get() = !isEmpty
+
     val loadState: CombinedLoadState by mutableStateOf(CombinedLoadState())
 
     private var loadType: LoadType = LoadType.Idle
-
-    private val lastIndex: Int get() = count - 1
 
     init {
         refresh()

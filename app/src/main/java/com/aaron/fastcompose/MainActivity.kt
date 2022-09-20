@@ -18,6 +18,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
@@ -208,7 +211,7 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
     SmartRefresh(
         state = refreshState,
         onRefresh = {
-            articles.refresh()
+            vm.refresh()
         },
         indicator = { smartRefreshState, triggerPixels, maxDragPixels, height ->
             JialaiIndicator(
@@ -228,12 +231,13 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            val listState = rememberLazyListState()
-            LazyColumn(
+            val spanCount = 2
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(spanCount),
                 modifier = Modifier.fillMaxSize(),
-                state = listState,
                 contentPadding = PaddingValues(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 itemsIndexed(articles, key = { index, _ -> index }) { index, article ->
                     Box(
@@ -243,7 +247,7 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
                                 shape = RoundedCornerShape(8.dp)
                             )
                             .onClick {
-                                articles.data.removeAt(index)
+                                vm.deleteItem(index)
                             }
                             .fillMaxWidth()
                             .height(200.dp),
@@ -253,14 +257,43 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
                             text = article,
                             color = Color(0xFF333333),
                             fontWeight = FontWeight.Bold,
-                            fontSize = 56.sp
+                            fontSize = 24.sp
                         )
                     }
                 }
 
                 when {
+                    loadState.loadMore is LoadState.Idle
+                            && !loadState.loadMore.noMoreData
+                            && articles.isNotEmpty -> {
+                        item(
+                            span = {
+                                GridItemSpan(spanCount)
+                            }
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onClick(enableRipple = false) {
+                                        vm.loadMore()
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "点我加载更多",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF666666),
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                            }
+                        }
+                    }
                     loadState.loadMore is LoadState.Loading -> {
-                        item {
+                        item(
+                            span = {
+                                GridItemSpan(spanCount)
+                            }
+                        ) {
                             Box(
                                 modifier = Modifier.fillMaxWidth(),
                                 contentAlignment = Alignment.Center
@@ -275,11 +308,15 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
                         }
                     }
                     loadState.loadMore is LoadState.Error -> {
-                        item {
+                        item(
+                            span = {
+                                GridItemSpan(spanCount)
+                            }
+                        ) {
                             Box(
                                 modifier = Modifier
                                     .onClick(enableRipple = false) {
-                                        articles.retry()
+                                        vm.retry()
                                     }
                                     .fillMaxWidth(),
                                 contentAlignment = Alignment.Center
@@ -294,7 +331,11 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
                         }
                     }
                     loadState.loadMore.noMoreData -> {
-                        item {
+                        item(
+                            span = {
+                                GridItemSpan(spanCount)
+                            }
+                        ) {
                             Box(
                                 modifier = Modifier.fillMaxWidth(),
                                 contentAlignment = Alignment.Center

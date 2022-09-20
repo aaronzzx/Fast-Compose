@@ -21,7 +21,7 @@ class MainVM : BaseViewStateVM() {
     companion object {
         init {
             with(PagingConfigDefaults) {
-                DefaultPrefetchDistance = 1
+                DefaultPrefetchDistance = 5
                 DefaultInitialSize = 10
                 DefaultPageSize = 10
                 DefaultMaxPage = 5
@@ -47,6 +47,22 @@ class MainVM : BaseViewStateVM() {
                 ArticlesEntity(200, "OK", list)
             }
         }
+    }
+
+    fun refresh() {
+        articles.refresh()
+    }
+
+    fun loadMore() {
+        articles.loadMore()
+    }
+
+    fun retry() {
+        articles.retry()
+    }
+
+    fun deleteItem(index: Int) {
+        articles.data.removeAt(index)
     }
 }
 
