@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
@@ -49,6 +50,7 @@ import com.aaron.compose.architecture.paging.items
 import com.aaron.compose.architecture.paging.itemsIndexed
 import com.aaron.compose.base.BaseComposeActivity
 import com.aaron.compose.ktx.clipToBackground
+import com.aaron.compose.ktx.isNotEmpty
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ktx.toPx
 import com.aaron.compose.ui.SmartRefresh
@@ -190,12 +192,16 @@ private fun MyIndicator(
 @Composable
 private fun SmartRefreshList(vm: MainVM = viewModel()) {
     val refreshState = vm.refreshState
+    val listState = rememberLazyGridState()
     val articles = vm.articles
     val loadState = articles.loadState
 
     val loadStateRefresh = loadState.refresh
     if (refreshState.isRefreshing) {
         if (loadStateRefresh is LoadState.Idle) {
+            LaunchedEffect(loadStateRefresh) {
+                listState.scrollToItem(0)
+            }
             refreshState.success()
         } else if (loadStateRefresh is LoadState.Error) {
             refreshState.failure()
@@ -234,6 +240,7 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
             val spanCount = 2
             LazyVerticalGrid(
                 columns = GridCells.Fixed(spanCount),
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -263,6 +270,25 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
                 }
 
                 when {
+                    loadState.loadMore is LoadState.Waiting -> {
+                        item(
+                            span = {
+                                GridItemSpan(spanCount)
+                            }
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "等待刷新完成",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF666666),
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                            }
+                        }
+                    }
                     loadState.loadMore is LoadState.Idle
                             && !loadState.loadMore.noMoreData
                             && articles.isNotEmpty -> {

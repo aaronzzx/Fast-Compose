@@ -4,9 +4,11 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
 import com.aaron.compose.architecture.BasePagingResult
-import com.aaron.compose.architecture.BaseViewStateVM
 import com.aaron.compose.architecture.paging.PageConfigDefaults
+import com.aaron.compose.ktx.DefaultSuccessCode
+import com.aaron.compose.ktx.buildMappingPageData
 import com.aaron.compose.ui.SmartRefreshState
 import kotlinx.coroutines.delay
 import kotlin.random.Random
@@ -16,13 +18,14 @@ import kotlin.random.Random
  * @since 2022/9/17
  */
 @Stable
-class MainVM : BaseViewStateVM() {
+class MainVM : ViewModel() {
 
     companion object {
         init {
+            DefaultSuccessCode = 200
             with(PageConfigDefaults) {
-                DefaultPrefetchDistance = 5
-                DefaultInitialSize = 10
+                DefaultPrefetchDistance = 0
+                DefaultInitialSize = 15
                 DefaultPageSize = 10
                 DefaultMaxPage = 5
                 DefaultRequestTimeMillis = 500
@@ -34,8 +37,12 @@ class MainVM : BaseViewStateVM() {
 
     val refreshState = SmartRefreshState(false)
 
-    val articles = buildPager(1) { page, pageSize ->
-        when (Random(System.currentTimeMillis()).nextInt(0, 10)) {
+    val articles = buildMappingPageData(1, onRequest = ::buildFakeData) { data ->
+        data.map { "$it-zzx" }
+    }
+
+    private suspend fun buildFakeData(page: Int, pageSize: Int): ArticlesEntity {
+        return when (Random(System.currentTimeMillis()).nextInt(0, 10)) {
             0 -> {
                 ArticlesEntity(404, "Not Found", emptyList())
             }

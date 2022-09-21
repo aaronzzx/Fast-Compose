@@ -14,8 +14,10 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -27,12 +29,13 @@ import kotlinx.coroutines.launch
 class PageData<K, V>(
     private val coroutineScope: CoroutineScope,
     private val config: PageConfig = PageConfig(),
-    private val onRequest: suspend (page: K?, config: PageConfig) -> LoadResult<K, V>
+    lazyLoad: Boolean = false,
+    private val onRequest: suspend (params: LoadParams<K>) -> LoadResult<K, V>
 ) {
 
     companion object {
         private const val Debug = true
-        private const val TAG = "PagingData"
+        private const val TAG = "PageData"
 
         private fun log(msg: String) {
             if (Debug) {
@@ -41,31 +44,31 @@ class PageData<K, V>(
         }
     }
 
-    var page: K? = null
+    var page: Int by mutableStateOf(1)
         private set
 
     val data: SnapshotStateList<V> = mutableStateListOf()
 
     val count: Int get() = data.size
 
-    val lastIndex: Int get() = count - 1
-
-    val isEmpty: Boolean get() = count <= 0
-
-    val isNotEmpty: Boolean get() = !isEmpty
-
     val loadState: CombinedLoadState by mutableStateOf(CombinedLoadState())
 
     private var loadType: LoadType = LoadType.Idle
 
+    private var nextKey: K? = null
+
+    private var curLoadJob: Job? = null
+
     init {
-        refresh()
+        if (!lazyLoad) {
+            refresh()
+        }
     }
 
     internal operator fun get(index: Int): V {
         // 判断是否触发加载
         val prefetchDistance = config.prefetchDistance
-        if (prefetchDistance > 0 && lastIndex - index == prefetchDistance) {
+        if (prefetchDistance > 0 && (count - 1) - index == prefetchDistance) {
             loadMore()
         }
         return data[index]
@@ -73,6 +76,11 @@ class PageData<K, V>(
 
     internal fun peek(index: Int): V {
         return data[index]
+    }
+
+    private fun isLoadEnd(): Boolean {
+        val config = config
+        return nextKey == null || !config.enableLoadMore || page >= config.maxPage
     }
 
     fun refresh() {
@@ -84,15 +92,16 @@ class PageData<K, V>(
     private suspend fun refreshImpl() {
         val loadState = loadState
         loadState.refresh = LoadState.Loading
-        page = null
+        nextKey = null
         log("refresh-start: ${loadState.refresh}")
-        when (val result = requestData()) {
+        when (val result = requestData(LoadType.Refresh)) {
             is LoadResult.Page -> {
                 val dataList = result.data
-                val nextPage = result.nextPage
-                page = nextPage
+                val nextKey = result.nextKey
+                this.page = 1
+                this.nextKey = nextKey
                 loadState.refresh = LoadState.Idle(false)
-                loadState.loadMore = LoadState.Idle(nextPage == null)
+                loadState.loadMore = LoadState.Idle(isLoadEnd())
                 with(data) {
                     clear()
                     addAll(dataList)
@@ -124,12 +133,13 @@ class PageData<K, V>(
         val loadState = loadState
         loadState.loadMore = LoadState.Loading
         log("loadMore-start: ${loadState.loadMore}")
-        when (val result = requestData()) {
+        when (val result = requestData(LoadType.LoadMore)) {
             is LoadResult.Page -> {
                 val dataList = result.data
-                val nextPage = result.nextPage
-                page = nextPage
-                loadState.loadMore = LoadState.Idle(nextPage == null)
+                val nextKey = result.nextKey
+                this.page++
+                this.nextKey = nextKey
+                loadState.loadMore = LoadState.Idle(isLoadEnd())
                 data.addAll(dataList)
             }
             is LoadResult.Error -> {
@@ -141,23 +151,30 @@ class PageData<K, V>(
     }
 
     fun retry() {
-        tryLaunch(LoadType.Retry) {
-            val loadState = loadState
-            if (loadState.refresh is LoadState.Error) {
+        val loadState = loadState
+        if (loadState.refresh is LoadState.Error) {
+            tryLaunch(LoadType.Refresh) {
                 refreshImpl()
-            } else if (loadState.loadMore is LoadState.Error) {
+            }
+        } else if (loadState.loadMore is LoadState.Error) {
+            tryLaunch(LoadType.LoadMore) {
                 loadMoreImpl()
             }
         }
     }
 
-    private suspend fun requestData(): LoadResult<K, V> {
-        val page = page
+    private suspend fun requestData(actualLoadType: LoadType): LoadResult<K, V> {
+        val nextKey = nextKey
         val config = config
 
         val startRequestTime = System.currentTimeMillis()
         return try {
-            val result = onRequest(page, config)
+            val params = when (actualLoadType) {
+                LoadType.Refresh -> LoadParams.Refresh(nextKey, config)
+                LoadType.LoadMore -> LoadParams.LoadMore(nextKey, config)
+                else -> error("Illegal LoadType: $actualLoadType")
+            }
+            val result = onRequest(params)
             val requestTimeCost = System.currentTimeMillis() - startRequestTime
             val delayTime = config.minRequestTimeMillis - requestTimeCost
             if (delayTime > 0) {
@@ -178,14 +195,25 @@ class PageData<K, V>(
     }
 
     private fun tryLaunch(loadType: LoadType, block: suspend () -> Unit) {
+        // 刷新操作必须覆盖加载更多，因为这时候加载更多没意义
+        if (loadType == LoadType.Refresh) {
+            curLoadJob?.cancel()
+            curLoadJob = null
+        }
         if (this.loadType != LoadType.Idle) {
+            // 加载更多必须等待刷新完成
+            if (loadType == LoadType.LoadMore && this.loadType == LoadType.Refresh) {
+                loadState.loadMore = LoadState.Waiting
+            }
             return
         }
         this.loadType = loadType
-        coroutineScope.launch {
+        curLoadJob = coroutineScope.launch {
             block()
-        }.invokeOnCompletion {
-            this.loadType = LoadType.Idle
+        }.also {
+            it.invokeOnCompletion {
+                this.loadType = LoadType.Idle
+            }
         }
     }
 }

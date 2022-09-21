@@ -48,6 +48,12 @@ sealed class LoadState(val noMoreData: Boolean) {
             return "Error(noMoreData=$noMoreData, throwable=$throwable)"
         }
     }
+
+    object Waiting : LoadState(false) {
+        override fun toString(): String {
+            return "Waiting"
+        }
+    }
 }
 
 @Stable

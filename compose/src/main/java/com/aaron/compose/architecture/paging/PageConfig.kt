@@ -4,7 +4,6 @@ import androidx.compose.runtime.Stable
 import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultEnableLoadMore
 import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultInitialSize
 import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultMaxPage
-import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultMaxSize
 import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultPageSize
 import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultPrefetchDistance
 import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultPrintError
@@ -26,9 +25,6 @@ object PageConfigDefaults {
 
     /** 默认预取距离，在倒数第几个时进行加载操作 */
     var DefaultPrefetchDistance = DefaultPageSize
-
-    /** 默认分页最多可以加载多少 */
-    var DefaultMaxSize = Int.MAX_VALUE
 
     /** 默认是否开启加载更多 */
     var DefaultEnableLoadMore = true
@@ -56,9 +52,6 @@ data class PageConfig(
 
     /** 预取距离，在倒数第几个时进行加载操作 */
     val prefetchDistance:Int = DefaultPrefetchDistance,
-
-    /** 最多可以加载多少 */
-    val maxSize:Int = DefaultMaxSize,
 
     /** 是否开启加载更多 */
     val enableLoadMore: Boolean = DefaultEnableLoadMore,

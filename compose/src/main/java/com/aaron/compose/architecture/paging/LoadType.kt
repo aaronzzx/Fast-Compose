@@ -6,5 +6,5 @@ package com.aaron.compose.architecture.paging
  */
 internal enum class LoadType {
 
-    Idle, Refresh, LoadMore, Retry
+    Idle, Refresh, LoadMore
 }
