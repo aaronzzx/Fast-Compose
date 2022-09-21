@@ -17,12 +17,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
@@ -46,11 +44,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aaron.compose.architecture.paging.LoadState
-import com.aaron.compose.architecture.paging.items
-import com.aaron.compose.architecture.paging.itemsIndexed
 import com.aaron.compose.base.BaseComposeActivity
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.isNotEmpty
+import com.aaron.compose.ktx.itemsIndexed
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ktx.toPx
 import com.aaron.compose.ui.SmartRefresh
