@@ -403,18 +403,19 @@ fun SmartRefresh(
 
 
     Box(
-        modifier = modifier
+        modifier = Modifier
             .nestedScroll(connection = nestedScrollConnection)
+            .then(modifier)
     ) {
         Box(
             Modifier.align(Alignment.TopCenter)
-                .let {
-                    if (isHeaderNeedClip(
-                            state,
-                            indicatorHeightPx
-                        )
-                    ) it.clipToBounds() else it
-                }
+//                .let {
+//                    if (isHeaderNeedClip(
+//                            state,
+//                            indicatorHeightPx
+//                        )
+//                    ) it.clipToBounds() else it
+//                }
         ) {
             LaunchedEffect(key1 = state) {
                 if (state.isRefreshing
