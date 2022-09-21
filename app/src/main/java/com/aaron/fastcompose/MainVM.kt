@@ -1,6 +1,5 @@
 package com.aaron.fastcompose
 
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -10,15 +9,17 @@ import com.aaron.compose.architecture.paging.PageConfigDefaults
 import com.aaron.compose.defaults.Defaults
 import com.aaron.compose.ktx.buildMappingPageData
 import com.aaron.compose.ui.SmartRefreshState
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
+import javax.inject.Inject
 import kotlin.random.Random
 
 /**
  * @author aaronzzxup@gmail.com
  * @since 2022/9/17
  */
-@Stable
-class MainVM : ViewModel() {
+@HiltViewModel
+class MainVM @Inject constructor() : ViewModel() {
 
     companion object {
         init {

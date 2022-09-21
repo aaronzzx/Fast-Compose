@@ -2,6 +2,7 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id "org.jetbrains.kotlin.kapt"
+    id 'dagger.hilt.android.plugin'
 }
 
 android {
@@ -86,4 +87,7 @@ dependencies {
     implementation 'io.github.scwang90:refresh-layout-kernel:2.0.5'
     implementation 'io.github.scwang90:refresh-header-classics:2.0.5'
     implementation 'io.github.scwang90:refresh-footer-classics:2.0.5'
+
+    implementation "com.google.dagger:hilt-android:2.38.1"
+    kapt "com.google.dagger:hilt-compiler:2.38.1"
 }
