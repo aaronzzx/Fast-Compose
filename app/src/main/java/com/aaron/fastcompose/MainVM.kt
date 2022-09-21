@@ -6,7 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.aaron.compose.architecture.BasePagingResult
 import com.aaron.compose.architecture.BaseViewStateVM
-import com.aaron.compose.architecture.paging.PagingConfigDefaults
+import com.aaron.compose.architecture.paging.PageConfigDefaults
 import com.aaron.compose.ui.SmartRefreshState
 import kotlinx.coroutines.delay
 import kotlin.random.Random
@@ -20,7 +20,7 @@ class MainVM : BaseViewStateVM() {
 
     companion object {
         init {
-            with(PagingConfigDefaults) {
+            with(PageConfigDefaults) {
                 DefaultPrefetchDistance = 5
                 DefaultInitialSize = 10
                 DefaultPageSize = 10

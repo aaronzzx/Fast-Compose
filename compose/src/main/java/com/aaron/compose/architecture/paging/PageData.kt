@@ -24,10 +24,10 @@ import kotlinx.coroutines.launch
  * @since 2022/9/20
  */
 @Stable
-class PagingData<K, V>(
+class PageData<K, V>(
     private val coroutineScope: CoroutineScope,
-    private val config: PagingConfig = PagingConfig(),
-    private val onRequest: suspend (page: K?, config: PagingConfig) -> LoadResult<K, V>
+    private val config: PageConfig = PageConfig(),
+    private val onRequest: suspend (page: K?, config: PageConfig) -> LoadResult<K, V>
 ) {
 
     companion object {
@@ -191,15 +191,15 @@ class PagingData<K, V>(
 }
 
 fun <K, V> LazyListScope.items(
-    pagingData: PagingData<K, V>,
+    pageData: PageData<K, V>,
     key: ((item: V) -> Any)? = null,
     contentType: ((item: V) -> Any?)? = null,
     itemContent: @Composable LazyItemScope.(item: V) -> Unit
 ) {
     items(
-        count = pagingData.count,
+        count = pageData.count,
         key = if (key == null) null else { index ->
-            val item = pagingData.peek(index)
+            val item = pageData.peek(index)
             if (item == null) {
                 PagingDataKey(index)
             } else {
@@ -207,23 +207,23 @@ fun <K, V> LazyListScope.items(
             }
         },
         contentType = { index ->
-            contentType?.invoke(pagingData.peek(index))
+            contentType?.invoke(pageData.peek(index))
         }
     ) { index ->
-        itemContent(pagingData[index])
+        itemContent(pageData[index])
     }
 }
 
 fun <K, V> LazyListScope.itemsIndexed(
-    pagingData: PagingData<K, V>,
+    pageData: PageData<K, V>,
     key: ((index: Int, item: V) -> Any)? = null,
     contentType: ((index: Int, item: V) -> Any?)? = null,
     itemContent: @Composable LazyItemScope.(index: Int, item: V) -> Unit
 ) {
     items(
-        count = pagingData.count,
+        count = pageData.count,
         key = if (key == null) null else { index ->
-            val item = pagingData.peek(index)
+            val item = pageData.peek(index)
             if (item == null) {
                 PagingDataKey(index)
             } else {
@@ -231,24 +231,24 @@ fun <K, V> LazyListScope.itemsIndexed(
             }
         },
         contentType = { index ->
-            contentType?.invoke(index, pagingData.peek(index))
+            contentType?.invoke(index, pageData.peek(index))
         }
     ) { index ->
-        itemContent(index, pagingData[index])
+        itemContent(index, pageData[index])
     }
 }
 
 fun <K, V> LazyGridScope.items(
-    pagingData: PagingData<K, V>,
+    pageData: PageData<K, V>,
     key: ((item: V) -> Any)? = null,
     contentType: ((item: V) -> Any?)? = null,
     span: (LazyGridItemSpanScope.(item: V) -> GridItemSpan)? = null,
     itemContent: @Composable LazyGridItemScope.(item: V) -> Unit
 ) {
     items(
-        count = pagingData.count,
+        count = pageData.count,
         key = if (key == null) null else { index ->
-            val item = pagingData.peek(index)
+            val item = pageData.peek(index)
             if (item == null) {
                 PagingDataKey(index)
             } else {
@@ -256,27 +256,27 @@ fun <K, V> LazyGridScope.items(
             }
         },
         span = if (span == null) null else { index ->
-            span(pagingData.peek(index))
+            span(pageData.peek(index))
         },
         contentType = { index ->
-            contentType?.invoke(pagingData.peek(index))
+            contentType?.invoke(pageData.peek(index))
         }
     ) { index ->
-        itemContent(pagingData[index])
+        itemContent(pageData[index])
     }
 }
 
 fun <K, V> LazyGridScope.itemsIndexed(
-    pagingData: PagingData<K, V>,
+    pageData: PageData<K, V>,
     key: ((index: Int, item: V) -> Any)? = null,
     contentType: ((index: Int, item: V) -> Any?)? = null,
     span: (LazyGridItemSpanScope.(index: Int, item: V) -> GridItemSpan)? = null,
     itemContent: @Composable LazyGridItemScope.(index: Int, item: V) -> Unit
 ) {
     items(
-        count = pagingData.count,
+        count = pageData.count,
         key = if (key == null) null else { index ->
-            val item = pagingData.peek(index)
+            val item = pageData.peek(index)
             if (item == null) {
                 PagingDataKey(index)
             } else {
@@ -284,13 +284,13 @@ fun <K, V> LazyGridScope.itemsIndexed(
             }
         },
         span = if (span == null) null else { index ->
-            span(index, pagingData.peek(index))
+            span(index, pageData.peek(index))
         },
         contentType = { index ->
-            contentType?.invoke(index, pagingData.peek(index))
+            contentType?.invoke(index, pageData.peek(index))
         }
     ) { index ->
-        itemContent(index, pagingData[index])
+        itemContent(index, pageData[index])
     }
 }
 

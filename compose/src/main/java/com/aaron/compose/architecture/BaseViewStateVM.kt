@@ -3,9 +3,9 @@ package com.aaron.compose.architecture
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aaron.compose.architecture.paging.LoadResult
-import com.aaron.compose.architecture.paging.PagingConfig
-import com.aaron.compose.architecture.paging.PagingData
-import com.aaron.compose.architecture.paging.PagingException
+import com.aaron.compose.architecture.paging.PageConfig
+import com.aaron.compose.architecture.paging.PageData
+import com.aaron.compose.architecture.paging.PageException
 import kotlinx.coroutines.launch
 
 /**
@@ -43,11 +43,11 @@ abstract class BaseViewStateVM : ViewModel() {
         initialPage: Int,
         spanCount: Int = 1,
         successCode: Int = DefaultSuccessCode,
-        pagingConfig: PagingConfig = PagingConfig(),
+        pageConfig: PageConfig = PageConfig(),
         onRequest: suspend (page: Int, pageSize: Int) -> BasePagingResult<V>
-    ): PagingData<Int, V> = PagingData(
+    ): PageData<Int, V> = PageData(
         coroutineScope = viewModelScope,
-        config = pagingConfig
+        config = pageConfig
     ) { page, config ->
         val pageSize = config.pageSize
         val initialSize = config.initialSize
@@ -70,7 +70,7 @@ abstract class BaseViewStateVM : ViewModel() {
             }
             LoadResult.Page(dataList, nextPage)
         } else {
-            LoadResult.Error(PagingException(result.code, result.msg))
+            LoadResult.Error(PageException(result.code, result.msg))
         }
     }
 }

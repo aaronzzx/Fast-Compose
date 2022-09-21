@@ -1,19 +1,19 @@
 package com.aaron.compose.architecture.paging
 
 import androidx.compose.runtime.Stable
-import com.aaron.compose.architecture.paging.PagingConfigDefaults.DefaultEnableLoadMore
-import com.aaron.compose.architecture.paging.PagingConfigDefaults.DefaultInitialSize
-import com.aaron.compose.architecture.paging.PagingConfigDefaults.DefaultMaxPage
-import com.aaron.compose.architecture.paging.PagingConfigDefaults.DefaultMaxSize
-import com.aaron.compose.architecture.paging.PagingConfigDefaults.DefaultPageSize
-import com.aaron.compose.architecture.paging.PagingConfigDefaults.DefaultPrefetchDistance
-import com.aaron.compose.architecture.paging.PagingConfigDefaults.DefaultPrintError
-import com.aaron.compose.architecture.paging.PagingConfigDefaults.DefaultRequestTimeMillis
+import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultEnableLoadMore
+import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultInitialSize
+import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultMaxPage
+import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultMaxSize
+import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultPageSize
+import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultPrefetchDistance
+import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultPrintError
+import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultRequestTimeMillis
 
 /**
  * 默认分页配置
  */
-object PagingConfigDefaults {
+object PageConfigDefaults {
 
     /** 默认每页个数 */
     var DefaultPageSize = 15
@@ -44,7 +44,7 @@ object PagingConfigDefaults {
  * 通用分页配置
  */
 @Stable
-data class PagingConfig(
+data class PageConfig(
     /** 每页个数 */
     val pageSize: Int = DefaultPageSize,
 
