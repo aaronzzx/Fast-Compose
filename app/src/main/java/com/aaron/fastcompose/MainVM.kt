@@ -7,7 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.aaron.compose.architecture.BasePagingResult
 import com.aaron.compose.architecture.paging.PageConfigDefaults
-import com.aaron.compose.ktx.DefaultSuccessCode
+import com.aaron.compose.defaults.Defaults
 import com.aaron.compose.ktx.buildMappingPageData
 import com.aaron.compose.ui.SmartRefreshState
 import kotlinx.coroutines.delay
@@ -22,7 +22,7 @@ class MainVM : ViewModel() {
 
     companion object {
         init {
-            DefaultSuccessCode = 200
+            Defaults.SuccessCode = 200
             with(PageConfigDefaults) {
                 DefaultPrefetchDistance = 0
                 DefaultInitialSize = 15

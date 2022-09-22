@@ -10,19 +10,15 @@ import com.aaron.compose.architecture.paging.LoadResult
 import com.aaron.compose.architecture.paging.PageConfig
 import com.aaron.compose.architecture.paging.PageData
 import com.aaron.compose.architecture.paging.PageException
+import com.aaron.compose.defaults.Defaults.SuccessCode
 import kotlinx.coroutines.launch
-
-/**
- * 默认请求成功码
- */
-var DefaultSuccessCode = 200
 
 /**
  * 使用 Flow 发射 ViewState
  */
 fun <T : BaseResult> ViewModel.emit(
     observer: ViewStateFlow<T>,
-    successCode: Int = DefaultSuccessCode,
+    successCode: Int = SuccessCode,
     request: suspend () -> T
 ) {
     viewModelScope.launch {
@@ -46,7 +42,7 @@ fun <T : BaseResult> ViewModel.emit(
  */
 fun <V> ViewModel.buildPageData(
     initialPage: Int,
-    successCode: Int = DefaultSuccessCode,
+    successCode: Int = SuccessCode,
     pageConfig: PageConfig = PageConfig(),
     lazyLoad: Boolean = false,
     onRequest: suspend (page: Int, pageSize: Int) -> BasePagingResult<V>
@@ -64,7 +60,7 @@ fun <V> ViewModel.buildPageData(
  */
 fun <V, R> ViewModel.buildMappingPageData(
     initialPage: Int,
-    successCode: Int = DefaultSuccessCode,
+    successCode: Int = SuccessCode,
     pageConfig: PageConfig = PageConfig(),
     lazyLoad: Boolean = false,
     onRequest: suspend (page: Int, pageSize: Int) -> BasePagingResult<V>,
