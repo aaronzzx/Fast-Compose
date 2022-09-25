@@ -25,18 +25,16 @@ class MainVM @Inject constructor() : ViewModel() {
         init {
             Defaults.SuccessCode = 200
             with(PageConfigDefaults) {
-                DefaultPrefetchDistance = 0
+                DefaultPrefetchDistance = 1
                 DefaultInitialSize = 15
                 DefaultPageSize = 10
                 DefaultMaxPage = 5
-                DefaultRequestTimeMillis = 500
+                DefaultRequestTimeMillis = 5000
             }
         }
     }
 
     var init by mutableStateOf(true)
-
-    val refreshState = SmartRefreshState(false)
 
     val articles = buildMappingPageData(1, onRequest = ::buildFakeData) { data ->
         data.map { "$it-zzx" }

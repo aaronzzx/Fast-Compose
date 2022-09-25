@@ -21,6 +21,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.autoSaver
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,14 +53,44 @@ import kotlinx.coroutines.launch
  */
 private const val DragMultiplier = 0.5f
 
+@Composable
+fun rememberSmartRefreshState(isRefreshing: Boolean): SmartRefreshState {
+    return rememberSaveable(saver = SmartRefreshState.Saver) {
+        SmartRefreshState(isRefreshing)
+    }
+}
+
 /**
  * 刷新状态
  */
 @Stable
 sealed class SmartRefreshType {
 
-    object Idle : SmartRefreshType()
-    object Refreshing : SmartRefreshType()
+    companion object {
+        internal const val TypeIdle = 1
+        internal const val TypeRefreshing = 2
+        internal const val TypeSuccess = 3
+        internal const val TypeFailure = 4
+
+        internal fun create(type: Int): SmartRefreshType {
+            return when (type) {
+                TypeIdle -> Idle
+                TypeRefreshing -> Refreshing
+                TypeSuccess -> Success(0)
+                TypeFailure -> Failure(0)
+                else -> error("Unknown type: $type")
+            }
+        }
+    }
+
+    internal abstract val intType: Int
+
+    object Idle : SmartRefreshType() {
+        override val intType: Int = TypeIdle
+    }
+    object Refreshing : SmartRefreshType() {
+        override val intType: Int = TypeRefreshing
+    }
 
     /**
      * 结束刷新状态， [dismissDelayMillis] 表示要悬挂多久
@@ -66,30 +100,59 @@ sealed class SmartRefreshType {
             const val DismissDelayMillis = 300L
         }
     }
-    class Success(dismissDelayMillis: Long = DismissDelayMillis) : FinishRefresh(dismissDelayMillis)
-    class Failure(dismissDelayMillis: Long = DismissDelayMillis) : FinishRefresh(dismissDelayMillis)
+    class Success(
+        dismissDelayMillis: Long = DismissDelayMillis
+    ) : FinishRefresh(dismissDelayMillis) {
+        override val intType: Int = TypeSuccess
+    }
+    class Failure(
+        dismissDelayMillis: Long = DismissDelayMillis
+    ) : FinishRefresh(dismissDelayMillis) {
+        override val intType: Int = TypeFailure
+    }
 }
 
 /**
- * 维护刷新期间各种状态，使用时应该将之维护在 [androidx.lifecycle.ViewModel] 中，
- * 因为 Compose 生命周期缘故，可能会频繁进入、退出 Composition ，导致状态被反复创建，
- * 例如在 [com.google.accompanist.pager.HorizontalPager] 中使用时，Pager 基于
- * [androidx.compose.foundation.lazy.LazyList] 构造而来，在切页时会出现回收的情况，
- * 因此状态将变得不明确。
+ * 维护刷新期间各种状态
  *
  * @param isRefreshing 初始刷新状态
  */
 @Stable
-class SmartRefreshState(isRefreshing: Boolean) {
+class SmartRefreshState internal constructor(
+    type: SmartRefreshType,
+    indicatorOffset: Float,
+    isContentArriveTop: Boolean
+) {
+
+    companion object {
+        val Saver: Saver<SmartRefreshState, *> = listSaver(
+            save = {
+                listOf(it.type.intType, it.indicatorOffset, it.isContentArriveTop)
+            },
+            restore = {
+                SmartRefreshState(
+                    type = SmartRefreshType.create(it[0] as Int),
+                    indicatorOffset = it[1] as Float,
+                    isContentArriveTop = it[2] as Boolean
+                )
+            }
+        )
+    }
+
+    constructor(isRefreshing: Boolean) : this(
+        type = if (isRefreshing) Refreshing else Idle,
+        indicatorOffset = 0f,
+        isContentArriveTop = true
+    )
 
     /**
      * 刷新的偏移量
      */
-    private val _indicatorOffset = Animatable(0f)
+    private val _indicatorOffset = Animatable(indicatorOffset)
 
     private val mutatorMutex = MutatorMutex()
 
-    var type: SmartRefreshType by mutableStateOf(if (isRefreshing) Refreshing else Idle)
+    var type: SmartRefreshType by mutableStateOf(type)
         private set
 
     val isIdle: Boolean get() = type is Idle
@@ -113,7 +176,7 @@ class SmartRefreshState(isRefreshing: Boolean) {
     /**
      * 刷新布局是否滚动到顶部了
      */
-    internal var isContentArriveTop = true
+    internal var isContentArriveTop = isContentArriveTop
 
     internal val isAnimating: Boolean get() = _indicatorOffset.isRunning
 

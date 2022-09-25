@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -93,6 +94,7 @@ fun JialaiIndicator(
             if (refreshState.isIdle) {
                 Icon(
                     modifier = Modifier
+                        .size(36.dp)
                         .graphicsLayer {
                             rotationZ = arrowRotation.value
                         },
@@ -103,14 +105,14 @@ fun JialaiIndicator(
             } else {
                 if (refreshState.isRefreshing) {
                     Icon(
-                        modifier = Modifier,
+                        modifier = Modifier.size(36.dp),
                         painter = rememberDrawablePainter(drawable = dynamicDrawable),
                         contentDescription = null,
                         tint = drawableColor
                     )
                 } else {
                     Icon(
-                        modifier = Modifier,
+                        modifier = Modifier.size(36.dp),
                         painter = rememberDrawablePainter(drawable = logo),
                         contentDescription = null,
                         tint = drawableColor

@@ -53,6 +53,7 @@ import com.aaron.compose.ktx.toPx
 import com.aaron.compose.ui.SmartRefresh
 import com.aaron.compose.ui.SmartRefreshState
 import com.aaron.compose.ui.TopBar
+import com.aaron.compose.ui.rememberSmartRefreshState
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
@@ -188,7 +189,7 @@ private fun MyIndicator(
 
 @Composable
 private fun SmartRefreshList(vm: MainVM = viewModel()) {
-    val refreshState = vm.refreshState
+    val refreshState = rememberSmartRefreshState(isRefreshing = false)
     val listState = rememberLazyGridState()
     val articles = vm.articles
     val loadState = articles.loadState
