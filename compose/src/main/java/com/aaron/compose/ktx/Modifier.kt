@@ -49,6 +49,8 @@ fun Modifier.onClick(
     )
 }
 
+fun Modifier.interceptClick() = onClick(enableRipple = false) {}
+
 /**
  * Draws [shape] with a solid [color] behind the content.
  *
