@@ -1,6 +1,7 @@
 package com.aaron.fastcompose
 
 import android.app.Application
+import android.content.Context
 
 /**
  * @author aaronzzxup@gmail.com
@@ -10,5 +11,9 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        appContext = this
     }
 }
+
+lateinit var appContext: Context
+    private set
