@@ -1,5 +1,6 @@
 package com.aaron.fastcompose.paging3
 
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,6 +45,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemsIndexed
 import com.aaron.compose.base.BaseComposeActivity
 import com.aaron.compose.ktx.clipToBackground
+import com.aaron.compose.ktx.itemsIndexed
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ui.SmartRefresh
 import com.aaron.compose.ui.TopBar
@@ -92,6 +95,8 @@ private fun SmartRefreshList(vm: PagingVM = viewModel()) {
     val articles = vm.repos.collectAsLazyPagingItems()
     val loadState = articles.loadState
 
+    val append = loadState.append
+
     val loadStateRefresh = loadState.refresh
     if (refreshState.isRefreshing) {
         if (loadStateRefresh is LoadState.NotLoading) {
@@ -138,12 +143,17 @@ private fun SmartRefreshList(vm: PagingVM = viewModel()) {
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                itemsIndexed(articles) { index, article ->
+                itemsIndexed(
+                    items = articles,
+                    key = { index, item ->
+                        item.id
+                    }
+                ) { index, article ->
                     Box(
                         modifier = Modifier
-                            .animateItemPlacement()
+//                            .animateItemPlacement()
                             .clipToBackground(
                                 color = Color.White,
                                 shape = RoundedCornerShape(8.dp)
@@ -153,14 +163,14 @@ private fun SmartRefreshList(vm: PagingVM = viewModel()) {
                             }
                             .fillMaxWidth()
                             .height(200.dp)
-                            .placeholder(article == null, Color.White),
+                            /*.placeholder(article == null, Color.White)*/,
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = article?.name ?: "",
+                            text = "$index - ${article?.name}",
                             color = Color(0xFF333333),
                             fontWeight = FontWeight.Bold,
-                            fontSize = 24.sp
+                            fontSize = 14.sp
                         )
                     }
                 }
@@ -173,9 +183,8 @@ private fun SmartRefreshList(vm: PagingVM = viewModel()) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .onClick(enableRipple = false) {
-//                                        vm.loadMore()
-                                        articles.retry()
+                                    .onClick(enableRipple = true) {
+                                        vm.loadMore()
                                     },
                                 contentAlignment = Alignment.Center
                             ) {

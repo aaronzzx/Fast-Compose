@@ -1,5 +1,6 @@
 package com.aaron.compose.paging
 
+import android.util.Log
 import androidx.paging.LoadType
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
@@ -16,59 +17,53 @@ fun <I : BaseResult, O : Any> buildWriteablePager(
     db: RoomDatabase,
     dao: IPagingDao<Int, O>,
     config: AppPagingConfig = AppPagingConfig(),
-    initialKey: Int = 1,
+    initialPage: Int = 1,
     successCode: Int = Defaults.SuccessCode,
     onTransform: suspend (result: I) -> Array<O>,
     onRequest: suspend (pageKey: Int, pageSize: Int) -> I
-): Pager<Int, O> = Pager(
-    config = PagingConfig(
-        pageSize = config.pageSize,
-        prefetchDistance = config.prefetchDistance,
-        enablePlaceholders = config.enablePlaceholders,
-        initialLoadSize = config.initialLoadSize,
-        maxSize = config.maxSize
-    ),
-    initialKey = initialKey,
-    pagingSourceFactory = { dao.pagingSource() },
-    remoteMediator = buildRemoteMediator(
-        minRequestTimeMillis = config.minRequestTimeMillis,
-        initialKey = initialKey,
-        onNextKey = { pageKey ->
-            pageKey?.plus(1)
-        },
-        onRequest = { params ->
-            val loadType = params.loadType
-            val pageKey = params.pageKey ?: initialKey
-            val pageSize = params.pageSize
-            val response = onRequest(pageKey, pageSize)
-            if (response.code == successCode) {
-                val array = onTransform(response)
-                db.withTransaction {
-                    if (loadType == LoadType.REFRESH) {
-                        dao.clearAll()
-                    }
-                    dao.insertAll(array)
+): Pager<Int, O> = buildBaseWriteablePager(
+    config = config,
+    initialKey = null,
+    onPagingSource = { dao.pagingSource() },
+    onNextKey = { pageKey, state ->
+        pageKey?.plus(1) ?: (initialPage + 1)
+    },
+    onRequest = { params ->
+        val loadType = params.loadType
+        val pageKey = params.pageKey ?: initialPage
+        Log.d("zzx", "page: $pageKey, loadType: $loadType")
+        val pageSize = params.pageSize
+        val response = onRequest(pageKey, pageSize)
+        if (response.code == successCode) {
+            val array = onTransform(response)
+            db.withTransaction {
+                if (loadType == LoadType.REFRESH) {
+                    dao.clearAll()
                 }
-                val endOfPaginationReached = array.isEmpty()
-                MediatorResult.Success(endOfPaginationReached)
-            } else {
-                MediatorResult.Error(AppPagingException(response.code, response.msg ?: "None"))
+                dao.insertAll(array)
             }
+            val endOfPaginationReached = array.isEmpty()
+                    || !config.enableLoadMore
+                    || params.state.pages.size >= config.maxPage - 1
+            MediatorResult.Success(endOfPaginationReached)
+        } else {
+            MediatorResult.Error(AppPagingException(response.code, response.msg ?: "None"))
         }
-    )
+    }
 )
 
 fun <K : Any, V : Any> buildBaseWriteablePager(
     config: AppPagingConfig = AppPagingConfig(),
     initialKey: K? = null,
     onPagingSource: () -> PagingSource<K, V>,
-    onNextKey: (pageKey: K?) -> K?,
+    onNextKey: (pageKey: K?, state: PagingState<K, V>) -> K?,
     onRequest: suspend (loadParams: LoadParams<K, V>) -> MediatorResult
 ): Pager<K, V> = Pager(
     config = PagingConfig(
         pageSize = config.pageSize,
         prefetchDistance = config.prefetchDistance,
-        enablePlaceholders = config.enablePlaceholders,
+        // 必须开启，否则分页异常
+        enablePlaceholders = true,
         initialLoadSize = config.initialLoadSize,
         maxSize = config.maxSize
     ),
@@ -85,7 +80,7 @@ fun <K : Any, V : Any> buildBaseWriteablePager(
 fun <K : Any, V : Any> buildRemoteMediator(
     minRequestTimeMillis: Long = PagingConfigDefaults.DefaultRequestTimeMillis,
     initialKey: K? = null,
-    onNextKey: (pageKey: K?) -> K?,
+    onNextKey: (pageKey: K?, state: PagingState<K, V>) -> K?,
     onRequest: suspend (loadParams: LoadParams<K, V>) -> MediatorResult
 ): RemoteMediator<K, V> = object : RemoteMediator<K, V>() {
 
@@ -100,7 +95,7 @@ fun <K : Any, V : Any> buildRemoteMediator(
                 LoadType.APPEND -> {
                     state.lastItemOrNull()
                         ?: return MediatorResult.Success(endOfPaginationReached = true)
-                    onNextKey(lastPageKey)
+                    onNextKey(lastPageKey, state)
                 }
             }
             val pageKey = loadKey ?: initialKey
@@ -130,4 +125,21 @@ interface IPagingDao<K : Any, V : Any> {
     suspend fun clearAll()
 
     fun pagingSource(): PagingSource<K, V>
+}
+
+private class RemoteMediatorPagingSource<K : Any, V : Any>(
+    val delegate: PagingSource<K, V>
+) : PagingSource<K, V>() {
+
+    override val jumpingSupported: Boolean
+        get() = delegate.jumpingSupported
+
+    override suspend fun load(params: LoadParams<K>): LoadResult<K, V> {
+        Log.d("zzx", "key: ${params.key}")
+        return delegate.load(params)
+    }
+
+    override fun getRefreshKey(state: PagingState<K, V>): K? {
+        return delegate.getRefreshKey(state)
+    }
 }

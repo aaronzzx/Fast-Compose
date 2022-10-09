@@ -17,6 +17,11 @@
         android:theme="@style/Theme.FastCompose"
         tools:targetApi="31">
         <activity
+            android:name=".paging3.PagingActivity"
+            android:exported="false"
+            android:label="PagingActivity"
+            android:theme="@style/Theme.FastCompose" />
+        <activity
             android:name=".SecondActivity"
             android:exported="false"
             android:label="@string/title_activity_second"

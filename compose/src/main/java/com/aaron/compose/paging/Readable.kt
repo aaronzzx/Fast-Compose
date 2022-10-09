@@ -14,25 +14,25 @@ import com.aaron.compose.defaults.Defaults
  */
 fun <I : BaseResult, O : Any> buildReadablePager(
     config: AppPagingConfig = AppPagingConfig(),
-    initialKey: Int = 1,
+    initialPage: Int = 1,
     successCode: Int = Defaults.SuccessCode,
     onTransform: suspend (result: I) -> List<O>,
     onRequest: suspend (pageKey: Int, pageSize: Int) -> I
 ): Pager<Int, O> = buildBaseReadablePager(
     config = config,
-    initialKey = initialKey
+    initialKey = initialPage
 ) { params ->
     val initialLoadSize = config.initialLoadSize
-    val pageKey = params.key ?: initialKey
+    val pageKey = params.key ?: initialPage
     val pageSize = params.loadSize
     val response = onRequest(pageKey, pageSize)
     if (response.code == successCode) {
         val list = onTransform(response)
-        val prevKey = when (pageKey == initialKey) {
+        val prevKey = when (pageKey == initialPage) {
             true -> null
             else -> pageKey - 1
         }
-        var nextKey: Int? = when (pageKey == initialKey) {
+        var nextKey: Int? = when (pageKey == initialPage) {
             true -> (initialLoadSize / pageSize) + 1
             else -> pageKey + 1
         }
