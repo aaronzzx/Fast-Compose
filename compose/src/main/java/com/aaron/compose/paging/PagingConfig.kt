@@ -24,7 +24,7 @@ object PagingConfigDefaults {
     var DefaultInitialSize = 15
 
     /** 默认预取距离，在倒数第几个时进行加载操作 */
-    var DefaultPrefetchDistance = DefaultPageSize
+    var DefaultPrefetchDistance = 1
 
     /** 默认 Paging 最多可以加载多少 */
     var DefaultMaxSize = Int.MAX_VALUE
