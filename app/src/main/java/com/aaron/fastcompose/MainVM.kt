@@ -7,10 +7,10 @@ import androidx.lifecycle.ViewModel
 import com.aaron.compose.architecture.BasePagingResult
 import com.aaron.compose.architecture.paging.PageConfigDefaults
 import com.aaron.compose.defaults.Defaults
-import com.aaron.compose.ktx.buildMappingPageData
-import com.aaron.compose.ui.SmartRefreshState
+import com.aaron.compose.ktx.buildPageData
+import com.aaron.fastcompose.paging3.Repo
+import com.aaron.fastcompose.paging3.gitHubService
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import javax.inject.Inject
 import kotlin.random.Random
 
@@ -26,67 +26,52 @@ class MainVM @Inject constructor() : ViewModel() {
             Defaults.SuccessCode = 200
             with(PageConfigDefaults) {
                 DefaultPrefetchDistance = 1
-                DefaultInitialSize = 15
-                DefaultPageSize = 10
-                DefaultMaxPage = 5
-                DefaultRequestTimeMillis = 5000
+                DefaultInitialSize = 5
+                DefaultPageSize = 5
+//                DefaultMaxPage = 5
+                DefaultRequestTimeMillis = 1000
             }
         }
     }
 
     var init by mutableStateOf(true)
 
-    val articles = buildMappingPageData(1, onRequest = ::buildFakeData) { data ->
-        data.map { "$it-zzx" }
-    }
+    val repos = buildPageData(1, onRequest = ::buildFakeData2)
 
-    private suspend fun buildFakeData(page: Int, pageSize: Int): ArticlesEntity {
+    private suspend fun buildFakeData2(page: Int, pageSize: Int): RepoEntity {
         return when (Random(System.currentTimeMillis()).nextInt(0, 10)) {
             0 -> {
-                ArticlesEntity(404, "Not Found", emptyList())
+                RepoEntity(404, "Not Found", emptyList())
             }
             1 -> {
                 throw IllegalStateException("Internal Error")
             }
             else -> {
-                val list = MockData.loadArticles(page, pageSize)
-                ArticlesEntity(200, "OK", list)
+                val list = gitHubService.searchRepos(page, pageSize).data
+                RepoEntity(200, "OK", list)
             }
         }
     }
 
     fun refresh() {
-        articles.refresh()
+        repos.refresh()
     }
 
     fun loadMore() {
-        articles.loadMore()
+        repos.loadMore()
     }
 
     fun retry() {
-        articles.retry()
+        repos.retry()
     }
 
     fun deleteItem(index: Int) {
-        articles.data.removeAt(index)
+        repos.data.removeAt(index)
     }
 }
 
-data class ArticlesEntity(
+data class RepoEntity(
     override val code: Int,
     override val msg: String?,
-    override val data: List<String>
-) : BasePagingResult<String>
-
-object MockData {
-
-    suspend fun loadArticles(page: Int, pageSize: Int): List<String> {
-        delay(Random(System.currentTimeMillis()).nextLong(0, 2000))
-        val list = arrayListOf<String>()
-        val random = Random(System.currentTimeMillis()).nextInt(1, 100)
-        repeat(pageSize) {
-            list.add("$page-$it-$random")
-        }
-        return list
-    }
-}
+    override val data: List<Repo>
+) : BasePagingResult<Repo>

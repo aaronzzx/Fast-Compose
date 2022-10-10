@@ -191,7 +191,7 @@ private fun MyIndicator(
 private fun SmartRefreshList(vm: MainVM = viewModel()) {
     val refreshState = rememberSmartRefreshState(isRefreshing = false)
     val listState = rememberLazyGridState()
-    val articles = vm.articles
+    val articles = vm.repos
     val loadState = articles.loadState
 
     val loadStateRefresh = loadState.refresh
@@ -259,10 +259,10 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = article,
+                            text = article.name,
                             color = Color(0xFF333333),
                             fontWeight = FontWeight.Bold,
-                            fontSize = 24.sp
+                            fontSize = 12.sp
                         )
                     }
                 }

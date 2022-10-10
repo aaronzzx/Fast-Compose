@@ -23,3 +23,5 @@ interface GitHubService {
     }
 
 }
+
+val gitHubService by lazy { GitHubService.create() }
