@@ -1,6 +1,6 @@
 package com.aaron.fastcompose.paging3
 
-import com.aaron.compose.architecture.BasePagingResult
+import com.aaron.compose.base.BasePagingResult
 import com.google.gson.annotations.SerializedName
 
 class RepoResponse(

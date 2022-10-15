@@ -1,13 +1,13 @@
-package com.aaron.compose.architecture.paging
+package com.aaron.compose.paging
 
 import androidx.compose.runtime.Stable
-import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultEnableLoadMore
-import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultInitialSize
-import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultMaxPage
-import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultPageSize
-import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultPrefetchDistance
-import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultPrintError
-import com.aaron.compose.architecture.paging.PageConfigDefaults.DefaultRequestTimeMillis
+import com.aaron.compose.paging.PageConfigDefaults.DefaultEnableLoadMore
+import com.aaron.compose.paging.PageConfigDefaults.DefaultInitialSize
+import com.aaron.compose.paging.PageConfigDefaults.DefaultMaxPage
+import com.aaron.compose.paging.PageConfigDefaults.DefaultPageSize
+import com.aaron.compose.paging.PageConfigDefaults.DefaultPrefetchDistance
+import com.aaron.compose.paging.PageConfigDefaults.DefaultPrintError
+import com.aaron.compose.paging.PageConfigDefaults.DefaultRequestTimeMillis
 
 /**
  * 默认分页配置

@@ -9,7 +9,7 @@ import androidx.compose.foundation.lazy.grid.LazyGridItemScope
 import androidx.compose.foundation.lazy.grid.LazyGridItemSpanScope
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.runtime.Composable
-import com.aaron.compose.architecture.paging.PageData
+import com.aaron.compose.paging.PageData
 
 /**
  * @author aaronzzxup@gmail.com

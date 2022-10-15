@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,13 +44,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.aaron.compose.architecture.paging.LoadState
 import com.aaron.compose.base.BaseComposeActivity
 import com.aaron.compose.ktx.clipToBackground
+import com.aaron.compose.ktx.collectAsStateWithLifecycle
 import com.aaron.compose.ktx.isNotEmpty
 import com.aaron.compose.ktx.itemsIndexed
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ktx.toPx
+import com.aaron.compose.paging.LoadState
 import com.aaron.compose.ui.SmartRefresh
 import com.aaron.compose.ui.SmartRefreshState
 import com.aaron.compose.ui.TopBar
@@ -58,6 +60,7 @@ import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 class MainActivity : BaseComposeActivity() {
@@ -91,11 +94,25 @@ class MainActivity : BaseComposeActivity() {
                             finishAfterTransition()
                         }
                     )
-                    MyPager()
+//                    MyPager()
+                    ViewStateComponent()
                 }
             }
         }
     }
+}
+
+@Composable
+private fun ViewStateComponent() {
+    val vm = viewModel<TestVM>()
+    val data by vm.data.collectAsStateWithLifecycle()
+    val refreshState = rememberSwipeRefreshState(isRefreshing = vm.isRefreshing)
+    TestComposable(
+        viewStateable = vm,
+        data = data,
+        refreshState = refreshState,
+        onRefresh = { vm.refresh() }
+    )
 }
 
 @OptIn(ExperimentalPagerApi::class)

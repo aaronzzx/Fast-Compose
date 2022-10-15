@@ -4,10 +4,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import com.aaron.compose.architecture.BasePagingResult
-import com.aaron.compose.architecture.paging.PageConfigDefaults
+import com.aaron.compose.base.BasePagingResult
 import com.aaron.compose.defaults.Defaults
 import com.aaron.compose.ktx.buildPageData
+import com.aaron.compose.paging.PageConfigDefaults
 import com.aaron.fastcompose.paging3.Repo
 import com.aaron.fastcompose.paging3.gitHubService
 import dagger.hilt.android.lifecycle.HiltViewModel

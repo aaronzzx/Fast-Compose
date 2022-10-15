@@ -5,7 +5,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import androidx.paging.RemoteMediator
-import com.aaron.compose.architecture.BasePagingResult
+import com.aaron.compose.base.BasePagingResult
 import kotlinx.coroutines.delay
 
 /**

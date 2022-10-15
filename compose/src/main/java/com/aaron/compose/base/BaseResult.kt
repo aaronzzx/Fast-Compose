@@ -1,4 +1,4 @@
-package com.aaron.compose.architecture
+package com.aaron.compose.base
 
 import androidx.compose.runtime.Stable
 

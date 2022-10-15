@@ -1,4 +1,4 @@
-package com.aaron.compose.architecture.paging
+package com.aaron.compose.paging
 
 /**
  * @author aaronzzxup@gmail.com

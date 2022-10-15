@@ -1,6 +1,6 @@
 package com.aaron.compose.ktx
 
-import com.aaron.compose.architecture.paging.PageData
+import com.aaron.compose.paging.PageData
 
 /**
  * @author aaronzzxup@gmail.com

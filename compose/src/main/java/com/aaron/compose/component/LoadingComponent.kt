@@ -24,12 +24,12 @@ import kotlin.coroutines.EmptyCoroutineContext
 
 @Composable
 fun LoadingComponent(
-    iLoading: ILoading,
+    loadingable: Loadingable,
     loading: (@Composable () -> Unit)? = { CircularLoading() },
     content: @Composable () -> Unit
 ) {
     content()
-    if (iLoading.showLoading.collectAsStateWithLifecycle().value) {
+    if (loadingable.showLoading.collectAsStateWithLifecycle().value) {
         loading?.invoke()
     }
 }
@@ -54,7 +54,7 @@ fun CircularLoading(
 }
 
 @Stable
-interface ILoading {
+interface Loadingable {
 
     val showLoading: StateFlow<Boolean>
 
@@ -78,7 +78,9 @@ interface ILoading {
     fun CoroutineScope.showLoading(show: Boolean)
 }
 
-class ILoadingDelegate : ILoading {
+fun Loadingable(): Loadingable = LoadingableDelegate()
+
+private class LoadingableDelegate : Loadingable {
 
     override val showLoading: StateFlow<Boolean> get() = _showLoading
 

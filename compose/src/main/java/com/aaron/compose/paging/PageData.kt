@@ -1,4 +1,4 @@
-package com.aaron.compose.architecture.paging
+package com.aaron.compose.paging
 
 import android.util.Log
 import androidx.compose.runtime.Stable
