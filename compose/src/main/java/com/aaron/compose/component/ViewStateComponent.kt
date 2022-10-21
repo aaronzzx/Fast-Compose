@@ -1,10 +1,15 @@
 package com.aaron.compose.component
 
+import androidx.activity.compose.BackHandler
+import androidx.annotation.DrawableRes
+import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -16,22 +21,26 @@ import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aaron.compose.R
 import com.aaron.compose.component.ViewStateable.Result
 import com.aaron.compose.ktx.clipToBackground
-import com.aaron.compose.ktx.collectAsStateWithLifecycle
 import com.aaron.compose.ktx.onClick
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
@@ -40,46 +49,52 @@ import kotlin.coroutines.EmptyCoroutineContext
 fun ViewStateComponent(
     viewStateable: ViewStateable,
     modifier: Modifier = Modifier,
-    loading: (@Composable () -> Unit)? = {
+    loading: (@Composable (viewState: ViewStateable) -> Unit)? = {
         CircularLoading()
     },
     failure: (@Composable (viewState: ViewStateable, code: Int, msg: String?) -> Unit)? = { viewState, code, msg ->
-        FailureViewState(code, msg) {
+        FailureViewState {
             viewState.retry()
         }
     },
     error: (@Composable (viewState: ViewStateable, ex: Throwable) -> Unit)? = { viewState, ex ->
-        ErrorViewState(ex) {
+        ErrorViewState {
             viewState.retry()
         }
     },
     empty: (@Composable (viewState: ViewStateable) -> Unit)? = { viewState ->
-        EmptyViewState {
-            viewState.retry()
-        }
+        EmptyViewState()
     },
     content: @Composable () -> Unit
 ) {
-    val showLoading by viewStateable.showLoading.collectAsStateWithLifecycle()
-    val result by viewStateable.result.collectAsStateWithLifecycle()
+    val showLoading by viewStateable.showLoading
+    BackHandler(enabled = showLoading) {
+        viewStateable.cancelLoading()
+    }
     Box(modifier = modifier) {
-        val castResult = result
+        val result = viewStateable.result.value
         when {
-            castResult is Result.Failure && failure != null -> {
-                failure.invoke(viewStateable, castResult.code, castResult.msg)
+            result is Result.Failure && failure != null -> {
+                failure.invoke(viewStateable, result.code, result.msg)
             }
-            castResult is Result.Error && error != null -> error.invoke(viewStateable, castResult.ex)
-            castResult is Result.Empty && empty != null -> empty.invoke(viewStateable)
+            result is Result.Error && error != null -> {
+                error.invoke(viewStateable, result.ex)
+            }
+            result is Result.Empty && empty != null -> {
+                empty.invoke(viewStateable)
+            }
             else -> content()
         }
-        if (showLoading) {
-            loading?.invoke()
+        if (loading != null) {
+            Crossfade(targetState = showLoading) {
+                if (it) loading(viewStateable)
+            }
         }
     }
 }
 
 @Composable
-fun FailureViewState(code: Int, msg: String?, onRetry: () -> Unit) {
+fun FailureViewState(onRetry: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -89,17 +104,17 @@ fun FailureViewState(code: Int, msg: String?, onRetry: () -> Unit) {
                 color = Color.White,
                 shape = RoundedCornerShape(8.dp)
             )
-            .onClick {
+            .onClick(enableRipple = false) {
                 onRetry()
             },
         contentAlignment = Alignment.Center
     ) {
-        VerticalImageText(imageVector = Icons.Default.ThumbUp, text = "请求失败：$code, $msg")
+        VerticalImageText(text = "请求失败")
     }
 }
 
 @Composable
-fun ErrorViewState(ex: Throwable, onRetry: () -> Unit) {
+fun ErrorViewState(onRetry: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -109,17 +124,18 @@ fun ErrorViewState(ex: Throwable, onRetry: () -> Unit) {
                 color = Color.White,
                 shape = RoundedCornerShape(8.dp)
             )
-            .onClick {
+            .onClick(enableRipple = false) {
                 onRetry()
             },
         contentAlignment = Alignment.Center
     ) {
-        VerticalImageText(imageVector = Icons.Default.Warning, text = "请求错误：${ex.message}")
+        VerticalImageText(text = "请求错误")
     }
 }
 
+@Preview
 @Composable
-fun EmptyViewState(onRetry: () -> Unit) {
+fun EmptyViewState() {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -131,25 +147,36 @@ fun EmptyViewState(onRetry: () -> Unit) {
             ),
         contentAlignment = Alignment.Center
     ) {
-        VerticalImageText(imageVector = Icons.Default.Done, text = "暂无数据")
+        VerticalImageText(text = "暂无数据")
     }
 }
 
 @Composable
-private fun VerticalImageText(imageVector: ImageVector, text: String) {
+private fun VerticalImageText(
+    text: String,
+    @DrawableRes iconRes: Int = R.drawable.details_image_wholea_normal,
+    iconSize: Dp = 160.dp,
+    spacing: Dp = 24.dp,
+    textColor: Color = Color(0xFF999999),
+    textSize: TextUnit = 16.sp
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(spacing)
     ) {
-        Icon(imageVector = imageVector, contentDescription = null)
-        Text(text = text, color = Color(0xFF666666), fontSize = 14.sp)
+        Image(
+            painter = painterResource(id = iconRes),
+            modifier = Modifier.size(iconSize),
+            contentDescription = null
+        )
+        Text(text = text, color = textColor, fontSize = textSize)
     }
 }
 
 @Stable
 interface ViewStateable : Loadingable {
 
-    val result: StateFlow<Result>
+    val result: State<Result>
 
     fun CoroutineScope.launchWithViewState(
         enableLoading: Boolean = true,
@@ -170,7 +197,7 @@ interface ViewStateable : Loadingable {
         }
     }
 
-    fun CoroutineScope.showResult(result: Result)
+    fun showResult(result: Result)
 
     fun retry()
 
@@ -191,14 +218,12 @@ fun ViewStateable(): ViewStateable = ViewStateableDelegate()
 
 private class ViewStateableDelegate : ViewStateable, Loadingable by Loadingable() {
 
-    override val result: StateFlow<Result> get() = _result
+    override val result: State<Result> get() = _result
 
-    private val _result = MutableStateFlow<Result>(Result.Default)
+    private val _result = mutableStateOf<Result>(Result.Default)
 
-    override fun CoroutineScope.showResult(result: Result) {
-        launch {
-            _result.emit(result)
-        }
+    override fun showResult(result: Result) {
+        _result.value = result
     }
 
     override fun retry() {
