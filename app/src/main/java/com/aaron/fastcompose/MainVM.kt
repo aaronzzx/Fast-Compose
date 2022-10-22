@@ -8,6 +8,7 @@ import com.aaron.compose.base.BasePagingResult
 import com.aaron.compose.defaults.Defaults
 import com.aaron.compose.ktx.buildPageData
 import com.aaron.compose.paging.PageConfigDefaults
+import com.aaron.compose.ui.refresh.SmartRefreshType
 import com.aaron.fastcompose.paging3.Repo
 import com.aaron.fastcompose.paging3.gitHubService
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,6 +38,8 @@ class MainVM @Inject constructor() : ViewModel() {
     var init by mutableStateOf(true)
 
     val repos = buildPageData(1, onRequest = ::buildFakeData2)
+
+    var smartRefreshType: SmartRefreshType by mutableStateOf(SmartRefreshType.Idle)
 
     private suspend fun buildFakeData2(page: Int, pageSize: Int): RepoEntity {
         return when (Random(System.currentTimeMillis()).nextInt(0, 10)) {

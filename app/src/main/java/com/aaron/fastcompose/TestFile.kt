@@ -24,8 +24,11 @@ import androidx.lifecycle.viewModelScope
 import com.aaron.compose.component.ViewStateable
 import com.aaron.compose.component.ViewStateComponent
 import com.aaron.compose.ktx.clipToBackground
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.SwipeRefreshState
+import com.aaron.compose.ktx.toDp
+import com.aaron.compose.ui.refresh.SmartRefresh
+import com.aaron.compose.ui.refresh.SmartRefreshType
+import com.aaron.compose.ui.refresh.materialheader.MaterialRefreshIndicator
+import com.aaron.compose.ui.refresh.rememberSmartRefreshState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,10 +43,24 @@ import kotlin.random.Random
 fun TestComposable(
     viewStateable: ViewStateable,
     data: List<Int>,
-    refreshState: SwipeRefreshState,
-    onRefresh: () -> Unit
+    refreshType: SmartRefreshType,
+    onRefresh: () -> Unit,
+    onIdle: () -> Unit
 ) {
-    SwipeRefresh(state = refreshState, onRefresh = onRefresh) {
+    SmartRefresh(
+        state = rememberSmartRefreshState(type = refreshType),
+        onRefresh = onRefresh,
+        onIdle = onIdle,
+        clipHeaderEnabled = false,
+        translateBody = false,
+        indicator = { smartRefreshState, triggerPixels, maxDragPixels, height ->
+            MaterialRefreshIndicator(
+                state = smartRefreshState,
+                refreshTriggerDistance = triggerPixels.toDp(),
+                contentColor = Color(0xFF4FC3F7)
+            )
+        }
+    ) {
         ViewStateComponent(
             viewStateable = viewStateable,
             modifier = Modifier
@@ -76,7 +93,7 @@ fun TestComposable(
 
 class TestVM : ViewModel(), ViewStateable by ViewStateable() {
 
-    var isRefreshing by mutableStateOf(false)
+    var smartRefreshType: SmartRefreshType by mutableStateOf(SmartRefreshType.Idle)
 
     val data: StateFlow<List<Int>> get() = _data
     private val _data = MutableStateFlow<List<Int>>(emptyList())
@@ -86,8 +103,17 @@ class TestVM : ViewModel(), ViewStateable by ViewStateable() {
     }
 
     fun refresh() {
-        isRefreshing = true
+        smartRefreshType = SmartRefreshType.Refreshing
         initLoad(false)
+    }
+
+    fun finishRefresh(success: Boolean) {
+        if (smartRefreshType == SmartRefreshType.Refreshing) {
+            smartRefreshType = when (success) {
+                true -> SmartRefreshType.Success(0)
+                else -> SmartRefreshType.Failure(0)
+            }
+        }
     }
 
     private fun initLoad(enableLoading: Boolean) {
@@ -95,24 +121,26 @@ class TestVM : ViewModel(), ViewStateable by ViewStateable() {
             delay(2000)
             when (Random(System.currentTimeMillis()).nextInt(0, 4)) {
                 1 -> {
+                    finishRefresh(false)
                     ViewStateable.Result.Failure(404, "Not Found")
                 }
                 2 -> {
+                    finishRefresh(false)
                     ViewStateable.Result.Error(IllegalStateException("Internal Error"))
                 }
                 3 -> {
+                    finishRefresh(true)
                     _data.emit(emptyList())
                     ViewStateable.Result.Empty
                 }
                 else -> {
+                    finishRefresh(true)
                     val stIndex = Random(System.currentTimeMillis()).nextInt(0, 1000)
                     val range = stIndex..(stIndex + 50)
                     _data.emit(range.toList())
                     ViewStateable.Result.Default
                 }
             }
-        }.invokeOnCompletion {
-            isRefreshing = false
         }
     }
 

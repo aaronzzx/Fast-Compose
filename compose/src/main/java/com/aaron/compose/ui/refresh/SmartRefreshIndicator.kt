@@ -1,4 +1,4 @@
-package com.aaron.compose.ui
+package com.aaron.compose.ui.refresh
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -37,10 +37,10 @@ import androidx.core.content.edit
 import com.aaron.compose.drawable.ArrowDrawable
 import com.aaron.compose.drawable.ProgressDrawable
 import com.aaron.compose.ktx.toPx
-import com.aaron.compose.ui.SmartRefreshType.Failure
-import com.aaron.compose.ui.SmartRefreshType.Idle
-import com.aaron.compose.ui.SmartRefreshType.Refreshing
-import com.aaron.compose.ui.SmartRefreshType.Success
+import com.aaron.compose.ui.refresh.SmartRefreshType.Failure
+import com.aaron.compose.ui.refresh.SmartRefreshType.Idle
+import com.aaron.compose.ui.refresh.SmartRefreshType.Refreshing
+import com.aaron.compose.ui.refresh.SmartRefreshType.Success
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import java.text.SimpleDateFormat
 import java.util.*

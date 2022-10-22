@@ -24,7 +24,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
@@ -52,15 +51,15 @@ import com.aaron.compose.ktx.itemsIndexed
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ktx.toPx
 import com.aaron.compose.paging.LoadState
-import com.aaron.compose.ui.SmartRefresh
-import com.aaron.compose.ui.SmartRefreshState
+import com.aaron.compose.ui.refresh.SmartRefresh
+import com.aaron.compose.ui.refresh.SmartRefreshState
+import com.aaron.compose.ui.refresh.SmartRefreshType
 import com.aaron.compose.ui.TopBar
-import com.aaron.compose.ui.rememberSmartRefreshState
+import com.aaron.compose.ui.refresh.rememberSmartRefreshState
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 class MainActivity : BaseComposeActivity() {
@@ -82,13 +81,15 @@ class MainActivity : BaseComposeActivity() {
                 modifier = Modifier
                     .fillMaxSize(),
                 elevation = 4.dp,
-                color = MaterialTheme.colors.background
+                color = Color(0xFFF0F0F0)
             ) {
                 Column {
                     TopBar(
                         modifier = Modifier.zIndex(1f),
                         title = "ComposeActivity",
                         startIcon = R.drawable.back,
+                        backgroundColor = Color(0xFFF0F0F0),
+                        elevation = 0.dp,
                         contentPadding = WindowInsets.statusBars.asPaddingValues(),
                         onStartIconClick = {
                             finishAfterTransition()
@@ -106,12 +107,12 @@ class MainActivity : BaseComposeActivity() {
 private fun ViewStateComponent() {
     val vm = viewModel<TestVM>()
     val data by vm.data.collectAsStateWithLifecycle()
-    val refreshState = rememberSwipeRefreshState(isRefreshing = vm.isRefreshing)
     TestComposable(
         viewStateable = vm,
         data = data,
-        refreshState = refreshState,
-        onRefresh = { vm.refresh() }
+        refreshType = vm.smartRefreshType,
+        onRefresh = { vm.refresh() },
+        onIdle = { vm.smartRefreshType = SmartRefreshType.Idle }
     )
 }
 
@@ -206,7 +207,7 @@ private fun MyIndicator(
 
 @Composable
 private fun SmartRefreshList(vm: MainVM = viewModel()) {
-    val refreshState = rememberSmartRefreshState(isRefreshing = false)
+    val refreshState = rememberSmartRefreshState(type = vm.smartRefreshType)
     val listState = rememberLazyGridState()
     val articles = vm.repos
     val loadState = articles.loadState
@@ -217,12 +218,12 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
             LaunchedEffect(loadStateRefresh) {
                 listState.scrollToItem(0)
             }
-            refreshState.success()
+            vm.smartRefreshType = SmartRefreshType.Success()
         } else if (loadStateRefresh is LoadState.Error) {
-            refreshState.failure()
+            vm.smartRefreshType = SmartRefreshType.Failure()
         }
     } else if (loadStateRefresh is LoadState.Loading && !vm.init) {
-        refreshState.refresh()
+        vm.smartRefreshType = SmartRefreshType.Refreshing
     }
 
     if (vm.init) {
@@ -234,6 +235,10 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
         onRefresh = {
             vm.refresh()
         },
+        onIdle = {
+            vm.smartRefreshType = SmartRefreshType.Idle
+        },
+        translateBody = false,
         indicator = { smartRefreshState, triggerPixels, maxDragPixels, height ->
             JialaiIndicator(
                 refreshState = smartRefreshState,

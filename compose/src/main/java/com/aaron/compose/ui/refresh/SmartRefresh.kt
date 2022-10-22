@@ -1,4 +1,4 @@
-package com.aaron.compose.ui
+package com.aaron.compose.ui.refresh
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationEndReason.BoundReached
@@ -22,7 +22,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.Saver
-import androidx.compose.runtime.saveable.autoSaver
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -38,12 +37,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import com.aaron.compose.ktx.toPx
-import com.aaron.compose.ui.SmartRefreshType.Failure
-import com.aaron.compose.ui.SmartRefreshType.FinishRefresh
-import com.aaron.compose.ui.SmartRefreshType.FinishRefresh.Companion.DismissDelayMillis
-import com.aaron.compose.ui.SmartRefreshType.Idle
-import com.aaron.compose.ui.SmartRefreshType.Refreshing
-import com.aaron.compose.ui.SmartRefreshType.Success
+import com.aaron.compose.ui.refresh.SmartRefreshType.FinishRefresh
+import com.aaron.compose.ui.refresh.SmartRefreshType.Idle
+import com.aaron.compose.ui.refresh.SmartRefreshType.Refreshing
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -54,9 +50,11 @@ import kotlinx.coroutines.launch
 private const val DragMultiplier = 0.5f
 
 @Composable
-fun rememberSmartRefreshState(isRefreshing: Boolean): SmartRefreshState {
+fun rememberSmartRefreshState(type: SmartRefreshType): SmartRefreshState {
     return rememberSaveable(saver = SmartRefreshState.Saver) {
-        SmartRefreshState(isRefreshing)
+        SmartRefreshState(type)
+    }.also {
+        it.type = type
     }
 }
 
@@ -139,8 +137,8 @@ class SmartRefreshState internal constructor(
         )
     }
 
-    constructor(isRefreshing: Boolean) : this(
-        type = if (isRefreshing) Refreshing else Idle,
+    constructor(type: SmartRefreshType) : this(
+        type = type,
         indicatorOffset = 0f,
         isContentArriveTop = true
     )
@@ -153,7 +151,6 @@ class SmartRefreshState internal constructor(
     private val mutatorMutex = MutatorMutex()
 
     var type: SmartRefreshType by mutableStateOf(type)
-        private set
 
     val isIdle: Boolean get() = type is Idle
 
@@ -179,30 +176,6 @@ class SmartRefreshState internal constructor(
     internal var isContentArriveTop = isContentArriveTop
 
     internal val isAnimating: Boolean get() = _indicatorOffset.isRunning
-
-    fun idle() {
-        if (!isIdle) {
-            type = Idle
-        }
-    }
-
-    fun refresh() {
-        if (!isRefreshing) {
-            type = Refreshing
-        }
-    }
-
-    fun success(dismissDelayMillis: Long = DismissDelayMillis) {
-        if (isRefreshing) {
-            type = Success(dismissDelayMillis)
-        }
-    }
-
-    fun failure(dismissDelayMillis: Long = DismissDelayMillis) {
-        if (isRefreshing) {
-            type = Failure(dismissDelayMillis)
-        }
-    }
 
     internal suspend fun animateOffsetTo(
         offset: Float,
@@ -410,6 +383,8 @@ private class SmartRefreshNestedScrollConnection(
  * @param onIdle 触发空闲状态的回调，在刷新操作完成后会回调
  * @param modifier 修饰符
  * @param swipeEnabled 是否启用刷新
+ * @param clipHeaderEnabled 是否启用裁剪头部
+ * @param translateBody [SmartRefreshState.indicatorOffset] 偏移时，主体部分是否也跟着偏移
  * @param triggerRatio 触发刷新的占比，基于 [indicatorHeight]
  * @param maxDragRatio 最大拖拽占比，基于 [indicatorHeight]
  * @param indicatorHeight 刷新头的高度
@@ -420,9 +395,11 @@ private class SmartRefreshNestedScrollConnection(
 fun SmartRefresh(
     state: SmartRefreshState,
     onRefresh: () -> Unit,
+    onIdle: () -> Unit,
     modifier: Modifier = Modifier,
-    onIdle: () -> Unit = { state.idle() },
     swipeEnabled: Boolean = true,
+    clipHeaderEnabled: Boolean = true,
+    translateBody: Boolean = true,
     triggerRatio: Float = 1f,
     maxDragRatio: Float = 2f,
     indicatorHeight: Dp = 80.dp,
@@ -464,21 +441,31 @@ fun SmartRefresh(
         this.maxIndicatorOffset = maxDragPx
     }
 
-
     Box(
         modifier = Modifier
             .nestedScroll(connection = nestedScrollConnection)
             .then(modifier)
     ) {
         Box(
+            modifier = Modifier
+                .graphicsLayer {
+                    if (translateBody) {
+                        translationY = state.indicatorOffset.coerceAtMost(maxDragPx)
+                    }
+                }
+        ) {
+            content()
+        }
+
+        Box(
             Modifier.align(Alignment.TopCenter)
-//                .let {
-//                    if (isHeaderNeedClip(
-//                            state,
-//                            indicatorHeightPx
-//                        )
-//                    ) it.clipToBounds() else it
-//                }
+                .let {
+                    if (clipHeaderEnabled && isHeaderNeedClip(
+                            state,
+                            indicatorHeightPx
+                        )
+                    ) it.clipToBounds() else it
+                }
         ) {
             LaunchedEffect(key1 = state) {
                 if (state.isRefreshing
@@ -489,15 +476,6 @@ fun SmartRefresh(
                 }
             }
             indicator(state, refreshTriggerPx, maxDragPx, indicatorHeight)
-        }
-
-        Box(
-            modifier = Modifier
-                .graphicsLayer {
-                    translationY = state.indicatorOffset.coerceAtMost(maxDragPx)
-                }
-        ) {
-            content()
         }
     }
 }

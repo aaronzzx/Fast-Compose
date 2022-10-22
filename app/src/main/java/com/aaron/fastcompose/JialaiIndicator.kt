@@ -23,11 +23,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.aaron.compose.ktx.toPx
-import com.aaron.compose.ui.SmartRefreshState
-import com.aaron.compose.ui.SmartRefreshType.Failure
-import com.aaron.compose.ui.SmartRefreshType.Idle
-import com.aaron.compose.ui.SmartRefreshType.Refreshing
-import com.aaron.compose.ui.SmartRefreshType.Success
+import com.aaron.compose.ui.refresh.SmartRefreshState
+import com.aaron.compose.ui.refresh.SmartRefreshType.Failure
+import com.aaron.compose.ui.refresh.SmartRefreshType.Idle
+import com.aaron.compose.ui.refresh.SmartRefreshType.Refreshing
+import com.aaron.compose.ui.refresh.SmartRefreshType.Success
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 
 /**
