@@ -2,6 +2,7 @@ package com.aaron.compose.component
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -10,6 +11,7 @@ import androidx.compose.material.Card
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProgressIndicatorDefaults
+import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
@@ -63,10 +65,10 @@ fun CircularLoading(
             .let { if (interceptClick) it.interceptClick() else it },
         contentAlignment = Alignment.Center
     ) {
-        Card(
-            backgroundColor = Color.White,
+        Surface(
             shape = CircleShape,
-            elevation = 4.dp
+            color = Color.White,
+            elevation = 6.dp
         ) {
             Box(
                 modifier = Modifier.size(48.dp),
