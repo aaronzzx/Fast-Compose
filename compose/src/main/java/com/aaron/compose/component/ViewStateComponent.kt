@@ -64,7 +64,7 @@ fun ViewStateComponent(
     },
     content: @Composable () -> Unit
 ) {
-    val showLoading by viewStateable.showLoading
+    val showLoading by viewStateable.loading
     BackHandler(enabled = showLoading) {
         viewStateable.cancelLoading()
     }

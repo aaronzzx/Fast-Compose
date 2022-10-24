@@ -2,12 +2,10 @@ package com.aaron.compose.component
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Card
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProgressIndicatorDefaults
@@ -41,7 +39,7 @@ fun LoadingComponent(
     },
     content: @Composable () -> Unit
 ) {
-    val showLoading by loadingable.showLoading
+    val showLoading by loadingable.loading
     BackHandler(enabled = showLoading) {
         loadingable.cancelLoading()
     }
@@ -90,7 +88,7 @@ fun CircularLoading(
 @Stable
 interface Loadingable {
 
-    val showLoading: State<Boolean>
+    val loading: State<Boolean>
 
     fun CoroutineScope.launchWithLoading(
         context: CoroutineContext = EmptyCoroutineContext,
@@ -124,12 +122,12 @@ fun loadingable(): Loadingable = LoadingableDelegate()
 
 private class LoadingableDelegate : Loadingable {
 
-    override val showLoading: State<Boolean> get() = _showLoading
+    override val loading: State<Boolean> get() = _loading
 
-    private val _showLoading = mutableStateOf(false)
+    private val _loading = mutableStateOf(false)
 
     override fun showLoading(show: Boolean) {
-        _showLoading.value = show
+        _loading.value = show
     }
 
     override fun cancelLoading() {

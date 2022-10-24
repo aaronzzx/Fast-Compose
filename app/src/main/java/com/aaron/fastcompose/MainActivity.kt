@@ -56,6 +56,7 @@ import com.aaron.compose.ui.refresh.SmartRefreshState
 import com.aaron.compose.ui.refresh.SmartRefreshType
 import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.refresh.rememberSmartRefreshState
+import com.aaron.fastcompose.paging3.PagingActivity
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
@@ -67,12 +68,14 @@ class MainActivity : BaseComposeActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 //        SecondActivity.start(this)
+        PagingActivity.start(this)
     }
 
     @Composable
     override fun Content() {
         val uiController = rememberSystemUiController()
         uiController.setStatusBarColor(Color.Transparent)
+        uiController.systemBarsDarkContentEnabled = true
         BackHandler {
             finish()
         }

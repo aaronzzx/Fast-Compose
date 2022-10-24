@@ -22,6 +22,11 @@
             android:label="@string/title_activity_second"
             android:theme="@style/Theme.FastCompose" />
         <activity
+            android:name=".paging3.PagingActivity"
+            android:exported="false"
+            android:label="PagingActivity"
+            android:theme="@style/Theme.FastCompose" />
+        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
