@@ -13,12 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Icon
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
@@ -27,7 +22,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -45,6 +39,9 @@ import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
+/**
+ * 感知视图状态
+ */
 @Composable
 fun ViewStateComponent(
     viewStateable: ViewStateable,
@@ -173,6 +170,9 @@ private fun VerticalImageText(
     }
 }
 
+/**
+ * ViewModel 可以实现此接口接管视图状态，使用 [viewStateable] 委托一步到位。
+ */
 @Stable
 interface ViewStateable : Loadingable {
 
@@ -214,9 +214,9 @@ interface ViewStateable : Loadingable {
     }
 }
 
-fun ViewStateable(): ViewStateable = ViewStateableDelegate()
+fun viewStateable(): ViewStateable = ViewStateableDelegate()
 
-private class ViewStateableDelegate : ViewStateable, Loadingable by Loadingable() {
+private class ViewStateableDelegate : ViewStateable, Loadingable by loadingable() {
 
     override val result: State<Result> get() = _result
 

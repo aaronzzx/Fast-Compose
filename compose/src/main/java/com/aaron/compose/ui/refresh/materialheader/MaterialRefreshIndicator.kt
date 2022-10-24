@@ -113,7 +113,7 @@ fun MaterialRefreshIndicator(
     scale: Boolean = false,
     arrowEnabled: Boolean = true,
     backgroundColor: Color = MaterialTheme.colors.surface,
-    contentColor: Color = contentColorFor(backgroundColor),
+    contentColor: Color = MaterialTheme.colors.primary,
     shape: Shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
     refreshingOffset: Dp = 16.dp,
     largeIndication: Boolean = false,

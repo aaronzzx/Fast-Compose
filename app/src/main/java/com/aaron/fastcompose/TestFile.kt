@@ -12,23 +12,21 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aaron.compose.component.RefreshComponent
+import com.aaron.compose.component.Refreshable
 import com.aaron.compose.component.ViewStateable
+import com.aaron.compose.component.viewStateable
 import com.aaron.compose.component.ViewStateComponent
 import com.aaron.compose.ktx.clipToBackground
-import com.aaron.compose.ktx.toDp
-import com.aaron.compose.ui.refresh.SmartRefresh
 import com.aaron.compose.ui.refresh.SmartRefreshType
-import com.aaron.compose.ui.refresh.materialheader.MaterialRefreshIndicator
-import com.aaron.compose.ui.refresh.rememberSmartRefreshState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,26 +39,11 @@ import kotlin.random.Random
 
 @Composable
 fun TestComposable(
+    refreshable: Refreshable,
     viewStateable: ViewStateable,
-    data: List<Int>,
-    refreshType: SmartRefreshType,
-    onRefresh: () -> Unit,
-    onIdle: () -> Unit
+    data: List<Int>
 ) {
-    SmartRefresh(
-        state = rememberSmartRefreshState(type = refreshType),
-        onRefresh = onRefresh,
-        onIdle = onIdle,
-        clipHeaderEnabled = false,
-        translateBody = false,
-        indicator = { smartRefreshState, triggerPixels, maxDragPixels, height ->
-            MaterialRefreshIndicator(
-                state = smartRefreshState,
-                refreshTriggerDistance = triggerPixels.toDp(),
-                contentColor = Color(0xFF4FC3F7)
-            )
-        }
-    ) {
+    RefreshComponent(refreshable = refreshable) {
         ViewStateComponent(
             viewStateable = viewStateable,
             modifier = Modifier
@@ -91,9 +74,9 @@ fun TestComposable(
     }
 }
 
-class TestVM : ViewModel(), ViewStateable by ViewStateable() {
+class TestVM : ViewModel(), Refreshable, ViewStateable by viewStateable() {
 
-    var smartRefreshType: SmartRefreshType by mutableStateOf(SmartRefreshType.Idle)
+    override val smartRefreshType: MutableState<SmartRefreshType> = mutableStateOf(SmartRefreshType.Idle)
 
     val data: StateFlow<List<Int>> get() = _data
     private val _data = MutableStateFlow<List<Int>>(emptyList())
@@ -102,18 +85,12 @@ class TestVM : ViewModel(), ViewStateable by ViewStateable() {
         initLoad(true)
     }
 
-    fun refresh() {
-        smartRefreshType = SmartRefreshType.Refreshing
+    override fun refreshIgnoreAnimation() {
         initLoad(false)
     }
 
-    fun finishRefresh(success: Boolean) {
-        if (smartRefreshType == SmartRefreshType.Refreshing) {
-            smartRefreshType = when (success) {
-                true -> SmartRefreshType.Success(0)
-                else -> SmartRefreshType.Failure(0)
-            }
-        }
+    private fun finishRefresh(success: Boolean) {
+        finishRefresh(success, 0)
     }
 
     private fun initLoad(enableLoading: Boolean) {

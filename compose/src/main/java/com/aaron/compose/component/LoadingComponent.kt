@@ -2,7 +2,6 @@ package com.aaron.compose.component
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -18,7 +17,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -30,6 +28,9 @@ import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
+/**
+ * 感知 loading
+ */
 @Composable
 fun LoadingComponent(
     loadingable: Loadingable,
@@ -81,6 +82,9 @@ fun CircularLoading(
     }
 }
 
+/**
+ * ViewModel 可以实现此接口接管 loading 状态，使用 [loadingable] 委托一步到位。
+ */
 @Stable
 interface Loadingable {
 
@@ -114,7 +118,7 @@ interface Loadingable {
     fun cancelLoading()
 }
 
-fun Loadingable(): Loadingable = LoadingableDelegate()
+fun loadingable(): Loadingable = LoadingableDelegate()
 
 private class LoadingableDelegate : Loadingable {
 

@@ -108,11 +108,9 @@ private fun ViewStateComponent() {
     val vm = viewModel<TestVM>()
     val data by vm.data.collectAsStateWithLifecycle()
     TestComposable(
+        refreshable = vm,
         viewStateable = vm,
-        data = data,
-        refreshType = vm.smartRefreshType,
-        onRefresh = { vm.refresh() },
-        onIdle = { vm.smartRefreshType = SmartRefreshType.Idle }
+        data = data
     )
 }
 
