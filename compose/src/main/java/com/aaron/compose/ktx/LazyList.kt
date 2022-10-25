@@ -23,7 +23,7 @@ fun <K, V> LazyListScope.items(
     itemContent: @Composable LazyItemScope.(item: V) -> Unit
 ) {
     items(
-        count = pageData.count,
+        count = pageData.itemCount,
         key = if (key == null) null else { index ->
             val item = pageData.peek(index)
             if (item == null) {
@@ -47,7 +47,7 @@ fun <K, V> LazyListScope.itemsIndexed(
     itemContent: @Composable LazyItemScope.(index: Int, item: V) -> Unit
 ) {
     items(
-        count = pageData.count,
+        count = pageData.itemCount,
         key = if (key == null) null else { index ->
             val item = pageData.peek(index)
             if (item == null) {
@@ -72,7 +72,7 @@ fun <K, V> LazyGridScope.items(
     itemContent: @Composable LazyGridItemScope.(item: V) -> Unit
 ) {
     items(
-        count = pageData.count,
+        count = pageData.itemCount,
         key = if (key == null) null else { index ->
             val item = pageData.peek(index)
             if (item == null) {
@@ -100,7 +100,7 @@ fun <K, V> LazyGridScope.itemsIndexed(
     itemContent: @Composable LazyGridItemScope.(index: Int, item: V) -> Unit
 ) {
     items(
-        count = pageData.count,
+        count = pageData.itemCount,
         key = if (key == null) null else { index ->
             val item = pageData.peek(index)
             if (item == null) {

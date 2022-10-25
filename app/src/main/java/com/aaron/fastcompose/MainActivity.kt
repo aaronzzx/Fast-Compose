@@ -399,7 +399,7 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
                 }
             }
 
-            if (articles.count == 0) {
+            if (articles.itemCount == 0) {
                 if (loadState.refresh is LoadState.Loading) {
                     Box(
                         modifier = Modifier.fillMaxSize(),

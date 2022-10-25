@@ -30,7 +30,6 @@ class MainVM @Inject constructor() : ViewModel() {
                 DefaultInitialSize = 5
                 DefaultPageSize = 5
 //                DefaultMaxPage = 5
-                DefaultRequestTimeMillis = 1000
             }
         }
     }

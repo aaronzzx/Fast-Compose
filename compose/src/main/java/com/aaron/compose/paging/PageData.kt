@@ -39,14 +39,28 @@ class PageData<K, V>(
 
     val data: SnapshotStateList<V> = mutableStateListOf()
 
-    val count: Int get() = data.size
+    val itemCount: Int get() = data.size
 
     val loadState: CombinedLoadState by mutableStateOf(CombinedLoadState())
 
+    /**
+     * 用于标识当前正在进行的操作，每次操作完成后都将回到 Idle 状态
+     */
     private var loadType: LoadType = LoadType.Idle
 
+    /**
+     * 用于标识最后一次操作，用于重试时辨别哪种类型
+     */
+    private var lastLoadType: LoadType? = null
+
+    /**
+     * 下一页的 key
+     */
     private var nextKey: K? = null
 
+    /**
+     * 当前正在执行的任务
+     */
     private var curLoadJob: Job? = null
 
     init {
@@ -58,7 +72,7 @@ class PageData<K, V>(
     internal operator fun get(index: Int): V {
         // 判断是否触发加载
         val prefetchDistance = config.prefetchDistance
-        if (prefetchDistance > 0 && (count - 1) - index == prefetchDistance) {
+        if (prefetchDistance > 0 && (itemCount - 1) - index == prefetchDistance) {
             loadMore()
         }
         return data[index]
@@ -100,6 +114,7 @@ class PageData<K, V>(
             is LoadResult.Error -> {
                 val throwable = result.throwable
                 loadState.refresh = LoadState.Error(throwable)
+                loadState.loadMore = LoadState.Idle(false)
             }
         }
         log("refresh-start: ${loadState.refresh}")
@@ -142,11 +157,12 @@ class PageData<K, V>(
 
     fun retry() {
         val loadState = loadState
-        if (loadState.refresh is LoadState.Error) {
+        val lastLoadType = lastLoadType
+        if (lastLoadType == LoadType.Refresh && loadState.refresh is LoadState.Error) {
             tryLaunch(LoadType.Refresh) {
                 refreshImpl()
             }
-        } else if (loadState.loadMore is LoadState.Error) {
+        } else if (lastLoadType == LoadType.LoadMore && loadState.loadMore is LoadState.Error) {
             tryLaunch(LoadType.LoadMore) {
                 loadMoreImpl()
             }
@@ -186,11 +202,13 @@ class PageData<K, V>(
             return
         }
         this.loadType = loadType
+        this.lastLoadType = loadType
         curLoadJob = coroutineScope.launch {
             block()
         }.also {
             it.invokeOnCompletion {
                 this.loadType = LoadType.Idle
+                curLoadJob = null
             }
         }
     }
