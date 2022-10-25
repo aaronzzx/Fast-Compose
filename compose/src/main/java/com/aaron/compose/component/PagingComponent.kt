@@ -253,10 +253,10 @@ open class PagingComponentFooter<K, V> {
                 .fillMaxWidth()
                 .let {
                     when (footerType) {
-                        PagingFooterType.LoadMore -> it.onClick {
+                        PagingFooterType.LoadMore -> it.onClick(enableRipple = false) {
                             component.loadMore()
                         }
-                        PagingFooterType.LoadError -> it.onClick {
+                        PagingFooterType.LoadError -> it.onClick(enableRipple = false) {
                             component.loadMoreRetry()
                         }
                         else -> it

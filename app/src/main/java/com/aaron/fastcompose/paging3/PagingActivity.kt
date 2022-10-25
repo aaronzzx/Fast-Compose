@@ -36,8 +36,8 @@ import com.aaron.compose.base.BaseComposeActivity
 import com.aaron.compose.component.PagingComponent
 import com.aaron.compose.component.PagingComponentFooter
 import com.aaron.compose.component.PagingGridComponent
+import com.aaron.compose.component.PagingStateComponent
 import com.aaron.compose.component.RefreshComponent
-import com.aaron.compose.component.StateComponent
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.itemsIndexed
 import com.aaron.compose.ktx.onClick
@@ -124,7 +124,7 @@ private fun PagingPage() {
             .fillMaxSize()
             .background(color = Color(0xFFF0F0F0))
     ) {
-        StateComponent(component = vm) {
+        PagingStateComponent(pagingComponent = vm, stateComponent = vm) {
             PagingGridComponent(
                 component = vm,
                 columns = GridCells.Fixed(2),

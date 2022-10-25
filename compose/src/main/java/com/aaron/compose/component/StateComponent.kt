@@ -19,6 +19,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,6 +34,7 @@ import com.aaron.compose.component.StateComponent.ViewState.Empty
 import com.aaron.compose.component.StateComponent.ViewState.Error
 import com.aaron.compose.component.StateComponent.ViewState.Failure
 import com.aaron.compose.ktx.clipToBackground
+import com.aaron.compose.ktx.isEmpty
 import com.aaron.compose.ktx.onClick
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -42,24 +44,35 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
 @Composable
-fun EmptyStateComponent(
-    component: StateComponent,
-    modifier: Modifier = Modifier,
-    loading: (@Composable (StateComponent) -> Unit)? = {
-        CircularLoading()
-    },
-    empty: (@Composable (StateComponent) -> Unit)? = {
-        ViewStatePage(text = "暂无数据")
-    },
+fun <K, V> PagingStateComponent(
+    pagingComponent: PagingComponent<K, V>,
+    stateComponent: StateComponent,
     content: @Composable () -> Unit
 ) {
+    val emptyContent: (@Composable () -> Unit) = remember {
+        { ViewStatePage(text = "暂无数据") }
+    }
+    val failureErrorContent: (@Composable () -> Unit) = remember {
+        {
+            val pageData = pagingComponent.pageData
+            if (pageData.isEmpty) {
+                emptyContent()
+            } else {
+                content()
+            }
+        }
+    }
     StateComponent(
-        component,
-        modifier,
-        loading = loading,
-        failure = null,
-        error = null,
-        empty = empty,
+        component = stateComponent,
+        failure = { component, code, msg ->
+            failureErrorContent()
+        },
+        error = { component, ex ->
+            failureErrorContent()
+        },
+        empty = {
+            emptyContent()
+        },
         content = content
     )
 }
