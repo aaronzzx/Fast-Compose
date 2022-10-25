@@ -254,7 +254,7 @@ open class PagingComponentFooter<K, V> {
                 .let {
                     when (footerType) {
                         PagingFooterType.LoadMore -> it.onClick(enableRipple = false) {
-                            component.loadMore()
+                            component.pagingLoadMore()
                         }
                         PagingFooterType.LoadError -> it.onClick(enableRipple = false) {
                             component.pagingRetry()
@@ -280,10 +280,14 @@ interface PagingComponent<K, V> : RefreshComponent {
     val pageData: PageData<K, V>
 
     override fun refreshIgnoreAnimation() {
+        pagingRefresh()
+    }
+
+    fun pagingRefresh() {
         pageData.refresh()
     }
 
-    fun loadMore() {
+    fun pagingLoadMore() {
         pageData.loadMore()
     }
 

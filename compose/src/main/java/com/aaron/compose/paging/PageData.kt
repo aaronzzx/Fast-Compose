@@ -49,11 +49,6 @@ class PageData<K, V>(
     private var loadType: LoadType = LoadType.Idle
 
     /**
-     * 用于标识最后一次操作，用于重试时辨别哪种类型
-     */
-    private var lastLoadType: LoadType? = null
-
-    /**
      * 下一页的 key
      */
     private var nextKey: K? = null
@@ -113,7 +108,9 @@ class PageData<K, V>(
             is LoadResult.Error -> {
                 val throwable = result.throwable
                 loadState.refresh = LoadState.Error(throwable)
-                loadState.loadMore = LoadState.Idle(false)
+                if (loadState.loadMore is LoadState.Waiting) {
+                    loadState.loadMore = LoadState.Idle(isLoadEnd())
+                }
             }
         }
         log("refresh-start: ${loadState.refresh}")
@@ -155,13 +152,7 @@ class PageData<K, V>(
     }
 
     fun retry() {
-        val loadState = loadState
-        val lastLoadType = lastLoadType
-        if (lastLoadType == LoadType.Refresh && loadState.refresh is LoadState.Error) {
-            tryLaunch(LoadType.Refresh) {
-                refreshImpl()
-            }
-        } else if (lastLoadType == LoadType.LoadMore && loadState.loadMore is LoadState.Error) {
+        if (loadState.loadMore is LoadState.Error) {
             tryLaunch(LoadType.LoadMore) {
                 loadMoreImpl()
             }
@@ -199,7 +190,6 @@ class PageData<K, V>(
             return
         }
         this.loadType = loadType
-        this.lastLoadType = loadType
         curLoadJob = coroutineScope.launch {
             block()
         }.also {
