@@ -39,12 +39,12 @@ fun LoadingComponent(
     },
     content: @Composable () -> Unit
 ) {
-    val showLoading by component.loading
-    BackHandler(enabled = showLoading) {
-        component.cancelLoading()
-    }
     content()
     if (loading != null) {
+        val showLoading by component.loading
+        BackHandler(enabled = showLoading) {
+            component.cancelLoading()
+        }
         Crossfade(targetState = showLoading) {
             if (it) loading(component)
         }
