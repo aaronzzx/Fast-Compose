@@ -33,11 +33,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aaron.compose.base.BaseComposeActivity
+import com.aaron.compose.component.PagingComponent
 import com.aaron.compose.component.PagingComponentFooter
 import com.aaron.compose.component.PagingGridComponent
-import com.aaron.compose.component.Pagingable
 import com.aaron.compose.component.RefreshComponent
-import com.aaron.compose.component.ViewStateComponent
+import com.aaron.compose.component.StateComponent
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.itemsIndexed
 import com.aaron.compose.ktx.onClick
@@ -97,7 +97,7 @@ class PagingActivity : BaseComposeActivity() {
 private class MyFooter<K, V> : PagingComponentFooter<K, V>() {
 
     @Composable
-    override fun LoadingContent(pagingable: Pagingable<K, V>) {
+    override fun LoadingContent(component: PagingComponent<K, V>) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -114,7 +114,7 @@ private class MyFooter<K, V> : PagingComponentFooter<K, V>() {
 private fun PagingPage() {
     val vm = viewModel<PagingVM>()
     RefreshComponent(
-        refreshable = vm,
+        component = vm,
         clipHeaderEnabled = true,
         translateBody = true,
         indicator = { smartRefreshState, triggerPixels, maxDragPixels, indicatorHeight ->
@@ -124,18 +124,18 @@ private fun PagingPage() {
             .fillMaxSize()
             .background(color = Color(0xFFF0F0F0))
     ) {
-        ViewStateComponent(viewStateable = vm) {
+        StateComponent(component = vm) {
             PagingGridComponent(
-                pagingable = vm,
+                component = vm,
                 columns = GridCells.Fixed(2),
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                footer = { pagingable2, pagingFooterType ->
+                footer = { component, footerType ->
                     remember { MyFooter<Int, Repo>() }.Content(
-                        pagingable = pagingable2,
-                        pagingFooterType = pagingFooterType
+                        component = component,
+                        footerType = footerType
                     )
                 }
             ) { pageData ->

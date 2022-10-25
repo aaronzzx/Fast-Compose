@@ -5,10 +5,10 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aaron.compose.component.Pagingable
-import com.aaron.compose.component.ViewStateable
-import com.aaron.compose.component.ViewStateable.Result
-import com.aaron.compose.component.viewStateable
+import com.aaron.compose.component.PagingComponent
+import com.aaron.compose.component.StateComponent
+import com.aaron.compose.component.StateComponent.ViewState
+import com.aaron.compose.component.stateComponent
 import com.aaron.compose.defaults.Defaults
 import com.aaron.compose.ktx.buildPageData
 import com.aaron.compose.ktx.isEmpty
@@ -23,7 +23,7 @@ import kotlin.random.Random
  * @author aaronzzxup@gmail.com
  * @since 2022/10/24
  */
-class PagingVM : ViewModel(), ViewStateable by viewStateable(), Pagingable<Int, Repo> {
+class PagingVM : ViewModel(), StateComponent by stateComponent(), PagingComponent<Int, Repo> {
 
     companion object {
         init {
@@ -54,7 +54,7 @@ class PagingVM : ViewModel(), ViewStateable by viewStateable(), Pagingable<Int, 
                 showLoading(false)
                 finishRefresh(false)
                 if (page == 1) {
-                    showResult(Result.Failure(404, "Not Found"))
+                    showState(ViewState.Failure(404, "Not Found"))
                 }
                 RepoEntity(404, "Not Found", emptyList())
             }
@@ -62,7 +62,7 @@ class PagingVM : ViewModel(), ViewStateable by viewStateable(), Pagingable<Int, 
                 showLoading(false)
                 finishRefresh(false)
                 if (page == 1) {
-                    showResult(Result.Error(IllegalStateException("Internal Error")))
+                    showState(ViewState.Error(IllegalStateException("Internal Error")))
                 }
                 throw IllegalStateException("Internal Error")
             }
@@ -70,7 +70,7 @@ class PagingVM : ViewModel(), ViewStateable by viewStateable(), Pagingable<Int, 
                 val list = gitHubService.searchRepos(page, pageSize).data
                 showLoading(false)
                 finishRefresh(true)
-                showResult(if (safePageData?.isEmpty == true && list.isEmpty()) Result.Empty else Result.Default)
+                showState(if (safePageData?.isEmpty == true && list.isEmpty()) ViewState.Empty else ViewState.Default)
                 RepoEntity(200, "OK", list)
             }
         }

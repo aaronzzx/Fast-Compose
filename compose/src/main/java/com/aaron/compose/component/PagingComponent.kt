@@ -38,7 +38,7 @@ import com.aaron.compose.ui.refresh.SmartRefreshState
  */
 @Composable
 fun <K, V> PagingComponent(
-    pagingable: Pagingable<K, V>,
+    component: PagingComponent<K, V>,
     modifier: Modifier = Modifier,
     state: LazyListState = rememberLazyListState(),
     refreshState: SmartRefreshState? = null,
@@ -49,14 +49,13 @@ fun <K, V> PagingComponent(
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
     userScrollEnabled: Boolean = true,
-    customFooter: Boolean = false,
-    footer: @Composable (
-        pagingable2: Pagingable<K, V>,
+    footer: (@Composable (
+        pagingComponent: PagingComponent<K, V>,
         pagingFooterType: PagingFooterType
-    ) -> Unit = { pagingable2, pagingFooterType ->
+    ) -> Unit)? = { pagingComponent, pagingFooterType ->
         rememberPagingComponentFooter<K, V>().Content(
-            pagingable = pagingable2,
-            pagingFooterType = pagingFooterType
+            component = pagingComponent,
+            footerType = pagingFooterType
         )
     },
     content: LazyListScope.(pageData: PageData<K, V>) -> Unit
@@ -71,17 +70,17 @@ fun <K, V> PagingComponent(
         flingBehavior = flingBehavior,
         userScrollEnabled = userScrollEnabled
     ) {
-        val pageData = pagingable.pageData
+        val pageData = component.pageData
         content(pageData)
 
-        if (customFooter) {
+        if (footer == null) {
             return@LazyColumn
         }
 
-        val pagingFooterType = getPagingFooterType(pagingable)
+        val pagingFooterType = getPagingFooterType(component)
         if (pagingFooterType != PagingFooterType.Idle) {
             item(contentType = "PageComponentFooter") {
-                footer(pagingable, pagingFooterType)
+                footer(component, pagingFooterType)
             }
         }
     }
@@ -92,7 +91,7 @@ fun <K, V> PagingComponent(
  */
 @Composable
 fun <K, V> PagingGridComponent(
-    pagingable: Pagingable<K, V>,
+    component: PagingComponent<K, V>,
     columns: GridCells,
     modifier: Modifier = Modifier,
     state: LazyGridState = rememberLazyGridState(),
@@ -106,12 +105,12 @@ fun <K, V> PagingGridComponent(
     userScrollEnabled: Boolean = true,
     customFooter: Boolean = false,
     footer: @Composable (
-        pagingable2: Pagingable<K, V>,
+        pagingComponent: PagingComponent<K, V>,
         pagingFooterType: PagingFooterType
-    ) -> Unit = { pagingable2, pagingFooterType ->
+    ) -> Unit = { pagingComponent, pagingFooterType ->
         rememberPagingComponentFooter<K, V>().Content(
-            pagingable = pagingable2,
-            pagingFooterType = pagingFooterType
+            component = pagingComponent,
+            footerType = pagingFooterType
         )
     },
     content: LazyGridScope.(pageData: PageData<K, V>) -> Unit
@@ -127,14 +126,14 @@ fun <K, V> PagingGridComponent(
         flingBehavior = flingBehavior,
         userScrollEnabled = userScrollEnabled
     ) {
-        val pageData = pagingable.pageData
+        val pageData = component.pageData
         content(pageData)
 
         if (customFooter) {
             return@LazyVerticalGrid
         }
 
-        val pagingFooterType = getPagingFooterType(pagingable)
+        val pagingFooterType = getPagingFooterType(component)
         if (pagingFooterType != PagingFooterType.Idle) {
             item(
                 span = {
@@ -142,14 +141,14 @@ fun <K, V> PagingGridComponent(
                 },
                 contentType = "PageComponentFooter"
             ) {
-                footer(pagingable, pagingFooterType)
+                footer(component, pagingFooterType)
             }
         }
     }
 }
 
-fun <K, V> getPagingFooterType(pagingable: Pagingable<K, V>): PagingFooterType {
-    val pageData = pagingable.pageData
+fun <K, V> getPagingFooterType(component: PagingComponent<K, V>): PagingFooterType {
+    val pageData = component.pageData
     val loadMoreState = pageData.loadState.loadMore
     val waitingRefresh = loadMoreState is LoadState.Waiting
     val loadMore = loadMoreState is LoadState.Idle
@@ -184,67 +183,67 @@ fun <K, V> rememberPagingComponentFooter(): PagingComponentFooter<K, V> {
 open class PagingComponentFooter<K, V> {
 
     @Composable
-    open fun Content(pagingable: Pagingable<K, V>, pagingFooterType: PagingFooterType) {
-        when (pagingFooterType) {
-            PagingFooterType.Loading -> LoadingContent(pagingable)
-            PagingFooterType.LoadMore -> LoadMoreContent(pagingable)
-            PagingFooterType.LoadError -> LoadErrorContent(pagingable)
-            PagingFooterType.NoMoreData -> NoMoreDataContent(pagingable)
-            PagingFooterType.WaitingRefresh -> WaitingRefreshContent(pagingable)
+    open fun Content(component: PagingComponent<K, V>, footerType: PagingFooterType) {
+        when (footerType) {
+            PagingFooterType.Loading -> LoadingContent(component)
+            PagingFooterType.LoadMore -> LoadMoreContent(component)
+            PagingFooterType.LoadError -> LoadErrorContent(component)
+            PagingFooterType.NoMoreData -> NoMoreDataContent(component)
+            PagingFooterType.WaitingRefresh -> WaitingRefreshContent(component)
             else -> Unit
         }
     }
     
     @Composable
-    open fun LoadingContent(pagingable: Pagingable<K, V>) {
+    open fun LoadingContent(component: PagingComponent<K, V>) {
         FooterText(
             text = "加载中...",
-            pagingable = pagingable,
-            pagingFooterType = PagingFooterType.Loading
+            component = component,
+            footerType = PagingFooterType.Loading
         )
     }
 
     @Composable
-    open fun LoadMoreContent(pagingable: Pagingable<K, V>) {
+    open fun LoadMoreContent(component: PagingComponent<K, V>) {
         FooterText(
             text = "点击加载更多",
-            pagingable = pagingable,
-            pagingFooterType = PagingFooterType.LoadMore
+            component = component,
+            footerType = PagingFooterType.LoadMore
         )
     }
 
     @Composable
-    open fun LoadErrorContent(pagingable: Pagingable<K, V>) {
+    open fun LoadErrorContent(component: PagingComponent<K, V>) {
         FooterText(
             text = "加载失败，点击重试",
-            pagingable = pagingable,
-            pagingFooterType = PagingFooterType.LoadError
+            component = component,
+            footerType = PagingFooterType.LoadError
         )
     }
 
     @Composable
-    open fun NoMoreDataContent(pagingable: Pagingable<K, V>) {
+    open fun NoMoreDataContent(component: PagingComponent<K, V>) {
         FooterText(
             text = "已经到底了",
-            pagingable = pagingable,
-            pagingFooterType = PagingFooterType.NoMoreData
+            component = component,
+            footerType = PagingFooterType.NoMoreData
         )
     }
 
     @Composable
-    open fun WaitingRefreshContent(pagingable: Pagingable<K, V>) {
+    open fun WaitingRefreshContent(component: PagingComponent<K, V>) {
         FooterText(
             text = "等待刷新完成",
-            pagingable = pagingable,
-            pagingFooterType = PagingFooterType.WaitingRefresh
+            component = component,
+            footerType = PagingFooterType.WaitingRefresh
         )
     }
 
     @Composable
     open fun FooterText(
         text: String,
-        pagingable: Pagingable<K, V>,
-        pagingFooterType: PagingFooterType,
+        component: PagingComponent<K, V>,
+        footerType: PagingFooterType,
         modifier: Modifier = Modifier,
         fontSize: TextUnit = 12.sp,
         textColor: Color = Color(0xFF666666)
@@ -253,12 +252,12 @@ open class PagingComponentFooter<K, V> {
             modifier = modifier
                 .fillMaxWidth()
                 .let {
-                    when (pagingFooterType) {
+                    when (footerType) {
                         PagingFooterType.LoadMore -> it.onClick {
-                            pagingable.loadMore()
+                            component.loadMore()
                         }
                         PagingFooterType.LoadError -> it.onClick {
-                            pagingable.loadMoreRetry()
+                            component.loadMoreRetry()
                         }
                         else -> it
                     }
@@ -276,7 +275,7 @@ open class PagingComponentFooter<K, V> {
 }
 
 @Stable
-interface Pagingable<K, V> : Refreshable {
+interface PagingComponent<K, V> : RefreshComponent {
 
     val pageData: PageData<K, V>
 

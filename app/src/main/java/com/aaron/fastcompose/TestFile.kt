@@ -21,10 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aaron.compose.component.RefreshComponent
-import com.aaron.compose.component.Refreshable
-import com.aaron.compose.component.ViewStateable
-import com.aaron.compose.component.viewStateable
-import com.aaron.compose.component.ViewStateComponent
+import com.aaron.compose.component.StateComponent
+import com.aaron.compose.component.stateComponent
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ui.refresh.SmartRefreshType
 import kotlinx.coroutines.delay
@@ -39,13 +37,13 @@ import kotlin.random.Random
 
 @Composable
 fun TestComposable(
-    refreshable: Refreshable,
-    viewStateable: ViewStateable,
+    refreshComponent: RefreshComponent,
+    stateComponent: StateComponent,
     data: List<Int>
 ) {
-    RefreshComponent(refreshable = refreshable) {
-        ViewStateComponent(
-            viewStateable = viewStateable,
+    RefreshComponent(component = refreshComponent) {
+        StateComponent(
+            component = stateComponent,
             modifier = Modifier
                 .fillMaxSize()
                 .background(color = Color(0xFFF0F0F0))
@@ -74,7 +72,7 @@ fun TestComposable(
     }
 }
 
-class TestVM : ViewModel(), Refreshable, ViewStateable by viewStateable() {
+class TestVM : ViewModel(), RefreshComponent, StateComponent by stateComponent() {
 
     override val smartRefreshType: MutableState<SmartRefreshType> = mutableStateOf(SmartRefreshType.Idle)
 
@@ -99,23 +97,23 @@ class TestVM : ViewModel(), Refreshable, ViewStateable by viewStateable() {
             when (Random(System.currentTimeMillis()).nextInt(0, 4)) {
                 1 -> {
                     finishRefresh(false)
-                    ViewStateable.Result.Failure(404, "Not Found")
+                    StateComponent.ViewState.Failure(404, "Not Found")
                 }
                 2 -> {
                     finishRefresh(false)
-                    ViewStateable.Result.Error(IllegalStateException("Internal Error"))
+                    StateComponent.ViewState.Error(IllegalStateException("Internal Error"))
                 }
                 3 -> {
                     finishRefresh(true)
                     _data.emit(emptyList())
-                    ViewStateable.Result.Empty
+                    StateComponent.ViewState.Empty
                 }
                 else -> {
                     finishRefresh(true)
                     val stIndex = Random(System.currentTimeMillis()).nextInt(0, 1000)
                     val range = stIndex..(stIndex + 50)
                     _data.emit(range.toList())
-                    ViewStateable.Result.Default
+                    StateComponent.ViewState.Default
                 }
             }
         }

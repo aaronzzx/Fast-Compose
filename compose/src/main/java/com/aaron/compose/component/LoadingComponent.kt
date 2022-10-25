@@ -33,20 +33,20 @@ import kotlin.coroutines.EmptyCoroutineContext
  */
 @Composable
 fun LoadingComponent(
-    loadingable: Loadingable,
-    loading: (@Composable (loadingable: Loadingable) -> Unit)? = {
+    component: LoadingComponent,
+    loading: (@Composable (LoadingComponent) -> Unit)? = {
         CircularLoading()
     },
     content: @Composable () -> Unit
 ) {
-    val showLoading by loadingable.loading
+    val showLoading by component.loading
     BackHandler(enabled = showLoading) {
-        loadingable.cancelLoading()
+        component.cancelLoading()
     }
     content()
     if (loading != null) {
         Crossfade(targetState = showLoading) {
-            if (it) loading(loadingable)
+            if (it) loading(component)
         }
     }
 }
@@ -83,10 +83,10 @@ fun CircularLoading(
 }
 
 /**
- * ViewModel 可以实现此接口接管 loading 状态，使用 [loadingable] 委托一步到位。
+ * ViewModel 可以实现此接口接管 loading 状态，使用 [loadingComponent] 委托一步到位。
  */
 @Stable
-interface Loadingable {
+interface LoadingComponent {
 
     val loading: State<Boolean>
 
@@ -94,18 +94,7 @@ interface Loadingable {
         context: CoroutineContext = EmptyCoroutineContext,
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend CoroutineScope.() -> Unit
-    ): Job {
-        showLoading(true)
-        val job = launch(
-            context = context,
-            start = start,
-            block = block
-        )
-        job.invokeOnCompletion {
-            showLoading(false)
-        }
-        return job
-    }
+    ): Job
 
     /**
      * 这个方法应该作为正常开启关闭加载的途径
@@ -113,24 +102,48 @@ interface Loadingable {
     fun showLoading(show: Boolean)
 
     /**
-     * 这个方法应该作为中途需要取消加载的途径，至于具体的取消逻辑交由实现类处理
+     * 这个方法应该作为中途需要取消加载的途径
      */
     fun cancelLoading()
 }
 
-fun loadingable(): Loadingable = LoadingableDelegate()
+fun loadingComponent(): LoadingComponent = LoadingComponentDelegate()
 
-private class LoadingableDelegate : Loadingable {
+private class LoadingComponentDelegate : LoadingComponent {
 
     override val loading: State<Boolean> get() = _loading
 
     private val _loading = mutableStateOf(false)
+
+    private var workingJob: Job? = null
+
+    override fun CoroutineScope.launchWithLoading(
+        context: CoroutineContext,
+        start: CoroutineStart,
+        block: suspend CoroutineScope.() -> Unit
+    ): Job {
+        workingJob?.cancel()
+        showLoading(true)
+        val job = launch(
+            context = context,
+            start = start,
+            block = block
+        )
+        workingJob = job
+        job.invokeOnCompletion {
+            showLoading(false)
+            workingJob = null
+        }
+        return job
+    }
 
     override fun showLoading(show: Boolean) {
         _loading.value = show
     }
 
     override fun cancelLoading() {
+        workingJob?.cancel()
+        workingJob = null
         showLoading(false)
     }
 }

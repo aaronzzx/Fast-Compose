@@ -18,9 +18,9 @@ import com.aaron.compose.ui.refresh.materialheader.MaterialRefreshIndicator
  */
 @Composable
 fun RefreshComponent(
-    refreshable: Refreshable,
+    component: RefreshComponent,
     modifier: Modifier = Modifier,
-    state: SmartRefreshState = rememberSmartRefreshStateForRefreshable(refreshable),
+    state: SmartRefreshState = rememberSmartRefreshStateForRefreshComponent(component),
     onRefresh: (() -> Boolean)? = null,
     swipeEnabled: Boolean = true,
     clipHeaderEnabled: Boolean = false,
@@ -46,11 +46,11 @@ fun RefreshComponent(
         onRefresh = {
             if (onRefresh?.invoke() != true) {
                 // 外部不处理
-                refreshable.refresh()
+                component.refresh()
             }
         },
         onIdle = {
-            refreshable.idle()
+            component.idle()
         },
         modifier = modifier,
         swipeEnabled = swipeEnabled,
@@ -65,11 +65,11 @@ fun RefreshComponent(
 }
 
 @Composable
-fun rememberSmartRefreshStateForRefreshable(refreshable: Refreshable): SmartRefreshState {
+fun rememberSmartRefreshStateForRefreshComponent(component: RefreshComponent): SmartRefreshState {
     return rememberSaveable(saver = SmartRefreshState.Saver) {
-        SmartRefreshState(refreshable.smartRefreshType.value)
+        SmartRefreshState(component.smartRefreshType.value)
     }.also {
-        it.type = refreshable.smartRefreshType.value
+        it.type = component.smartRefreshType.value
     }
 }
 
@@ -77,7 +77,7 @@ fun rememberSmartRefreshStateForRefreshable(refreshable: Refreshable): SmartRefr
  * ViewModel 可以实现此接口接管刷新
  */
 @Stable
-interface Refreshable {
+interface RefreshComponent {
 
     val smartRefreshType: MutableState<SmartRefreshType>
 

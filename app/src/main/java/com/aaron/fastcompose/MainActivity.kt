@@ -51,10 +51,10 @@ import com.aaron.compose.ktx.itemsIndexed
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ktx.toPx
 import com.aaron.compose.paging.LoadState
+import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.refresh.SmartRefresh
 import com.aaron.compose.ui.refresh.SmartRefreshState
 import com.aaron.compose.ui.refresh.SmartRefreshType
-import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.refresh.rememberSmartRefreshState
 import com.aaron.fastcompose.paging3.PagingActivity
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
@@ -111,8 +111,8 @@ private fun ViewStateComponent() {
     val vm = viewModel<TestVM>()
     val data by vm.data.collectAsStateWithLifecycle()
     TestComposable(
-        refreshable = vm,
-        viewStateable = vm,
+        refreshComponent = vm,
+        stateComponent = vm,
         data = data
     )
 }
