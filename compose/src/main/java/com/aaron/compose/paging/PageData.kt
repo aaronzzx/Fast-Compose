@@ -96,9 +96,8 @@ class PageData<K, V>(
     private suspend fun refreshImpl() {
         val loadState = loadState
         loadState.refresh = LoadState.Loading
-        nextKey = null
         log("refresh-start: ${loadState.refresh}")
-        when (val result = requestData(LoadType.Refresh)) {
+        when (val result = requestData(LoadType.Refresh, null)) {
             is LoadResult.Page -> {
                 val dataList = result.data
                 val nextKey = result.nextKey
@@ -138,7 +137,7 @@ class PageData<K, V>(
         val loadState = loadState
         loadState.loadMore = LoadState.Loading
         log("loadMore-start: ${loadState.loadMore}")
-        when (val result = requestData(LoadType.LoadMore)) {
+        when (val result = requestData(LoadType.LoadMore, nextKey)) {
             is LoadResult.Page -> {
                 val dataList = result.data
                 val nextKey = result.nextKey
@@ -169,10 +168,8 @@ class PageData<K, V>(
         }
     }
 
-    private suspend fun requestData(actualLoadType: LoadType): LoadResult<K, V> {
-        val nextKey = nextKey
+    private suspend fun requestData(actualLoadType: LoadType, nextKey: K?): LoadResult<K, V> {
         val config = config
-
         return try {
             val params = when (actualLoadType) {
                 LoadType.Refresh -> LoadParams.Refresh(nextKey, config)
