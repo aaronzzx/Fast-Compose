@@ -32,7 +32,7 @@ class PagingVM : ViewModel(), StateComponent by stateComponent(), PagingComponen
                 DefaultPrefetchDistance = 0
                 DefaultInitialSize = 5
                 DefaultPageSize = 5
-                DefaultMaxPage = 5
+                DefaultMaxPage = 2
             }
         }
     }

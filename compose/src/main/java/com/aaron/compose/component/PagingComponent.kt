@@ -257,7 +257,7 @@ open class PagingComponentFooter<K, V> {
                             component.loadMore()
                         }
                         PagingFooterType.LoadError -> it.onClick(enableRipple = false) {
-                            component.loadMoreRetry()
+                            component.pagingRetry()
                         }
                         else -> it
                     }
@@ -287,7 +287,7 @@ interface PagingComponent<K, V> : RefreshComponent {
         pageData.loadMore()
     }
 
-    fun loadMoreRetry() {
+    fun pagingRetry() {
         pageData.retry()
     }
 }

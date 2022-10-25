@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -23,7 +24,6 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aaron.compose.base.BaseComposeActivity
 import com.aaron.compose.component.PagingComponent
@@ -94,10 +95,10 @@ class PagingActivity : BaseComposeActivity() {
     }
 }
 
-private class MyFooter<K, V> : PagingComponentFooter<K, V>() {
+private object MyFooter : PagingComponentFooter<Int, Repo>() {
 
     @Composable
-    override fun LoadingContent(component: PagingComponent<K, V>) {
+    override fun LoadingContent(component: PagingComponent<Int, Repo>) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -105,6 +106,51 @@ private class MyFooter<K, V> : PagingComponentFooter<K, V>() {
             contentAlignment = Alignment.Center
         ) {
             CircularProgressIndicator(modifier = Modifier.size(24.dp))
+        }
+    }
+
+    @Composable
+    override fun NoMoreDataContent(component: PagingComponent<Int, Repo>) {
+        ConstraintLayout(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            val (line1Id, line2Id, text) = createRefs()
+            Text(
+                modifier = Modifier
+                    .constrainAs(text) {
+                        top.linkTo(parent.top)
+                        bottom.linkTo(parent.bottom)
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                    },
+                text = "我是有底线的",
+                fontSize = 12.sp,
+                color = Color(0xFF999999)
+            )
+            Box(
+                modifier = Modifier
+                    .constrainAs(line1Id) {
+                        top.linkTo(text.top)
+                        bottom.linkTo(text.bottom)
+                        end.linkTo(text.start, 16.dp)
+                    }
+                    .height(1.dp)
+                    .aspectRatio(20f)
+                    .background(color = Color(0x4D999999))
+            )
+            Box(
+                modifier = Modifier
+                    .constrainAs(line2Id) {
+                        top.linkTo(text.top)
+                        bottom.linkTo(text.bottom)
+                        start.linkTo(text.end, 16.dp)
+                    }
+                    .height(1.dp)
+                    .aspectRatio(20f)
+                    .background(color = Color(0x4D999999))
+            )
         }
     }
 }
@@ -133,7 +179,7 @@ private fun PagingPage() {
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 footer = { component, footerType ->
-                    remember { MyFooter<Int, Repo>() }.Content(
+                    MyFooter.Content(
                         component = component,
                         footerType = footerType
                     )
