@@ -33,7 +33,6 @@ class PagingVM : ViewModel(), StateComponent by stateComponent(), PagingComponen
                 DefaultInitialSize = 5
                 DefaultPageSize = 5
                 DefaultMaxPage = 5
-                DefaultRequestTimeMillis = 0
             }
         }
     }

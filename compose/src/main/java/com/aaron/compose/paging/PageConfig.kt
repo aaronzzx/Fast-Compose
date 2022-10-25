@@ -7,7 +7,6 @@ import com.aaron.compose.paging.PageConfigDefaults.DefaultMaxPage
 import com.aaron.compose.paging.PageConfigDefaults.DefaultPageSize
 import com.aaron.compose.paging.PageConfigDefaults.DefaultPrefetchDistance
 import com.aaron.compose.paging.PageConfigDefaults.DefaultPrintError
-import com.aaron.compose.paging.PageConfigDefaults.DefaultRequestTimeMillis
 
 /**
  * 默认分页配置
@@ -28,9 +27,6 @@ object PageConfigDefaults {
 
     /** 默认是否开启加载更多 */
     var DefaultEnableLoadMore = true
-
-    /** 默认最小请求时间 */
-    var DefaultRequestTimeMillis = 500L
 
     /** 默认是否打印异常 */
     var DefaultPrintError = false
@@ -55,9 +51,6 @@ data class PageConfig(
 
     /** 是否开启加载更多 */
     val enableLoadMore: Boolean = DefaultEnableLoadMore,
-
-    /** 设置最小需要多少毫秒才能完成一次请求 */
-    val minRequestTimeMillis: Long = DefaultRequestTimeMillis,
 
     /** 是否打印异常 */
     val printError: Boolean = DefaultPrintError

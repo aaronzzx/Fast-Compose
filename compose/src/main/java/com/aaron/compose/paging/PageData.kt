@@ -9,7 +9,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -158,28 +157,16 @@ class PageData<K, V>(
         val nextKey = nextKey
         val config = config
 
-        val startRequestTime = System.currentTimeMillis()
         return try {
             val params = when (actualLoadType) {
                 LoadType.Refresh -> LoadParams.Refresh(nextKey, config)
                 LoadType.LoadMore -> LoadParams.LoadMore(nextKey, config)
                 else -> error("Illegal LoadType: $actualLoadType")
             }
-            val result = onRequest(params)
-            val requestTimeCost = System.currentTimeMillis() - startRequestTime
-            val delayTime = config.minRequestTimeMillis - requestTimeCost
-            if (delayTime > 0) {
-                delay(delayTime)
-            }
-            result
+            onRequest(params)
         } catch (exception: Exception) {
             if (config.printError) {
                 exception.printStackTrace()
-            }
-            val requestTimeCost = System.currentTimeMillis() - startRequestTime
-            val delayTime = config.minRequestTimeMillis - requestTimeCost
-            if (delayTime > 0) {
-                delay(delayTime)
             }
             LoadResult.Error(exception)
         }
