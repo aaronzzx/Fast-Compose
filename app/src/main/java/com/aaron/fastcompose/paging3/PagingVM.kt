@@ -69,7 +69,7 @@ class PagingVM : ViewModel(), StateComponent by stateComponent(), PagingComponen
                 val list = gitHubService.searchRepos(page, pageSize).data
                 showLoading(false)
                 finishRefresh(true)
-                showState(if (safePageData?.isEmpty == true && list.isEmpty()) ViewState.Empty else ViewState.Default)
+                showState(if (safePageData?.isEmpty == true && list.isEmpty()) ViewState.Empty else ViewState.Idle)
                 RepoEntity(200, "OK", list)
             }
         }

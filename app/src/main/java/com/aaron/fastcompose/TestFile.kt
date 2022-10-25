@@ -113,7 +113,7 @@ class TestVM : ViewModel(), RefreshComponent, StateComponent by stateComponent()
                     val stIndex = Random(System.currentTimeMillis()).nextInt(0, 1000)
                     val range = stIndex..(stIndex + 50)
                     _data.emit(range.toList())
-                    StateComponent.ViewState.Default
+                    StateComponent.ViewState.Idle
                 }
             }
         }

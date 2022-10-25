@@ -29,10 +29,10 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aaron.compose.R
-import com.aaron.compose.component.StateComponent.ViewState.Default
 import com.aaron.compose.component.StateComponent.ViewState.Empty
 import com.aaron.compose.component.StateComponent.ViewState.Error
 import com.aaron.compose.component.StateComponent.ViewState.Failure
+import com.aaron.compose.component.StateComponent.ViewState.Idle
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.isEmpty
 import com.aaron.compose.ktx.onClick
@@ -219,7 +219,7 @@ interface StateComponent : LoadingComponent {
     @Stable
     sealed class ViewState {
 
-        object Default : ViewState()
+        object Idle : ViewState()
 
         data class Failure(val code: Int, val msg: String?) : ViewState()
 
@@ -235,7 +235,7 @@ private class StateComponentDelegate : StateComponent, LoadingComponent by loadi
 
     override val viewState: State<StateComponent.ViewState> get() = _viewState
 
-    private val _viewState = mutableStateOf<StateComponent.ViewState>(Default)
+    private val _viewState = mutableStateOf<StateComponent.ViewState>(Idle)
 
     override fun CoroutineScope.launchWithViewState(
         enableLoading: Boolean,

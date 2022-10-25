@@ -31,7 +31,6 @@ import com.aaron.compose.ktx.isNotEmpty
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.paging.LoadState
 import com.aaron.compose.paging.PageData
-import com.aaron.compose.ui.refresh.SmartRefreshState
 
 /**
  * 分页
@@ -41,7 +40,6 @@ fun <K, V> PagingComponent(
     component: PagingComponent<K, V>,
     modifier: Modifier = Modifier,
     state: LazyListState = rememberLazyListState(),
-    refreshState: SmartRefreshState? = null,
     contentPadding: PaddingValues = PaddingValues(0.dp),
     reverseLayout: Boolean = false,
     verticalArrangement: Arrangement.Vertical =
@@ -95,7 +93,6 @@ fun <K, V> PagingGridComponent(
     columns: GridCells,
     modifier: Modifier = Modifier,
     state: LazyGridState = rememberLazyGridState(),
-    refreshState: SmartRefreshState? = null,
     contentPadding: PaddingValues = PaddingValues(0.dp),
     reverseLayout: Boolean = false,
     verticalArrangement: Arrangement.Vertical =
