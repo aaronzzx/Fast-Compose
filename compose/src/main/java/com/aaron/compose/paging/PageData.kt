@@ -67,7 +67,7 @@ class PageData<K, V>(
     internal operator fun get(index: Int): V {
         // 判断是否触发加载
         val prefetchDistance = config.prefetchDistance
-        if (prefetchDistance > 0 && (itemCount - 1) - index == prefetchDistance) {
+        if (prefetchDistance > 0 && itemCount - index == prefetchDistance) {
             loadMore()
         }
         return data[index]
