@@ -29,10 +29,10 @@ class PagingVM : ViewModel(), StateComponent, RefreshComponent, PagingComponent<
         init {
             Defaults.SuccessCode = 200
             with(PageConfigDefaults) {
-                DefaultPrefetchDistance = 0
-                DefaultInitialSize = 5
-                DefaultPageSize = 5
-                DefaultMaxPage = 2
+                DefaultPrefetchDistance = 1
+                DefaultInitialSize = 10
+                DefaultPageSize = 10
+                DefaultMaxPage = 5
             }
         }
     }
@@ -40,16 +40,13 @@ class PagingVM : ViewModel(), StateComponent, RefreshComponent, PagingComponent<
     override val loading: SafeState<Boolean> = safeStateOf(false)
     override val viewState: SafeState<ViewState> = safeStateOf(ViewState.Idle)
     override val smartRefreshType: SafeState<SmartRefreshType> = safeStateOf(SmartRefreshType.Idle)
-    override val pageData: PageData<Int, Repo> = buildPageData(1, onRequest = ::buildFakeData2)
-
-    private suspend fun buildFakeData2(page: Int, pageSize: Int): RepoEntity {
+    override val pageData: PageData<Int, Repo> = buildPageData(initialPage = 1) { page, pageSize ->
+        Log.d("zzx", "page: $page")
         delay(2000)
 
         val code = Random(System.currentTimeMillis()).nextInt(0, 4)
-        Log.d("zzx", "code: $code")
         val safePageData = runCatching { pageData }.getOrNull()
-        Log.d("zzx", "$safePageData")
-        return when (code) {
+        when (code) {
             0 -> {
                 showLoading(false)
                 finishRefresh(false)

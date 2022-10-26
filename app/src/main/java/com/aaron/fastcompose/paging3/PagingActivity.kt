@@ -36,10 +36,11 @@ import androidx.compose.ui.zIndex
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aaron.compose.base.BaseComposeActivity
+import com.aaron.compose.component.LoadingComponent
 import com.aaron.compose.component.PagingComponent
 import com.aaron.compose.component.PagingComponentFooter
 import com.aaron.compose.component.PagingGridComponent
-import com.aaron.compose.component.PagingStateComponent
+import com.aaron.compose.component.PagingWrapperComponent
 import com.aaron.compose.component.RefreshComponent
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.itemsIndexed
@@ -107,10 +108,78 @@ class PagingActivity : BaseComposeActivity() {
     }
 }
 
-private object MyFooter : PagingComponentFooter<Int, Repo>() {
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun PagingPage() {
+    val vm = viewModel<PagingVM>()
+    RefreshComponent(
+        component = vm,
+        clipHeaderEnabled = false,
+        translateBody = true,
+        indicator = { smartRefreshState, triggerDistance, maxDragDistance, indicatorHeight ->
+            val indicatorHeightPx = indicatorHeight.toPx()
+            SmartRefreshIndicator(
+                modifier = Modifier.graphicsLayer {
+                    alpha = smartRefreshState.indicatorOffset / (indicatorHeightPx / 2f)
+                },
+                state = smartRefreshState,
+                triggerDistance = triggerDistance,
+                maxDragDistance = maxDragDistance,
+                height = indicatorHeight
+            )
+        },
+        modifier = Modifier.fillMaxSize()
+    ) {
+        LoadingComponent(component = vm) {
+            PagingWrapperComponent(component = vm) {
+                PagingGridComponent(
+                    component = vm,
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    footer = { footerType ->
+                        MyFooter.Content(
+                            component = vm,
+                            footerType = footerType
+                        )
+                    }
+                ) { pageData ->
+                    itemsIndexed(pageData, key = { _, item -> item.id }) { index, item ->
+                        Box(
+                            modifier = Modifier
+                                .animateItemPlacement()
+                                .clipToBackground(
+                                    color = Color.White,
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                .onClick {
+                                    vm.deleteItem(index)
+                                }
+                                .fillMaxWidth()
+                                .aspectRatio(1f)
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = item.name,
+                                color = Color(0xFF333333),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private object MyFooter : PagingComponentFooter() {
 
     @Composable
-    override fun LoadingContent(component: PagingComponent<Int, Repo>) {
+    override fun LoadingContent(component: PagingComponent<*, *>) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -122,7 +191,7 @@ private object MyFooter : PagingComponentFooter<Int, Repo>() {
     }
 
     @Composable
-    override fun NoMoreDataContent(component: PagingComponent<Int, Repo>) {
+    override fun NoMoreDataContent(component: PagingComponent<*, *>) {
         ConstraintLayout(
             modifier = Modifier
                 .fillMaxWidth()
@@ -163,75 +232,6 @@ private object MyFooter : PagingComponentFooter<Int, Repo>() {
                     .aspectRatio(20f)
                     .background(color = Color(0x4D999999))
             )
-        }
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun PagingPage() {
-    val vm = viewModel<PagingVM>()
-    RefreshComponent(
-        component = vm,
-        clipHeaderEnabled = false,
-        translateBody = true,
-        indicator = { smartRefreshState, triggerDistance, maxDragDistance, indicatorHeight ->
-            val indicatorHeightPx = indicatorHeight.toPx()
-            SmartRefreshIndicator(
-                modifier = Modifier.graphicsLayer {
-                    alpha = smartRefreshState.indicatorOffset / (indicatorHeightPx / 2f)
-                },
-                state = smartRefreshState,
-                triggerDistance = triggerDistance,
-                maxDragDistance = maxDragDistance,
-                height = indicatorHeight
-            )
-        },
-        modifier = Modifier.fillMaxSize()
-    ) {
-        PagingStateComponent(
-            pagingComponent = vm,
-            stateComponent = vm
-        ) {
-            PagingGridComponent(
-                component = vm,
-                columns = GridCells.Fixed(2),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                footer = { component, footerType ->
-                    MyFooter.Content(
-                        component = component,
-                        footerType = footerType
-                    )
-                }
-            ) { pageData ->
-                itemsIndexed(pageData, key = { _, item -> item.id }) { index, item ->
-                    Box(
-                        modifier = Modifier
-                            .animateItemPlacement()
-                            .clipToBackground(
-                                color = Color.White,
-                                shape = RoundedCornerShape(8.dp)
-                            )
-                            .onClick {
-                                vm.deleteItem(index)
-                            }
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = item.name,
-                            color = Color(0xFF333333),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-            }
         }
     }
 }

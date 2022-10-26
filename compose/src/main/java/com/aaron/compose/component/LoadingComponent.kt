@@ -34,31 +34,35 @@ import kotlin.coroutines.EmptyCoroutineContext
 @Composable
 fun LoadingComponent(
     component: LoadingComponent,
-    loading: (@Composable (LoadingComponent) -> Unit)? = {
-        CircularLoading()
+    modifier: Modifier = Modifier,
+    loading: (@Composable () -> Unit)? = {
+        CircularLoadingLayout()
     },
     content: @Composable () -> Unit
 ) {
-    content()
-    if (loading != null) {
-        val showLoading by component.loading
-        BackHandler(enabled = showLoading) {
-            component.cancelLoading()
-        }
-        Crossfade(targetState = showLoading) {
-            if (it) loading(component)
+    Box(modifier = modifier) {
+        content()
+        if (loading != null) {
+            val showLoading by component.loading
+            BackHandler(enabled = showLoading) {
+                component.cancelLoading()
+            }
+            Crossfade(targetState = showLoading) {
+                if (it) loading()
+            }
         }
     }
 }
 
 @Composable
-fun CircularLoading(
+fun CircularLoadingLayout(
+    modifier: Modifier = Modifier,
     interceptClick: Boolean = true,
     color: Color = MaterialTheme.colors.primary,
     strokeWidth: Dp = ProgressIndicatorDefaults.StrokeWidth
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .let { if (interceptClick) it.interceptClick() else it },
         contentAlignment = Alignment.Center

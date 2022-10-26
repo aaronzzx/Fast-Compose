@@ -17,7 +17,6 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,7 +33,6 @@ import com.aaron.compose.component.StateComponent.ViewState.Error
 import com.aaron.compose.component.StateComponent.ViewState.Failure
 import com.aaron.compose.component.StateComponent.ViewState.Idle
 import com.aaron.compose.ktx.clipToBackground
-import com.aaron.compose.ktx.isEmpty
 import com.aaron.compose.ktx.onClick
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -43,40 +41,6 @@ import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
-@Composable
-fun <K, V> PagingStateComponent(
-    pagingComponent: PagingComponent<K, V>,
-    stateComponent: StateComponent,
-    empty: @Composable () -> Unit = {
-        ViewStateLayout(text = "暂无数据")
-    },
-    content: @Composable () -> Unit
-) {
-    val failureErrorContent: (@Composable () -> Unit) = remember {
-        {
-            val pageData = pagingComponent.pageData
-            if (pageData.isEmpty) {
-                empty()
-            } else {
-                content()
-            }
-        }
-    }
-    StateComponent(
-        component = stateComponent,
-        failure = { component, code, msg ->
-            failureErrorContent()
-        },
-        error = { component, ex ->
-            failureErrorContent()
-        },
-        empty = {
-            empty()
-        },
-        content = content
-    )
-}
-
 /**
  * 感知视图状态
  */
@@ -84,35 +48,28 @@ fun <K, V> PagingStateComponent(
 fun StateComponent(
     component: StateComponent,
     modifier: Modifier = Modifier,
-    loading: (@Composable (StateComponent) -> Unit)? = {
-        CircularLoading()
+    loading: (@Composable () -> Unit)? = {
+        CircularLoadingLayout()
     },
-    failure: (@Composable (
-        stateComponent: StateComponent,
-        code: Int,
-        msg: String?
-    ) -> Unit)? = { stateComponent, code, msg ->
+    failure: (@Composable (code: Int, msg: String?) -> Unit)? = { code, msg ->
         ViewStateLayout(
             text = "请求失败",
             modifier = Modifier
                 .onClick(enableRipple = false) {
-                    stateComponent.retry()
+                    component.retry()
                 }
         )
     },
-    error: (@Composable (
-        stateComponent: StateComponent,
-        ex: Throwable
-    ) -> Unit)? = { stateComponent, ex ->
+    error: (@Composable (ex: Throwable) -> Unit)? = { ex ->
         ViewStateLayout(
             text = "请求错误",
             modifier = Modifier
                 .onClick(enableRipple = false) {
-                    stateComponent.retry()
+                    component.retry()
                 }
         )
     },
-    empty: (@Composable (StateComponent) -> Unit)? = {
+    empty: (@Composable () -> Unit)? = {
         ViewStateLayout(text = "暂无数据")
     },
     content: @Composable () -> Unit
@@ -125,19 +82,19 @@ fun StateComponent(
         val result = component.viewState.value
         when {
             result is Failure && failure != null -> {
-                failure.invoke(component, result.code, result.msg)
+                failure.invoke(result.code, result.msg)
             }
             result is Error && error != null -> {
-                error.invoke(component, result.ex)
+                error.invoke(result.ex)
             }
             result is Empty && empty != null -> {
-                empty.invoke(component)
+                empty.invoke()
             }
             else -> content()
         }
         if (loading != null) {
             Crossfade(targetState = showLoading) {
-                if (it) loading(component)
+                if (it) loading()
             }
         }
     }

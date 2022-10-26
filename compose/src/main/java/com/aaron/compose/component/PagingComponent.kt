@@ -20,19 +20,37 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aaron.compose.ktx.isEmpty
 import com.aaron.compose.ktx.isNotEmpty
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.paging.LoadResult
 import com.aaron.compose.paging.LoadState
 import com.aaron.compose.paging.PageData
 import kotlinx.coroutines.MainScope
+
+@Composable
+fun <K, V> PagingWrapperComponent(
+    component: PagingComponent<K, V>,
+    modifier: Modifier = Modifier,
+    empty: @Composable () -> Unit = {
+        ViewStateLayout(text = "暂无数据")
+    },
+    content: @Composable () -> Unit
+) {
+    Box(modifier = modifier) {
+        if (component.pageData.isEmpty) {
+            empty()
+        } else {
+            content()
+        }
+    }
+}
 
 /**
  * 分页
@@ -49,13 +67,10 @@ fun <K, V> PagingComponent(
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
     userScrollEnabled: Boolean = true,
-    footer: (@Composable (
-        pagingComponent: PagingComponent<K, V>,
-        pagingFooterType: PagingFooterType
-    ) -> Unit)? = { pagingComponent, pagingFooterType ->
-        rememberPagingComponentFooter<K, V>().Content(
-            component = pagingComponent,
-            footerType = pagingFooterType
+    footer: (@Composable (pagingFooterType: PagingFooterType) -> Unit)? = {
+        PagingComponentFooterSingleton.Content(
+            component = component,
+            footerType = it
         )
     },
     content: LazyListScope.(pageData: PageData<K, V>) -> Unit
@@ -79,8 +94,8 @@ fun <K, V> PagingComponent(
 
         val pagingFooterType = getPagingFooterType(component)
         if (pagingFooterType != PagingFooterType.Idle) {
-            item(contentType = "PageComponentFooter") {
-                footer(component, pagingFooterType)
+            item(contentType = "PagingComponentFooter") {
+                footer(pagingFooterType)
             }
         }
     }
@@ -103,13 +118,10 @@ fun <K, V> PagingGridComponent(
     flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
     userScrollEnabled: Boolean = true,
     customFooter: Boolean = false,
-    footer: @Composable (
-        pagingComponent: PagingComponent<K, V>,
-        pagingFooterType: PagingFooterType
-    ) -> Unit = { pagingComponent, pagingFooterType ->
-        rememberPagingComponentFooter<K, V>().Content(
-            component = pagingComponent,
-            footerType = pagingFooterType
+    footer: @Composable (pagingFooterType: PagingFooterType) -> Unit = {
+        PagingComponentFooterSingleton.Content(
+            component = component,
+            footerType = it
         )
     },
     content: LazyGridScope.(pageData: PageData<K, V>) -> Unit
@@ -138,9 +150,9 @@ fun <K, V> PagingGridComponent(
                 span = {
                     GridItemSpan(maxLineSpan)
                 },
-                contentType = "PageComponentFooter"
+                contentType = "PagingComponentFooter"
             ) {
-                footer(component, pagingFooterType)
+                footer(pagingFooterType)
             }
         }
     }
@@ -172,17 +184,12 @@ enum class PagingFooterType {
     Idle, Loading, LoadMore, LoadError, NoMoreData, WaitingRefresh
 }
 
-@Composable
-fun <K, V> rememberPagingComponentFooter(): PagingComponentFooter<K, V> {
-    return remember {
-        PagingComponentFooter()
-    }
-}
+private val PagingComponentFooterSingleton by lazy { PagingComponentFooter() }
 
-open class PagingComponentFooter<K, V> {
+open class PagingComponentFooter {
 
     @Composable
-    open fun Content(component: PagingComponent<K, V>, footerType: PagingFooterType) {
+    open fun Content(component: PagingComponent<*, *>, footerType: PagingFooterType) {
         when (footerType) {
             PagingFooterType.Loading -> LoadingContent(component)
             PagingFooterType.LoadMore -> LoadMoreContent(component)
@@ -194,7 +201,7 @@ open class PagingComponentFooter<K, V> {
     }
     
     @Composable
-    open fun LoadingContent(component: PagingComponent<K, V>) {
+    open fun LoadingContent(component: PagingComponent<*, *>) {
         FooterText(
             text = "加载中...",
             component = component,
@@ -203,7 +210,7 @@ open class PagingComponentFooter<K, V> {
     }
 
     @Composable
-    open fun LoadMoreContent(component: PagingComponent<K, V>) {
+    open fun LoadMoreContent(component: PagingComponent<*, *>) {
         FooterText(
             text = "点击加载更多",
             component = component,
@@ -212,7 +219,7 @@ open class PagingComponentFooter<K, V> {
     }
 
     @Composable
-    open fun LoadErrorContent(component: PagingComponent<K, V>) {
+    open fun LoadErrorContent(component: PagingComponent<*, *>) {
         FooterText(
             text = "加载失败，点击重试",
             component = component,
@@ -221,7 +228,7 @@ open class PagingComponentFooter<K, V> {
     }
 
     @Composable
-    open fun NoMoreDataContent(component: PagingComponent<K, V>) {
+    open fun NoMoreDataContent(component: PagingComponent<*, *>) {
         FooterText(
             text = "已经到底了",
             component = component,
@@ -230,7 +237,7 @@ open class PagingComponentFooter<K, V> {
     }
 
     @Composable
-    open fun WaitingRefreshContent(component: PagingComponent<K, V>) {
+    open fun WaitingRefreshContent(component: PagingComponent<*, *>) {
         FooterText(
             text = "等待刷新完成",
             component = component,
@@ -241,7 +248,7 @@ open class PagingComponentFooter<K, V> {
     @Composable
     open fun FooterText(
         text: String,
-        component: PagingComponent<K, V>,
+        component: PagingComponent<*, *>,
         footerType: PagingFooterType,
         modifier: Modifier = Modifier,
         fontSize: TextUnit = 12.sp,
