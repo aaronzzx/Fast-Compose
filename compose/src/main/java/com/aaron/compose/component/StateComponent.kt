@@ -48,7 +48,7 @@ fun <K, V> PagingStateComponent(
     pagingComponent: PagingComponent<K, V>,
     stateComponent: StateComponent,
     empty: @Composable () -> Unit = {
-        ViewStatePage(text = "暂无数据")
+        ViewStateLayout(text = "暂无数据")
     },
     content: @Composable () -> Unit
 ) {
@@ -92,7 +92,7 @@ fun StateComponent(
         code: Int,
         msg: String?
     ) -> Unit)? = { stateComponent, code, msg ->
-        ViewStatePage(
+        ViewStateLayout(
             text = "请求失败",
             modifier = Modifier
                 .onClick(enableRipple = false) {
@@ -104,7 +104,7 @@ fun StateComponent(
         stateComponent: StateComponent,
         ex: Throwable
     ) -> Unit)? = { stateComponent, ex ->
-        ViewStatePage(
+        ViewStateLayout(
             text = "请求错误",
             modifier = Modifier
                 .onClick(enableRipple = false) {
@@ -113,7 +113,7 @@ fun StateComponent(
         )
     },
     empty: (@Composable (StateComponent) -> Unit)? = {
-        ViewStatePage(text = "暂无数据")
+        ViewStateLayout(text = "暂无数据")
     },
     content: @Composable () -> Unit
 ) {
@@ -144,7 +144,7 @@ fun StateComponent(
 }
 
 @Composable
-fun ViewStatePage(
+fun ViewStateLayout(
     text: String,
     modifier: Modifier = Modifier,
     @DrawableRes iconRes: Int = R.drawable.details_image_wholea_normal,
