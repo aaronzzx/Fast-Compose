@@ -519,7 +519,7 @@ private fun HandleSmartIndicatorOffset(
                     delay(refreshType.dismissDelayMillis.coerceAtLeast(0))
                 }
                 // 回调 onIdle 之前先 snap 回去，不然会瞥到 Idle 状态的 UI
-//                state.animateOffsetTo(0f)
+                state.animateOffsetTo(0f)
                 onIdle.invoke()
             }
         }
