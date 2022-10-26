@@ -442,9 +442,7 @@ fun SmartRefresh(
     }
 
     Box(
-        modifier = Modifier
-            .nestedScroll(connection = nestedScrollConnection)
-            .then(modifier)
+        modifier = modifier.nestedScroll(connection = nestedScrollConnection)
     ) {
         Box(
             modifier = Modifier
@@ -458,7 +456,8 @@ fun SmartRefresh(
         }
 
         Box(
-            Modifier.align(Alignment.TopCenter)
+            modifier = Modifier
+                .matchParentSize()
                 .let {
                     if (clipHeaderEnabled && isHeaderNeedClip(
                             state,
@@ -467,15 +466,19 @@ fun SmartRefresh(
                     ) it.clipToBounds() else it
                 }
         ) {
-            LaunchedEffect(key1 = state) {
-                if (state.isRefreshing
-                    && state.indicatorOffset == 0f
-                    && state.isContentArriveTop
-                ) {
-                    state.animateOffsetTo(refreshTriggerPx)
+            Box(
+                modifier = Modifier.align(Alignment.TopCenter)
+            ) {
+                LaunchedEffect(key1 = state) {
+                    if (state.isRefreshing
+                        && state.indicatorOffset == 0f
+                        && state.isContentArriveTop
+                    ) {
+                        state.animateOffsetTo(refreshTriggerPx)
+                    }
                 }
+                indicator(state, refreshTriggerPx, maxDragPx, indicatorHeight)
             }
-            indicator(state, refreshTriggerPx, maxDragPx, indicatorHeight)
         }
     }
 }
@@ -515,7 +518,7 @@ private fun HandleSmartIndicatorOffset(
                     delay(refreshType.dismissDelayMillis.coerceAtLeast(0))
                 }
                 // 回调 onIdle 之前先 snap 回去，不然会瞥到 Idle 状态的 UI
-                state.animateOffsetTo(0f)
+//                state.animateOffsetTo(0f)
                 onIdle.invoke()
             }
         }
