@@ -26,6 +26,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
@@ -73,24 +74,33 @@ class PagingActivity : BaseComposeActivity() {
         }
         FastComposeTheme {
             Surface(
-                modifier = Modifier
-                    .fillMaxSize(),
-                elevation = 4.dp,
+                modifier = Modifier.fillMaxSize(),
                 color = Color(0xFFF0F0F0)
             ) {
-                Column {
-                    TopBar(
-                        modifier = Modifier.zIndex(1f),
-                        title = "",
-                        startIcon = R.drawable.back,
-                        backgroundColor = Color.Transparent,
-                        elevation = 0.dp,
-                        contentPadding = WindowInsets.statusBars.asPaddingValues(),
-                        onStartIconClick = {
-                            finishAfterTransition()
-                        }
-                    )
-                    PagingPage()
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = Brush.verticalGradient(
+                                0f to Color(0xB32196F3),
+                                0.5f to Color(0xFFF0F0F0)
+                            )
+                        )
+                ) {
+                    Column {
+                        TopBar(
+                            modifier = Modifier.zIndex(1f),
+                            title = "",
+                            startIcon = R.drawable.back,
+                            backgroundColor = Color.Transparent,
+                            elevation = 0.dp,
+                            contentPadding = WindowInsets.statusBars.asPaddingValues(),
+                            onStartIconClick = {
+                                finishAfterTransition()
+                            }
+                        )
+                        PagingPage()
+                    }
                 }
             }
         }
@@ -177,11 +187,12 @@ private fun PagingPage() {
                 height = indicatorHeight
             )
         },
-        modifier = Modifier
-            .fillMaxSize()
-            .background(color = Color(0xFFF0F0F0))
+        modifier = Modifier.fillMaxSize()
     ) {
-        PagingStateComponent(pagingComponent = vm, stateComponent = vm) {
+        PagingStateComponent(
+            pagingComponent = vm,
+            stateComponent = vm
+        ) {
             PagingGridComponent(
                 component = vm,
                 columns = GridCells.Fixed(2),

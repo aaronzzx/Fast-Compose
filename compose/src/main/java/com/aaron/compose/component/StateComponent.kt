@@ -47,16 +47,16 @@ import kotlin.coroutines.EmptyCoroutineContext
 fun <K, V> PagingStateComponent(
     pagingComponent: PagingComponent<K, V>,
     stateComponent: StateComponent,
+    empty: @Composable () -> Unit = {
+        ViewStatePage(text = "暂无数据")
+    },
     content: @Composable () -> Unit
 ) {
-    val emptyContent: (@Composable () -> Unit) = remember {
-        { ViewStatePage(text = "暂无数据") }
-    }
     val failureErrorContent: (@Composable () -> Unit) = remember {
         {
             val pageData = pagingComponent.pageData
             if (pageData.isEmpty) {
-                emptyContent()
+                empty()
             } else {
                 content()
             }
@@ -71,7 +71,7 @@ fun <K, V> PagingStateComponent(
             failureErrorContent()
         },
         empty = {
-            emptyContent()
+            empty()
         },
         content = content
     )
