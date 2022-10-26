@@ -240,11 +240,11 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
             vm.smartRefreshType = SmartRefreshType.Idle
         },
         translateBody = false,
-        indicator = { smartRefreshState, triggerPixels, maxDragPixels, height ->
-            JialaiIndicator(
+        indicator = { smartRefreshState, triggerDistance, maxDragDistance, height ->
+            JialaiRefreshIndicator(
                 refreshState = smartRefreshState,
-                triggerPixels = triggerPixels,
-                maxDragPixels = maxDragPixels,
+                triggerDistance = triggerDistance,
+                maxDragDistance = maxDragDistance,
                 height = height,
                 modifier = Modifier
             )

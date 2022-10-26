@@ -36,19 +36,21 @@ import com.google.accompanist.drawablepainter.rememberDrawablePainter
  */
 
 @Composable
-fun JialaiIndicator(
+fun JialaiRefreshIndicator(
     refreshState: SmartRefreshState,
-    triggerPixels: Float,
-    maxDragPixels: Float,
+    triggerDistance: Dp,
+    maxDragDistance: Dp,
     height: Dp,
     modifier: Modifier = Modifier,
     drawableColor: Color = Color(0xFFF25924),
     textColor: Color = Color(0xFF666666)
 ) {
+    val triggerDistancePx = triggerDistance.toPx()
+    val maxDragDistancePx = maxDragDistance.toPx()
     val indicatorHeight = height.toPx()
     val offset =
-        (maxDragPixels - indicatorHeight).coerceAtMost(refreshState.indicatorOffset - indicatorHeight)
-    val releaseToRefresh = offset > triggerPixels - indicatorHeight
+        (maxDragDistancePx - indicatorHeight).coerceAtMost(refreshState.indicatorOffset - indicatorHeight)
+    val releaseToRefresh = offset > triggerDistancePx - indicatorHeight
 
     val refreshStatusText = when (refreshState.type) {
         is Idle -> if (releaseToRefresh) "松开刷新" else "下拉刷新"
