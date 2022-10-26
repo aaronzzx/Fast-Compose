@@ -273,6 +273,9 @@ open class PagingComponentFooter<K, V> {
     }
 }
 
+/**
+ * 分页状态组件
+ */
 @Stable
 interface PagingComponent<K, V> {
 

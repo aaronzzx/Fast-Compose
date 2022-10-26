@@ -85,7 +85,7 @@ fun CircularLoading(
 private const val JOB_KEY = "working-job"
 
 /**
- * ViewModel 可以实现此接口接管 loading 状态，使用 [loadingComponent] 委托一步到位。
+ * ViewModel 可以实现此接口接管 loading 状态
  */
 @Stable
 interface LoadingComponent {

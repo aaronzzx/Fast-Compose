@@ -198,7 +198,7 @@ private fun VerticalImageText(
 }
 
 /**
- * ViewModel 可以实现此接口接管视图状态，使用 [stateComponent] 委托一步到位。
+ * ViewModel 可以实现此接口接管视图状态
  */
 @Stable
 interface StateComponent : LoadingComponent {
