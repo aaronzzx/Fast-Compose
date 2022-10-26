@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.AppBarDefaults
 import androidx.compose.material.Divider
 import androidx.compose.material.Icon
@@ -75,6 +76,7 @@ fun TopBar(
                     }
                 ) {
                     Icon(
+                        modifier = Modifier.size(24.dp),
                         painter = painterResource(id = startIcon),
                         contentDescription = null,
                         tint = contentColor
