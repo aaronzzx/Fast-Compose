@@ -115,7 +115,7 @@ private fun PagingPage() {
     RefreshComponent(
         component = vm,
         clipHeaderEnabled = false,
-        translateBody = true,
+        translateBodyEnabled = true,
         indicator = { smartRefreshState, triggerDistance, maxDragDistance, indicatorHeight ->
             val indicatorHeightPx = indicatorHeight.toPx()
             SmartRefreshIndicator(

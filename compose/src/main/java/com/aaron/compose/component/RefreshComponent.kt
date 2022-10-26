@@ -2,7 +2,6 @@ package com.aaron.compose.component
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -12,6 +11,7 @@ import com.aaron.compose.ui.refresh.SmartRefresh
 import com.aaron.compose.ui.refresh.SmartRefreshState
 import com.aaron.compose.ui.refresh.SmartRefreshType
 import com.aaron.compose.ui.refresh.materialheader.MaterialRefreshIndicator
+import com.aaron.compose.ui.refresh.rememberSmartRefreshState
 
 /**
  * 对 [com.aaron.compose.ui.refresh.SmartRefresh] 进行封装
@@ -20,11 +20,11 @@ import com.aaron.compose.ui.refresh.materialheader.MaterialRefreshIndicator
 fun RefreshComponent(
     component: RefreshComponent,
     modifier: Modifier = Modifier,
-    state: SmartRefreshState = rememberSmartRefreshStateForRefreshComponent(component),
+    state: SmartRefreshState = rememberSmartRefreshState(type = component.smartRefreshType.value),
     onRefresh: (() -> Boolean)? = null,
     swipeEnabled: Boolean = true,
     clipHeaderEnabled: Boolean = true,
-    translateBody: Boolean = false,
+    translateBodyEnabled: Boolean = false,
     triggerRatio: Float = 1f,
     maxDragRatio: Float = 2f,
     indicatorHeight: Dp = 80.dp,
@@ -55,22 +55,13 @@ fun RefreshComponent(
         modifier = modifier,
         swipeEnabled = swipeEnabled,
         clipHeaderEnabled = clipHeaderEnabled,
-        translateBody = translateBody,
+        translateBody = translateBodyEnabled,
         triggerRatio = triggerRatio,
         maxDragRatio = maxDragRatio,
         indicatorHeight = indicatorHeight,
         indicator = indicator,
         content = content
     )
-}
-
-@Composable
-fun rememberSmartRefreshStateForRefreshComponent(component: RefreshComponent): SmartRefreshState {
-    return rememberSaveable(saver = SmartRefreshState.Saver) {
-        SmartRefreshState(component.smartRefreshType.value)
-    }.also {
-        it.type = component.smartRefreshType.value
-    }
 }
 
 /**
