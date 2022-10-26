@@ -70,8 +70,8 @@ data class SmartRefreshIndicatorText(
 @Composable
 fun SmartRefreshIndicator(
     state: SmartRefreshState,
-    triggerPx: Float,
-    maxDragPx: Float,
+    triggerDistance: Dp,
+    maxDragDistance: Dp,
     height: Dp,
     modifier: Modifier = Modifier,
     showLastRefreshTime: Boolean = true,
@@ -91,10 +91,12 @@ fun SmartRefreshIndicator(
         refreshFailedText = "刷新失败"
     )
 ) {
-    val indicatorHeight = height.toPx()
-    val offset = (maxDragPx - indicatorHeight).coerceAtMost(state.indicatorOffset - indicatorHeight)
+    val triggerDistancePx = triggerDistance.toPx()
+    val maxDragDistancePx = maxDragDistance.toPx()
+    val indicatorHeightPx = height.toPx()
+    val offset = (maxDragDistancePx - indicatorHeightPx).coerceAtMost(state.indicatorOffset - indicatorHeightPx)
 
-    val releaseToRefresh = offset > triggerPx - indicatorHeight
+    val releaseToRefresh = offset > triggerDistancePx - indicatorHeightPx
 
     val refreshStatusText = when (state.type) {
         is Idle -> if (releaseToRefresh) text.releaseToRefreshText else text.pullToRefreshText

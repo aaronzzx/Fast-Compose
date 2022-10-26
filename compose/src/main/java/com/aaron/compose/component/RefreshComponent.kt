@@ -1,13 +1,13 @@
 package com.aaron.compose.component
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.aaron.compose.ktx.toDp
+import com.aaron.compose.base.SafeState
+import com.aaron.compose.base.safeStateOf
 import com.aaron.compose.ui.refresh.SmartRefresh
 import com.aaron.compose.ui.refresh.SmartRefreshState
 import com.aaron.compose.ui.refresh.SmartRefreshType
@@ -23,20 +23,20 @@ fun RefreshComponent(
     state: SmartRefreshState = rememberSmartRefreshStateForRefreshComponent(component),
     onRefresh: (() -> Boolean)? = null,
     swipeEnabled: Boolean = true,
-    clipHeaderEnabled: Boolean = false,
+    clipHeaderEnabled: Boolean = true,
     translateBody: Boolean = false,
     triggerRatio: Float = 1f,
     maxDragRatio: Float = 2f,
     indicatorHeight: Dp = 80.dp,
     indicator: @Composable (
         smartRefreshState: SmartRefreshState,
-        triggerPixels: Float,
-        maxDragPixels: Float,
+        triggerDistance: Dp,
+        maxDragDistance: Dp,
         indicatorHeight: Dp
-    ) -> Unit = { smartRefreshState, triggerPixels, _, _ ->
+    ) -> Unit = { smartRefreshState, triggerDistance, _, _ ->
         MaterialRefreshIndicator(
             state = smartRefreshState,
-            refreshTriggerDistance = triggerPixels.toDp()
+            refreshTriggerDistance = triggerDistance
         )
     },
     content: @Composable () -> Unit
@@ -79,13 +79,13 @@ fun rememberSmartRefreshStateForRefreshComponent(component: RefreshComponent): S
 @Stable
 interface RefreshComponent {
 
-    val smartRefreshType: MutableState<SmartRefreshType>
+    val smartRefreshType: SafeState<SmartRefreshType>
 
     fun refresh() {
         if (smartRefreshType.value == SmartRefreshType.Refreshing) {
             return
         }
-        smartRefreshType.value = SmartRefreshType.Refreshing
+        smartRefreshType.setValue(SmartRefreshType.Refreshing)
         refreshIgnoreAnimation()
     }
 
@@ -95,14 +95,25 @@ interface RefreshComponent {
         if (smartRefreshType.value != SmartRefreshType.Refreshing) {
             return
         }
-        smartRefreshType.value = if (success) {
-            SmartRefreshType.Success(delay)
-        } else {
-            SmartRefreshType.Failure(delay)
-        }
+        smartRefreshType.setValue(
+            if (success) {
+                SmartRefreshType.Success(delay)
+            } else {
+                SmartRefreshType.Failure(delay)
+            }
+        )
     }
 
     fun idle() {
-        smartRefreshType.value = SmartRefreshType.Idle
+        smartRefreshType.setValue(SmartRefreshType.Idle)
+    }
+}
+
+fun refreshComponent(): RefreshComponent = object : RefreshComponent {
+
+    override val smartRefreshType: SafeState<SmartRefreshType> = safeStateOf(SmartRefreshType.Idle)
+
+    override fun refreshIgnoreAnimation() {
+        error("You must implement refreshIgnoreAnimation function by self.")
     }
 }

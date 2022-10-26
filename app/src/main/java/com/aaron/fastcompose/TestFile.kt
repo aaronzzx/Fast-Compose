@@ -12,14 +12,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aaron.compose.base.SafeState
+import com.aaron.compose.base.safeStateOf
 import com.aaron.compose.component.RefreshComponent
 import com.aaron.compose.component.StateComponent
 import com.aaron.compose.component.stateComponent
@@ -74,7 +74,7 @@ fun TestComposable(
 
 class TestVM : ViewModel(), RefreshComponent, StateComponent by stateComponent() {
 
-    override val smartRefreshType: MutableState<SmartRefreshType> = mutableStateOf(SmartRefreshType.Idle)
+    override val smartRefreshType: SafeState<SmartRefreshType> = safeStateOf(SmartRefreshType.Idle)
 
     val data: StateFlow<List<Int>> get() = _data
     private val _data = MutableStateFlow<List<Int>>(emptyList())

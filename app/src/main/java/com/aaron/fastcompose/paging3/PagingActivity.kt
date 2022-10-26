@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,6 +43,7 @@ import com.aaron.compose.component.RefreshComponent
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.itemsIndexed
 import com.aaron.compose.ktx.onClick
+import com.aaron.compose.ktx.toPx
 import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.refresh.SmartRefreshIndicator
 import com.aaron.fastcompose.R
@@ -79,9 +81,9 @@ class PagingActivity : BaseComposeActivity() {
                 Column {
                     TopBar(
                         modifier = Modifier.zIndex(1f),
-                        title = "PagingActivity",
+                        title = "",
                         startIcon = R.drawable.back,
-                        backgroundColor = Color(0x00F0F0F0),
+                        backgroundColor = Color.Transparent,
                         elevation = 0.dp,
                         contentPadding = WindowInsets.statusBars.asPaddingValues(),
                         onStartIconClick = {
@@ -161,10 +163,19 @@ private fun PagingPage() {
     val vm = viewModel<PagingVM>()
     RefreshComponent(
         component = vm,
-        clipHeaderEnabled = true,
+        clipHeaderEnabled = false,
         translateBody = true,
-        indicator = { smartRefreshState, triggerPixels, maxDragPixels, indicatorHeight ->
-            SmartRefreshIndicator(smartRefreshState, triggerPixels, maxDragPixels, indicatorHeight)
+        indicator = { smartRefreshState, triggerDistance, maxDragDistance, indicatorHeight ->
+            val indicatorHeightPx = indicatorHeight.toPx()
+            SmartRefreshIndicator(
+                modifier = Modifier.graphicsLayer {
+                    alpha = smartRefreshState.indicatorOffset / (indicatorHeightPx / 2f)
+                },
+                state = smartRefreshState,
+                triggerDistance = triggerDistance,
+                maxDragDistance = maxDragDistance,
+                height = indicatorHeight
+            )
         },
         modifier = Modifier
             .fillMaxSize()

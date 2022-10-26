@@ -36,6 +36,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
+import com.aaron.compose.ktx.toDp
 import com.aaron.compose.ktx.toPx
 import com.aaron.compose.ui.refresh.SmartRefreshType.FinishRefresh
 import com.aaron.compose.ui.refresh.SmartRefreshType.Idle
@@ -405,14 +406,14 @@ fun SmartRefresh(
     indicatorHeight: Dp = 80.dp,
     indicator: @Composable (
         smartRefreshState: SmartRefreshState,
-        triggerPixels: Float,
-        maxDragPixels: Float,
+        triggerDistance: Dp,
+        maxDragDistance: Dp,
         indicatorHeight: Dp
-    ) -> Unit = { smartRefreshState, triggerPixels, maxDragPixels, height ->
+    ) -> Unit = { smartRefreshState, triggerDistance, maxDragDistance, height ->
         SmartRefreshIndicator(
             state = smartRefreshState,
-            triggerPx = triggerPixels,
-            maxDragPx = maxDragPixels,
+            triggerDistance = triggerDistance,
+            maxDragDistance = maxDragDistance,
             height = height
         )
     },
@@ -477,7 +478,7 @@ fun SmartRefresh(
                         state.animateOffsetTo(refreshTriggerPx)
                     }
                 }
-                indicator(state, refreshTriggerPx, maxDragPx, indicatorHeight)
+                indicator(state, refreshTriggerPx.toDp(), maxDragPx.toDp(), indicatorHeight)
             }
         }
     }

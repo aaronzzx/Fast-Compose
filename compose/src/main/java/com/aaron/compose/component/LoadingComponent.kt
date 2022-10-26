@@ -12,14 +12,14 @@ import androidx.compose.material.ProgressIndicatorDefaults
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.aaron.compose.base.SafeState
+import com.aaron.compose.base.safeStateOf
 import com.aaron.compose.ktx.interceptClick
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -82,68 +82,54 @@ fun CircularLoading(
     }
 }
 
+private const val JOB_KEY = "working-job"
+
 /**
  * ViewModel 可以实现此接口接管 loading 状态，使用 [loadingComponent] 委托一步到位。
  */
 @Stable
 interface LoadingComponent {
 
-    val loading: State<Boolean>
+    val loading: SafeState<Boolean>
 
     fun CoroutineScope.launchWithLoading(
         context: CoroutineContext = EmptyCoroutineContext,
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend CoroutineScope.() -> Unit
-    ): Job
-
-    /**
-     * 这个方法应该作为正常开启关闭加载的途径
-     */
-    fun showLoading(show: Boolean)
-
-    /**
-     * 这个方法应该作为中途需要取消加载的途径
-     */
-    fun cancelLoading()
-}
-
-fun loadingComponent(): LoadingComponent = LoadingComponentDelegate()
-
-private class LoadingComponentDelegate : LoadingComponent {
-
-    override val loading: State<Boolean> get() = _loading
-
-    private val _loading = mutableStateOf(false)
-
-    private var workingJob: Job? = null
-
-    override fun CoroutineScope.launchWithLoading(
-        context: CoroutineContext,
-        start: CoroutineStart,
-        block: suspend CoroutineScope.() -> Unit
     ): Job {
-        workingJob?.cancel()
+        val loading = loading
+        loading.get<Job>(JOB_KEY)?.cancel()
         showLoading(true)
         val job = launch(
             context = context,
             start = start,
             block = block
         )
-        workingJob = job
+        loading[JOB_KEY] = job
         job.invokeOnCompletion {
             showLoading(false)
-            workingJob = null
+            loading.fastRemove(JOB_KEY)
         }
         return job
     }
 
-    override fun showLoading(show: Boolean) {
-        _loading.value = show
+    /**
+     * 这个方法应该作为正常开启关闭加载的途径
+     */
+    fun showLoading(show: Boolean) {
+        loading.setValue(show)
     }
 
-    override fun cancelLoading() {
-        workingJob?.cancel()
-        workingJob = null
+    /**
+     * 这个方法应该作为中途需要取消加载的途径
+     */
+    fun cancelLoading() {
+        loading.remove<Job>(JOB_KEY)?.cancel()
         showLoading(false)
     }
+}
+
+fun loadingComponent(): LoadingComponent = object : LoadingComponent {
+
+    override val loading: SafeState<Boolean> = safeStateOf(false)
 }

@@ -16,9 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +27,8 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aaron.compose.R
+import com.aaron.compose.base.SafeState
+import com.aaron.compose.base.safeStateOf
 import com.aaron.compose.component.StateComponent.ViewState.Empty
 import com.aaron.compose.component.StateComponent.ViewState.Error
 import com.aaron.compose.component.StateComponent.ViewState.Failure
@@ -203,16 +203,30 @@ private fun VerticalImageText(
 @Stable
 interface StateComponent : LoadingComponent {
 
-    val viewState: State<ViewState>
+    val viewState: SafeState<ViewState>
 
     fun CoroutineScope.launchWithViewState(
         enableLoading: Boolean = true,
         context: CoroutineContext = EmptyCoroutineContext,
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend CoroutineScope.() -> ViewState
-    ): Job
+    ): Job = run {
+        if (enableLoading) {
+            launchWithLoading(context = context, start = start) {
+                val result = block()
+                showState(result)
+            }
+        } else {
+            launch(context = context, start = start) {
+                val result = block()
+                showState(result)
+            }
+        }
+    }
 
-    fun showState(viewState: ViewState)
+    fun showState(viewState: ViewState) {
+        this.viewState.setValue(viewState)
+    }
 
     fun retry()
 
@@ -229,36 +243,10 @@ interface StateComponent : LoadingComponent {
     }
 }
 
-fun stateComponent(): StateComponent = StateComponentDelegate()
+fun stateComponent(): StateComponent = object : StateComponent {
 
-private class StateComponentDelegate : StateComponent, LoadingComponent by loadingComponent() {
-
-    override val viewState: State<StateComponent.ViewState> get() = _viewState
-
-    private val _viewState = mutableStateOf<StateComponent.ViewState>(Idle)
-
-    override fun CoroutineScope.launchWithViewState(
-        enableLoading: Boolean,
-        context: CoroutineContext,
-        start: CoroutineStart,
-        block: suspend CoroutineScope.() -> StateComponent.ViewState
-    ): Job = run {
-        if (enableLoading) {
-            launchWithLoading(context = context, start = start) {
-                val result = block()
-                showState(result)
-            }
-        } else {
-            launch(context = context, start = start) {
-                val result = block()
-                showState(result)
-            }
-        }
-    }
-
-    override fun showState(viewState: StateComponent.ViewState) {
-        _viewState.value = viewState
-    }
+    override val loading: SafeState<Boolean> = safeStateOf(false)
+    override val viewState: SafeState<StateComponent.ViewState> = safeStateOf(Idle)
 
     override fun retry() {
         error("You must implement retry function by self.")

@@ -29,8 +29,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aaron.compose.ktx.isNotEmpty
 import com.aaron.compose.ktx.onClick
+import com.aaron.compose.paging.LoadResult
 import com.aaron.compose.paging.LoadState
 import com.aaron.compose.paging.PageData
+import kotlinx.coroutines.MainScope
 
 /**
  * 分页
@@ -272,13 +274,9 @@ open class PagingComponentFooter<K, V> {
 }
 
 @Stable
-interface PagingComponent<K, V> : RefreshComponent {
+interface PagingComponent<K, V> {
 
     val pageData: PageData<K, V>
-
-    override fun refreshIgnoreAnimation() {
-        pagingRefresh()
-    }
 
     fun pagingRefresh() {
         pageData.refresh()
@@ -291,4 +289,12 @@ interface PagingComponent<K, V> : RefreshComponent {
     fun pagingRetry() {
         pageData.retry()
     }
+}
+
+fun <K, V> pagingComponent(): PagingComponent<K, V> = object : PagingComponent<K, V> {
+
+    override val pageData: PageData<K, V> = PageData(
+        coroutineScope = MainScope(),
+        onRequest = { LoadResult.Page(emptyList(), null) }
+    )
 }

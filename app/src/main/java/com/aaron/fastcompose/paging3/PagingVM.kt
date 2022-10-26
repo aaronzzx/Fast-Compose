@@ -1,14 +1,14 @@
 package com.aaron.fastcompose.paging3
 
 import android.util.Log
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aaron.compose.base.SafeState
+import com.aaron.compose.base.safeStateOf
 import com.aaron.compose.component.PagingComponent
+import com.aaron.compose.component.RefreshComponent
 import com.aaron.compose.component.StateComponent
 import com.aaron.compose.component.StateComponent.ViewState
-import com.aaron.compose.component.stateComponent
 import com.aaron.compose.defaults.Defaults
 import com.aaron.compose.ktx.buildPageData
 import com.aaron.compose.ktx.isEmpty
@@ -23,7 +23,7 @@ import kotlin.random.Random
  * @author aaronzzxup@gmail.com
  * @since 2022/10/24
  */
-class PagingVM : ViewModel(), StateComponent by stateComponent(), PagingComponent<Int, Repo> {
+class PagingVM : ViewModel(), StateComponent, RefreshComponent, PagingComponent<Int, Repo> {
 
     companion object {
         init {
@@ -37,8 +37,9 @@ class PagingVM : ViewModel(), StateComponent by stateComponent(), PagingComponen
         }
     }
 
-    override val smartRefreshType: MutableState<SmartRefreshType> = mutableStateOf(SmartRefreshType.Idle)
-
+    override val loading: SafeState<Boolean> = safeStateOf(false)
+    override val viewState: SafeState<ViewState> = safeStateOf(ViewState.Idle)
+    override val smartRefreshType: SafeState<SmartRefreshType> = safeStateOf(SmartRefreshType.Idle)
     override val pageData: PageData<Int, Repo> = buildPageData(1, onRequest = ::buildFakeData2)
 
     private suspend fun buildFakeData2(page: Int, pageSize: Int): RepoEntity {
@@ -77,6 +78,10 @@ class PagingVM : ViewModel(), StateComponent by stateComponent(), PagingComponen
 
     init {
         showLoading(true)
+    }
+
+    override fun refreshIgnoreAnimation() {
+        pagingRefresh()
     }
 
     override fun finishRefresh(success: Boolean, delay: Long) {
