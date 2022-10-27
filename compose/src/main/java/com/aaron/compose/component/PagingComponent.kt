@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -68,7 +69,7 @@ fun <K, V> PagingComponent(
     flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
     userScrollEnabled: Boolean = true,
     footer: (@Composable (pagingFooterType: PagingFooterType) -> Unit)? = {
-        PagingComponentFooterSingleton.Content(
+        remember { PagingComponentFooter() }.Content(
             component = component,
             footerType = it
         )
@@ -117,9 +118,8 @@ fun <K, V> PagingGridComponent(
     horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
     flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
     userScrollEnabled: Boolean = true,
-    customFooter: Boolean = false,
-    footer: @Composable (pagingFooterType: PagingFooterType) -> Unit = {
-        PagingComponentFooterSingleton.Content(
+    footer: (@Composable (pagingFooterType: PagingFooterType) -> Unit)? = {
+        remember { PagingComponentFooter() }.Content(
             component = component,
             footerType = it
         )
@@ -140,7 +140,7 @@ fun <K, V> PagingGridComponent(
         val pageData = component.pageData
         content(pageData)
 
-        if (customFooter) {
+        if (footer == null) {
             return@LazyVerticalGrid
         }
 
@@ -183,8 +183,6 @@ enum class PagingFooterType {
 
     Idle, Loading, LoadMore, LoadError, NoMoreData, WaitingRefresh
 }
-
-private val PagingComponentFooterSingleton by lazy { PagingComponentFooter() }
 
 open class PagingComponentFooter {
 
