@@ -22,6 +22,7 @@ import com.aaron.compose.base.SafeState
 import com.aaron.compose.base.safeStateOf
 import com.aaron.compose.component.RefreshComponent
 import com.aaron.compose.component.StateComponent
+import com.aaron.compose.component.StateComponent.ViewState
 import com.aaron.compose.component.stateComponent
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ui.refresh.SmartRefreshType
@@ -72,8 +73,10 @@ fun TestComposable(
     }
 }
 
-class TestVM : ViewModel(), RefreshComponent, StateComponent by stateComponent() {
+class TestVM : ViewModel(), RefreshComponent, StateComponent {
 
+    override val loading: SafeState<Boolean> = safeStateOf(false)
+    override val viewState: SafeState<ViewState> = safeStateOf(ViewState.Idle)
     override val smartRefreshType: SafeState<SmartRefreshType> = safeStateOf(SmartRefreshType.Idle)
 
     val data: StateFlow<List<Int>> get() = _data
@@ -97,23 +100,23 @@ class TestVM : ViewModel(), RefreshComponent, StateComponent by stateComponent()
             when (Random(System.currentTimeMillis()).nextInt(0, 4)) {
                 1 -> {
                     finishRefresh(false)
-                    StateComponent.ViewState.Failure(404, "Not Found")
+                    ViewState.Failure(404, "Not Found")
                 }
                 2 -> {
                     finishRefresh(false)
-                    StateComponent.ViewState.Error(IllegalStateException("Internal Error"))
+                    ViewState.Error(IllegalStateException("Internal Error"))
                 }
                 3 -> {
                     finishRefresh(true)
                     _data.emit(emptyList())
-                    StateComponent.ViewState.Empty
+                    ViewState.Empty
                 }
                 else -> {
                     finishRefresh(true)
                     val stIndex = Random(System.currentTimeMillis()).nextInt(0, 1000)
                     val range = stIndex..(stIndex + 50)
                     _data.emit(range.toList())
-                    StateComponent.ViewState.Idle
+                    ViewState.Idle
                 }
             }
         }

@@ -133,7 +133,10 @@ interface LoadingComponent {
     }
 }
 
-fun loadingComponent(): LoadingComponent = object : LoadingComponent {
+@Composable
+fun loadingComponent(
+    loading: Boolean = false
+): LoadingComponent = object : LoadingComponent {
 
-    override val loading: SafeState<Boolean> = safeStateOf(false)
+    override val loading: SafeState<Boolean> = safeStateOf(loading)
 }

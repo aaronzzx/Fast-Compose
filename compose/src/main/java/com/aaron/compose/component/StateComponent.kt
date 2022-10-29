@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import com.aaron.compose.R
 import com.aaron.compose.base.SafeState
 import com.aaron.compose.base.safeStateOf
+import com.aaron.compose.component.StateComponent.ViewState
 import com.aaron.compose.component.StateComponent.ViewState.Empty
 import com.aaron.compose.component.StateComponent.ViewState.Error
 import com.aaron.compose.component.StateComponent.ViewState.Failure
@@ -200,10 +201,14 @@ interface StateComponent : LoadingComponent {
     }
 }
 
-fun stateComponent(): StateComponent = object : StateComponent {
+@Composable
+fun stateComponent(
+    loading: Boolean = false,
+    viewState: ViewState = Idle
+): StateComponent = object : StateComponent {
 
-    override val loading: SafeState<Boolean> = safeStateOf(false)
-    override val viewState: SafeState<StateComponent.ViewState> = safeStateOf(Idle)
+    override val loading: SafeState<Boolean> = safeStateOf(loading)
+    override val viewState: SafeState<ViewState> = safeStateOf(viewState)
 
     override fun retry() {
         error("You must implement retry function by self.")

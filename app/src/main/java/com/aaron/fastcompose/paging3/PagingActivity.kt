@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -42,6 +43,7 @@ import com.aaron.compose.component.PagingComponentFooter
 import com.aaron.compose.component.PagingGridComponent
 import com.aaron.compose.component.PagingWrapperComponent
 import com.aaron.compose.component.RefreshComponent
+import com.aaron.compose.component.pagingComponent
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.itemsIndexed
 import com.aaron.compose.ktx.onClick
@@ -232,6 +234,65 @@ private object MyFooter : PagingComponentFooter() {
                     .aspectRatio(20f)
                     .background(color = Color(0x4D999999))
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Preview
+@Composable
+private fun Test() {
+    val pagingComponent = pagingComponent<Int, String>(
+        "Michael",
+        "James",
+        "Kobe",
+        "ABC",
+        "CBA",
+        "NBA"
+    )
+    PagingWrapperComponent(
+        component = pagingComponent,
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                color = Color(0xFFF0F0F0)
+            )
+    ) {
+        PagingComponent(
+            component = pagingComponent,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            footer = { footerType ->
+                MyFooter.Content(
+                    component = pagingComponent,
+                    footerType = footerType
+                )
+            }
+        ) { pageData ->
+            itemsIndexed(pageData, key = { _, item -> item }) { index, item ->
+                Box(
+                    modifier = Modifier
+                        .animateItemPlacement()
+                        .clipToBackground(
+                            color = Color.White,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .onClick {
+                        }
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = item,
+                        color = Color(0xFF333333),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                }
+            }
         }
     }
 }

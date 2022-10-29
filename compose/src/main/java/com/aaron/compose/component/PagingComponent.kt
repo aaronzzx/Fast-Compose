@@ -94,7 +94,7 @@ fun <K, V> PagingComponent(
         }
 
         val pagingFooterType = getPagingFooterType(component)
-        if (pagingFooterType != PagingFooterType.Idle) {
+        if (pagingFooterType != PagingFooterType.None) {
             item(contentType = "PagingComponentFooter") {
                 footer(pagingFooterType)
             }
@@ -145,7 +145,7 @@ fun <K, V> PagingGridComponent(
         }
 
         val pagingFooterType = getPagingFooterType(component)
-        if (pagingFooterType != PagingFooterType.Idle) {
+        if (pagingFooterType != PagingFooterType.None) {
             item(
                 span = {
                     GridItemSpan(maxLineSpan)
@@ -175,13 +175,13 @@ fun <K, V> getPagingFooterType(component: PagingComponent<K, V>): PagingFooterTy
         loadError -> PagingFooterType.LoadError
         noMoreData -> PagingFooterType.NoMoreData
         waitingRefresh -> PagingFooterType.WaitingRefresh
-        else -> PagingFooterType.Idle
+        else -> PagingFooterType.None
     }
 }
 
 enum class PagingFooterType {
 
-    Idle, Loading, LoadMore, LoadError, NoMoreData, WaitingRefresh
+    None, Loading, LoadMore, LoadError, NoMoreData, WaitingRefresh
 }
 
 open class PagingComponentFooter {
@@ -299,10 +299,11 @@ interface PagingComponent<K, V> {
     }
 }
 
-fun <K, V> pagingComponent(): PagingComponent<K, V> = object : PagingComponent<K, V> {
+@Composable
+fun <K, V> pagingComponent(vararg item: V): PagingComponent<K, V> = object : PagingComponent<K, V> {
 
     override val pageData: PageData<K, V> = PageData(
         coroutineScope = MainScope(),
-        onRequest = { LoadResult.Page(emptyList(), null) }
+        onRequest = { LoadResult.Page(listOf(*item), null) }
     )
 }

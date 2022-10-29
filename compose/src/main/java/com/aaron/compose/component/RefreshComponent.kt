@@ -100,9 +100,12 @@ interface RefreshComponent {
     }
 }
 
-fun refreshComponent(): RefreshComponent = object : RefreshComponent {
+@Composable
+fun refreshComponent(
+    type: SmartRefreshType = SmartRefreshType.Idle
+): RefreshComponent = object : RefreshComponent {
 
-    override val smartRefreshType: SafeState<SmartRefreshType> = safeStateOf(SmartRefreshType.Idle)
+    override val smartRefreshType: SafeState<SmartRefreshType> = safeStateOf(type)
 
     override fun refreshIgnoreAnimation() {
         error("You must implement refreshIgnoreAnimation function by self.")
