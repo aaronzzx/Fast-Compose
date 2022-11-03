@@ -214,6 +214,7 @@ class SmartRefreshState internal constructor(
 
 private class SmartRefreshNestedScrollConnection(
     private val state: SmartRefreshState,
+    private val translateBodyEnabled: Boolean,
     private val coroutineScope: CoroutineScope,
     private val onRefresh: () -> Unit,
 ) : NestedScrollConnection {
@@ -248,7 +249,8 @@ private class SmartRefreshNestedScrollConnection(
 
         val coroutineScope = coroutineScope
         val refreshTrigger = refreshTriggerOffset
-        if (state.isIdle
+        if (translateBodyEnabled
+            && state.isIdle
             && source == NestedScrollSource.Fling
             && available.y > 0
             && state.indicatorOffset in 0f..refreshTrigger
@@ -351,7 +353,7 @@ private class SmartRefreshNestedScrollConnection(
         val triggerOffset = refreshTriggerOffset
         val maxOffset = maxIndicatorOffset
         // 触达顶部边界或者刷新头出来了且是向上滚动
-        if (initialOffset >= 0f && available.y > 0f) {
+        if (translateBodyEnabled && initialOffset >= 0f && available.y > 0f) {
             if (!state.isIdle && !state.isAnimating && state.indicatorOffset < triggerOffset) {
                 // 非空闲状态直接使用衰减动画
                 // 非空闲的话不给太多回弹，一点足够
@@ -385,7 +387,7 @@ private class SmartRefreshNestedScrollConnection(
  * @param modifier 修饰符
  * @param swipeEnabled 是否启用刷新
  * @param clipHeaderEnabled 是否启用裁剪头部
- * @param translateBody [SmartRefreshState.indicatorOffset] 偏移时，主体部分是否也跟着偏移
+ * @param translateBodyEnabled [SmartRefreshState.indicatorOffset] 偏移时，主体部分是否也跟着偏移
  * @param triggerRatio 触发刷新的占比，基于 [indicatorHeight]
  * @param maxDragRatio 最大拖拽占比，基于 [indicatorHeight]
  * @param indicatorHeight 刷新头的高度
@@ -400,7 +402,7 @@ fun SmartRefresh(
     modifier: Modifier = Modifier,
     swipeEnabled: Boolean = true,
     clipHeaderEnabled: Boolean = true,
-    translateBody: Boolean = true,
+    translateBodyEnabled: Boolean = true,
     triggerRatio: Float = 1f,
     maxDragRatio: Float = 2f,
     indicatorHeight: Dp = 80.dp,
@@ -431,8 +433,8 @@ fun SmartRefresh(
     }
 
     // Our nested scroll connection, which updates our state.
-    val nestedScrollConnection = remember(state, coroutineScope) {
-        SmartRefreshNestedScrollConnection(state, coroutineScope) {
+    val nestedScrollConnection = remember(state, translateBodyEnabled, coroutineScope) {
+        SmartRefreshNestedScrollConnection(state, translateBodyEnabled, coroutineScope) {
             // On refresh, re-dispatch to the update onRefresh block
             updatedOnRefresh.value.invoke()
         }
@@ -448,7 +450,7 @@ fun SmartRefresh(
         Box(
             modifier = Modifier
                 .graphicsLayer {
-                    if (translateBody) {
+                    if (translateBodyEnabled) {
                         translationY = state.indicatorOffset.coerceAtMost(maxDragPx)
                     }
                 }

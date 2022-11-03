@@ -1,6 +1,5 @@
 package com.aaron.compose.paging
 
-import android.util.Log
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -10,6 +9,8 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 /**
  * @author aaronzzxup@gmail.com
@@ -20,19 +21,9 @@ class PageData<K, V>(
     private val coroutineScope: CoroutineScope,
     private val config: PageConfig = PageConfig(),
     lazyLoad: Boolean = false,
-    private val onRequest: suspend (params: LoadParams<K>) -> LoadResult<K, V>
+    private val invokeCompletion: (suspend PageData<K, V>.(LoadResult<K, V>) -> Unit)? = null,
+    private val onRequest: suspend PageData<K, V>.(params: LoadParams<K>) -> LoadResult<K, V>
 ) {
-
-    companion object {
-        private const val Debug = true
-        private const val TAG = "PageData"
-
-        private fun log(msg: String) {
-            if (Debug) {
-                Log.d(TAG, msg)
-            }
-        }
-    }
 
     var page: Int by mutableStateOf(1)
         private set
@@ -82,19 +73,41 @@ class PageData<K, V>(
         return nextKey == null || !config.enableLoadMore || page >= config.maxPage
     }
 
-    fun refresh() {
+    fun refresh(
+        onSuccess: ((List<V>) -> Unit)? = null,
+        onFailure: ((Throwable) -> Unit)? = null
+    ) {
         tryLaunch(LoadType.Refresh) {
             refreshImpl()
+                .onSuccess {
+                    onSuccess?.invoke(it)
+                }
+                .onFailure {
+                    onFailure?.invoke(it)
+                }
         }
     }
 
-    private suspend fun refreshImpl() {
+    suspend fun refreshSuspend(): Result<List<V>> = suspendCoroutine { cont ->
+        refresh(
+            onSuccess = {
+                cont.resume(Result.success(it))
+            },
+            onFailure = {
+                cont.resume(Result.failure(it))
+            }
+        )
+    }
+
+    private suspend fun refreshImpl(): Result<List<V>> {
         val loadState = loadState
         loadState.refresh = LoadState.Loading
-        log("refresh-start: ${loadState.refresh}")
-        when (val result = requestData(LoadType.Refresh, null)) {
+        val result = requestData(LoadType.Refresh, null)
+        val pageList: List<V>
+        when (result) {
             is LoadResult.Page -> {
                 val dataList = result.data
+                pageList = dataList
                 val nextKey = result.nextKey
                 this.page = 1
                 this.nextKey = nextKey
@@ -106,6 +119,7 @@ class PageData<K, V>(
                 }
             }
             is LoadResult.Error -> {
+                pageList = emptyList()
                 val throwable = result.throwable
                 loadState.refresh = LoadState.Error(throwable)
                 if (loadState.loadMore is LoadState.Waiting) {
@@ -113,30 +127,62 @@ class PageData<K, V>(
                 }
             }
         }
-        log("refresh-start: ${loadState.refresh}")
+        invokeCompletion?.invoke(this, result)
+        return if (result is LoadResult.Error) {
+            Result.failure(result.throwable)
+        } else {
+            Result.success(pageList)
+        }
     }
 
-    fun loadMore() {
+    fun loadMore(
+        onSuccess: ((List<V>) -> Unit)? = null,
+        onFailure: ((Throwable) -> Unit)? = null,
+        retryIfCurrentError: Boolean = false
+    ) {
         val loadMore = loadState.loadMore
         if (loadMore is LoadState.Idle && loadMore.noMoreData) {
             // 没有更多数据了
             return
         } else if (loadMore is LoadState.Error) {
             // 加载更多时出错，等待手动重试
+            if (retryIfCurrentError) retry(onSuccess, onFailure)
             return
         }
         tryLaunch(LoadType.LoadMore) {
             loadMoreImpl()
+                .onSuccess {
+                    onSuccess?.invoke(it)
+                }
+                .onFailure {
+                    onFailure?.invoke(it)
+                }
         }
     }
 
-    private suspend fun loadMoreImpl() {
+    suspend fun loadMoreSuspend(
+        retryIfCurrentError: Boolean = false
+    ): Result<List<V>> = suspendCoroutine { cont ->
+        loadMore(
+            onSuccess = {
+                cont.resume(Result.success(it))
+            },
+            onFailure = {
+                cont.resume(Result.failure(it))
+            },
+            retryIfCurrentError = retryIfCurrentError
+        )
+    }
+
+    private suspend fun loadMoreImpl(): Result<List<V>> {
         val loadState = loadState
         loadState.loadMore = LoadState.Loading
-        log("loadMore-start: ${loadState.loadMore}")
-        when (val result = requestData(LoadType.LoadMore, nextKey)) {
+        val result = requestData(LoadType.LoadMore, nextKey)
+        val pageList: List<V>
+        when (result) {
             is LoadResult.Page -> {
                 val dataList = result.data
+                pageList = dataList
                 val nextKey = result.nextKey
                 this.page++
                 this.nextKey = nextKey
@@ -144,19 +190,45 @@ class PageData<K, V>(
                 data.addAll(dataList)
             }
             is LoadResult.Error -> {
+                pageList = emptyList()
                 val throwable = result.throwable
                 loadState.loadMore = LoadState.Error(throwable)
             }
         }
-        log("loadMore-end: ${loadState.loadMore}")
+        invokeCompletion?.invoke(this, result)
+        return if (result is LoadResult.Error) {
+            Result.failure(result.throwable)
+        } else {
+            Result.success(pageList)
+        }
     }
 
-    fun retry() {
+    fun retry(
+        onSuccess: ((List<V>) -> Unit)? = null,
+        onFailure: ((Throwable) -> Unit)? = null
+    ) {
         if (loadState.loadMore is LoadState.Error) {
             tryLaunch(LoadType.LoadMore) {
                 loadMoreImpl()
+                    .onSuccess {
+                        onSuccess?.invoke(it)
+                    }
+                    .onFailure {
+                        onFailure?.invoke(it)
+                    }
             }
         }
+    }
+
+    suspend fun retrySuspend(): Result<List<V>> = suspendCoroutine { cont ->
+        retry(
+            onSuccess = {
+                cont.resume(Result.success(it))
+            },
+            onFailure = {
+                cont.resume(Result.failure(it))
+            }
+        )
     }
 
     private suspend fun requestData(actualLoadType: LoadType, nextKey: K?): LoadResult<K, V> {

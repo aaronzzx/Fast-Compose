@@ -239,7 +239,7 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
         onIdle = {
             vm.smartRefreshType = SmartRefreshType.Idle
         },
-        translateBody = false,
+        translateBodyEnabled = false,
         indicator = { smartRefreshState, triggerDistance, maxDragDistance, height ->
             JialaiRefreshIndicator(
                 refreshState = smartRefreshState,

@@ -55,7 +55,7 @@ fun RefreshComponent(
         modifier = modifier,
         swipeEnabled = swipeEnabled,
         clipHeaderEnabled = clipHeaderEnabled,
-        translateBody = translateBodyEnabled,
+        translateBodyEnabled = translateBodyEnabled,
         triggerRatio = triggerRatio,
         maxDragRatio = maxDragRatio,
         indicatorHeight = indicatorHeight,

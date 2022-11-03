@@ -170,6 +170,7 @@ fun <K, V> getPagingFooterType(component: PagingComponent<K, V>): PagingFooterTy
     val noMoreData = loadMoreState.noMoreData
     
     return when {
+        pageData.isEmpty -> PagingFooterType.None
         loading -> PagingFooterType.Loading
         loadMore -> PagingFooterType.LoadMore
         loadError -> PagingFooterType.LoadError
