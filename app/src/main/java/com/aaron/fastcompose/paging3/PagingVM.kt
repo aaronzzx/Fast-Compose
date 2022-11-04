@@ -32,7 +32,7 @@ class PagingVM : ViewModel(), StateComponent, RefreshComponent, PagingComponent<
                 DefaultPrefetchDistance = 1
                 DefaultInitialSize = 10
                 DefaultPageSize = 10
-                DefaultMaxPage = 5
+                DefaultMaxPage = 1
             }
         }
     }
@@ -87,7 +87,7 @@ class PagingVM : ViewModel(), StateComponent, RefreshComponent, PagingComponent<
 
     fun deleteItem(index: Int) {
         viewModelScope.launchWithLoading {
-            delay(1000)
+//            delay(1000)
             pageData.data.removeAt(index)
         }
     }

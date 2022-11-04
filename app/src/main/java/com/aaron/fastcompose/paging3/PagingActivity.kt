@@ -3,8 +3,13 @@ package com.aaron.fastcompose.paging3
 import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,17 +23,32 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.FloatingActionButton
+import androidx.compose.material.Icon
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -39,9 +59,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aaron.compose.base.BaseComposeActivity
 import com.aaron.compose.component.LoadingComponent
 import com.aaron.compose.component.PagingComponent
-import com.aaron.compose.component.PagingComponentFooter
 import com.aaron.compose.component.PagingGridComponent
-import com.aaron.compose.component.PagingWrapperComponent
+import com.aaron.compose.component.PagingStateFooter
 import com.aaron.compose.component.RefreshComponent
 import com.aaron.compose.component.pagingComponent
 import com.aaron.compose.ktx.clipToBackground
@@ -50,9 +69,11 @@ import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ktx.toPx
 import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.refresh.SmartRefreshIndicator
+import com.aaron.compose.utils.OverScrollHandler
 import com.aaron.fastcompose.R
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import kotlinx.coroutines.launch
 
 /**
  * @author aaronzzxup@gmail.com
@@ -133,55 +154,141 @@ private fun PagingPage() {
         modifier = Modifier.fillMaxSize()
     ) {
         LoadingComponent(component = vm) {
-            PagingWrapperComponent(component = vm) {
-                PagingGridComponent(
-                    component = vm,
-                    columns = GridCells.Fixed(2),
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    footer = { footerType ->
-                        MyFooter.Content(
-                            component = vm,
-                            footerType = footerType
-                        )
-                    }
-                ) { pageData ->
-                    itemsIndexed(pageData, key = { _, item -> item.id }) { index, item ->
-                        Box(
-                            modifier = Modifier
-                                .animateItemPlacement()
-                                .clipToBackground(
-                                    color = Color.White,
-                                    shape = RoundedCornerShape(8.dp)
-                                )
-                                .onClick {
-                                    vm.deleteItem(index)
-                                }
-                                .fillMaxWidth()
-                                .aspectRatio(1f)
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = item.name,
-                                color = Color(0xFF333333),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
+            Box {
+                val outerListState = rememberLazyListState()
+                val innerListState = rememberLazyGridState()
+                val scope = rememberCoroutineScope()
+
+                OverScrollHandler(enabled = false) {
+                    LazyColumn(
+                        state = outerListState,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        item {
+                            Image(
+                                painter = painterResource(id = R.drawable.ide_bg),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(250.dp)
+                                    .background(
+                                        color = Color.Red.copy(0.5f),
+                                    )
                             )
                         }
+                        item {
+                            OverScrollHandler(enabled = true) {
+                                PagingGridComponent(
+                                    component = vm,
+                                    columns = GridCells.Fixed(2),
+                                    state = innerListState,
+                                    modifier = Modifier
+                                        .fillParentMaxSize()
+                                        .nestedScroll(object : NestedScrollConnection {
+                                            override fun onPreScroll(
+                                                available: Offset,
+                                                source: NestedScrollSource
+                                            ): Offset {
+                                                if (available.y < 0
+                                                    && outerListState.firstVisibleItemIndex == 0
+                                                ) {
+                                                    scope.launch {
+                                                        outerListState.scrollBy(-available.y)
+                                                    }
+                                                    return available
+                                                }
+                                                return super.onPreScroll(available, source)
+                                            }
+                                        }),
+                                    contentPadding = PaddingValues(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    headerContent = {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(100.dp)
+                                                .background(
+                                                    color = Color.Green.copy(0.5f),
+                                                    shape = RoundedCornerShape(8.dp)
+                                                )
+                                        )
+                                    },
+                                    footerContent = {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(100.dp)
+                                                .background(
+                                                    color = Color.Blue.copy(0.5f),
+                                                    shape = RoundedCornerShape(8.dp)
+                                                )
+                                        )
+                                    },
+                                    pagingStateFooter = MyFooter
+                                ) { pageData ->
+                                    itemsIndexed(pageData, key = { _, item -> item.id }) { index, item ->
+                                        Box(
+                                            modifier = Modifier
+                                                .animateItemPlacement()
+                                                .clipToBackground(
+                                                    color = Color.White,
+                                                    shape = RoundedCornerShape(8.dp)
+                                                )
+                                                .onClick {
+                                                    vm.deleteItem(index)
+                                                }
+                                                .fillMaxWidth()
+                                                .aspectRatio(1f)
+                                                .padding(16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = item.name,
+                                                color = Color(0xFF333333),
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 12.sp
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
+                }
+
+                val density = LocalDensity.current
+                FloatingActionButton(
+                    onClick = {
+                        if (outerListState.firstVisibleItemIndex == 0) {
+                            scope.launch {
+                                outerListState.animateScrollToItem(1)
+                            }
+                        } else {
+                            scope.launch {
+                                innerListState.scrollToItem(0)
+                                outerListState.animateScrollBy(with(density) { -250.dp.toPx() }, spring(stiffness = Spring.StiffnessMediumLow))
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(
+                            horizontal = 16.dp,
+                            vertical = 32.dp
+                        )
+                ) {
+                    Icon(imageVector = Icons.Default.Done, contentDescription = null)
                 }
             }
         }
     }
 }
 
-private object MyFooter : PagingComponentFooter() {
+private object MyFooter : PagingStateFooter() {
 
-    @Composable
-    override fun LoadingContent(component: PagingComponent<*, *>) {
+    override val loading: (@Composable (PagingComponent<*, *>) -> Unit) = {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -192,8 +299,7 @@ private object MyFooter : PagingComponentFooter() {
         }
     }
 
-    @Composable
-    override fun NoMoreDataContent(component: PagingComponent<*, *>) {
+    override val noMoreData: (@Composable (PagingComponent<*, *>) -> Unit) = {
         ConstraintLayout(
             modifier = Modifier
                 .fillMaxWidth()
@@ -250,48 +356,34 @@ private fun Test() {
         "CBA",
         "NBA"
     )
-    PagingWrapperComponent(
+    PagingComponent(
         component = pagingComponent,
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                color = Color(0xFFF0F0F0)
-            )
-    ) {
-        PagingComponent(
-            component = pagingComponent,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            footer = { footerType ->
-                MyFooter.Content(
-                    component = pagingComponent,
-                    footerType = footerType
-                )
-            }
-        ) { pageData ->
-            itemsIndexed(pageData, key = { _, item -> item }) { index, item ->
-                Box(
-                    modifier = Modifier
-                        .animateItemPlacement()
-                        .clipToBackground(
-                            color = Color.White,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .onClick {
-                        }
-                        .fillMaxWidth()
-                        .height(100.dp)
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = item,
-                        color = Color(0xFF333333),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        pagingStateFooter = MyFooter
+    ) { pageData ->
+        itemsIndexed(pageData, key = { _, item -> item }) { index, item ->
+            Box(
+                modifier = Modifier
+                    .animateItemPlacement()
+                    .clipToBackground(
+                        color = Color.White,
+                        shape = RoundedCornerShape(8.dp)
                     )
-                }
+                    .onClick {
+                    }
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = item,
+                    color = Color(0xFF333333),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
             }
         }
     }
