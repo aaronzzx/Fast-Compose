@@ -3,8 +3,6 @@ package com.aaron.fastcompose.paging3
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aaron.compose.base.SafeState
-import com.aaron.compose.base.safeStateOf
 import com.aaron.compose.component.PagingComponent
 import com.aaron.compose.component.RefreshComponent
 import com.aaron.compose.component.StateComponent
@@ -14,6 +12,9 @@ import com.aaron.compose.ktx.buildPageData
 import com.aaron.compose.ktx.isEmpty
 import com.aaron.compose.paging.PageConfigDefaults
 import com.aaron.compose.paging.PageData
+import com.aaron.compose.safestate.SafeState
+import com.aaron.compose.safestate.SafeStateScope
+import com.aaron.compose.safestate.safeStateOf
 import com.aaron.compose.ui.refresh.SmartRefreshType
 import com.aaron.fastcompose.RepoEntity
 import kotlinx.coroutines.delay
@@ -23,7 +24,8 @@ import kotlin.random.Random
  * @author aaronzzxup@gmail.com
  * @since 2022/10/24
  */
-class PagingVM : ViewModel(), StateComponent, RefreshComponent, PagingComponent<Int, Repo> {
+class PagingVM : ViewModel(), StateComponent, RefreshComponent, PagingComponent<Int, Repo>,
+    SafeStateScope {
 
     companion object {
         init {
@@ -88,7 +90,7 @@ class PagingVM : ViewModel(), StateComponent, RefreshComponent, PagingComponent<
     fun deleteItem(index: Int) {
         viewModelScope.launchWithLoading {
 //            delay(1000)
-            pageData.data.removeAt(index)
+            pageData.data.edit().removeAt(index)
         }
     }
 

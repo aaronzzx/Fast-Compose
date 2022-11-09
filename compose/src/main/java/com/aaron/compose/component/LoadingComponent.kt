@@ -18,9 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.aaron.compose.base.SafeState
-import com.aaron.compose.base.safeStateOf
 import com.aaron.compose.ktx.interceptClick
+import com.aaron.compose.safestate.SafeState
+import com.aaron.compose.safestate.safeStateOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -121,7 +121,7 @@ interface LoadingComponent {
      * 这个方法应该作为正常开启关闭加载的途径
      */
     fun showLoading(show: Boolean) {
-        loading.setValue(show)
+        loading.setValueInternal(show)
     }
 
     /**

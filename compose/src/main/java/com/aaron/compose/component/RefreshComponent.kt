@@ -5,8 +5,8 @@ import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.aaron.compose.base.SafeState
-import com.aaron.compose.base.safeStateOf
+import com.aaron.compose.safestate.SafeState
+import com.aaron.compose.safestate.safeStateOf
 import com.aaron.compose.ui.refresh.SmartRefresh
 import com.aaron.compose.ui.refresh.SmartRefreshState
 import com.aaron.compose.ui.refresh.SmartRefreshType
@@ -76,7 +76,7 @@ interface RefreshComponent {
         if (smartRefreshType.value == SmartRefreshType.Refreshing) {
             return
         }
-        smartRefreshType.setValue(SmartRefreshType.Refreshing)
+        smartRefreshType.setValueInternal(SmartRefreshType.Refreshing)
         refreshIgnoreAnimation()
     }
 
@@ -86,7 +86,7 @@ interface RefreshComponent {
         if (smartRefreshType.value != SmartRefreshType.Refreshing) {
             return
         }
-        smartRefreshType.setValue(
+        smartRefreshType.setValueInternal(
             if (success) {
                 SmartRefreshType.Success(delay)
             } else {
@@ -96,7 +96,7 @@ interface RefreshComponent {
     }
 
     fun idle() {
-        smartRefreshType.setValue(SmartRefreshType.Idle)
+        smartRefreshType.setValueInternal(SmartRefreshType.Idle)
     }
 }
 

@@ -26,8 +26,6 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aaron.compose.R
-import com.aaron.compose.base.SafeState
-import com.aaron.compose.base.safeStateOf
 import com.aaron.compose.component.StateComponent.ViewState
 import com.aaron.compose.component.StateComponent.ViewState.Empty
 import com.aaron.compose.component.StateComponent.ViewState.Error
@@ -35,6 +33,8 @@ import com.aaron.compose.component.StateComponent.ViewState.Failure
 import com.aaron.compose.component.StateComponent.ViewState.Idle
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.onClick
+import com.aaron.compose.safestate.SafeState
+import com.aaron.compose.safestate.safeStateOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -183,7 +183,7 @@ interface StateComponent : LoadingComponent {
     }
 
     fun showState(viewState: ViewState) {
-        this.viewState.setValue(viewState)
+        this.viewState.setValueInternal(viewState)
     }
 
     fun retry()

@@ -1,4 +1,4 @@
-package com.aaron.compose.base
+package com.aaron.compose.safestate
 
 import androidx.compose.runtime.Stable
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,8 +13,12 @@ abstract class SafeStateFlow<T>(
     private val delegate: MutableStateFlow<T>
 ) : StateFlow<T> by delegate {
 
-    internal fun setValue(value: T) {
-        delegate.value = value
+    internal suspend fun emitInternal(value: T) {
+        delegate.emit(value)
+    }
+
+    internal fun tryEmitInternal(value: T) {
+        delegate.tryEmit(value)
     }
 }
 

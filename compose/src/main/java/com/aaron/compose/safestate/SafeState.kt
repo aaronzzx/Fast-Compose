@@ -1,10 +1,12 @@
-package com.aaron.compose.base
+package com.aaron.compose.safestate
 
 import android.util.ArrayMap
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.SnapshotMutationPolicy
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.structuralEqualityPolicy
 
 /**
  * @author aaronzzxup@gmail.com
@@ -33,11 +35,17 @@ abstract class SafeState<T>(
         return remove(key)
     }
 
-    internal fun setValue(value: T) {
+    internal fun setValueInternal(value: T) {
         delegate.value = value
     }
 }
 
-private class SafeStateImpl<T>(value: T) : SafeState<T>(mutableStateOf(value))
+private class SafeStateImpl<T>(
+    value: T,
+    policy: SnapshotMutationPolicy<T> = structuralEqualityPolicy()
+) : SafeState<T>(mutableStateOf(value, policy))
 
-fun <T> safeStateOf(value: T): SafeState<T> = SafeStateImpl(value)
+fun <T> safeStateOf(
+    value: T,
+    policy: SnapshotMutationPolicy<T> = structuralEqualityPolicy()
+): SafeState<T> = SafeStateImpl(value, policy)

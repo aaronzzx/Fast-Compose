@@ -31,7 +31,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +44,6 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aaron.compose.base.BaseComposeActivity
 import com.aaron.compose.ktx.clipToBackground
-import com.aaron.compose.ktx.collectAsStateWithLifecycle
 import com.aaron.compose.ktx.isNotEmpty
 import com.aaron.compose.ktx.itemsIndexed
 import com.aaron.compose.ktx.onClick
@@ -56,7 +54,6 @@ import com.aaron.compose.ui.refresh.SmartRefresh
 import com.aaron.compose.ui.refresh.SmartRefreshState
 import com.aaron.compose.ui.refresh.SmartRefreshType
 import com.aaron.compose.ui.refresh.rememberSmartRefreshState
-import com.aaron.fastcompose.paging3.PagingActivity
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
@@ -68,7 +65,7 @@ class MainActivity : BaseComposeActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 //        SecondActivity.start(this)
-        PagingActivity.start(this)
+//        PagingActivity.start(this)
     }
 
     @Composable
@@ -109,10 +106,13 @@ class MainActivity : BaseComposeActivity() {
 @Composable
 private fun ViewStateComponent() {
     val vm = viewModel<TestVM>()
-    val data by vm.data.collectAsStateWithLifecycle()
+    val data = vm.data
     TestComposable(
         refreshComponent = vm,
         stateComponent = vm,
+        onRemoveItem = {
+            vm.deleteItem(it)
+        },
         data = data
     )
 }

@@ -2,10 +2,10 @@ package com.aaron.compose.paging
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
+import com.aaron.compose.safestate.SafeStateList
+import com.aaron.compose.safestate.safeStateListOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -28,11 +28,11 @@ class PageData<K, V>(
     var page: Int by mutableStateOf(1)
         private set
 
-    val data: SnapshotStateList<V> = mutableStateListOf()
+    val data: SafeStateList<V> = safeStateListOf()
 
     val itemCount: Int get() = data.size
 
-    val loadState: CombinedLoadState by mutableStateOf(CombinedLoadState())
+    val loadState: CombinedLoadState = CombinedLoadState()
 
     /**
      * 用于标识当前正在进行的操作，每次操作完成后都将回到 Idle 状态
@@ -113,7 +113,7 @@ class PageData<K, V>(
                 this.nextKey = nextKey
                 loadState.refresh = LoadState.Idle(false)
                 loadState.loadMore = LoadState.Idle(isLoadEnd())
-                with(data) {
+                with(data.editInternal()) {
                     clear()
                     addAll(dataList)
                 }
@@ -187,7 +187,7 @@ class PageData<K, V>(
                 this.page++
                 this.nextKey = nextKey
                 loadState.loadMore = LoadState.Idle(isLoadEnd())
-                data.addAll(dataList)
+                data.editInternal().addAll(dataList)
             }
             is LoadResult.Error -> {
                 pageList = emptyList()

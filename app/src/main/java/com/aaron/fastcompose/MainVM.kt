@@ -8,6 +8,7 @@ import com.aaron.compose.base.BasePagingResult
 import com.aaron.compose.defaults.Defaults
 import com.aaron.compose.ktx.buildPageData
 import com.aaron.compose.paging.PageConfigDefaults
+import com.aaron.compose.safestate.SafeStateScope
 import com.aaron.compose.ui.refresh.SmartRefreshType
 import com.aaron.fastcompose.paging3.Repo
 import com.aaron.fastcompose.paging3.gitHubService
@@ -20,7 +21,7 @@ import kotlin.random.Random
  * @since 2022/9/17
  */
 @HiltViewModel
-class MainVM @Inject constructor() : ViewModel() {
+class MainVM @Inject constructor() : ViewModel(), SafeStateScope {
 
     companion object {
         init {
@@ -68,7 +69,7 @@ class MainVM @Inject constructor() : ViewModel() {
     }
 
     fun deleteItem(index: Int) {
-        repos.data.removeAt(index)
+        repos.data.edit().removeAt(index)
     }
 }
 
