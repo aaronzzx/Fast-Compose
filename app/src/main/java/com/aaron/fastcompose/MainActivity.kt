@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -24,6 +25,8 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.ScrollableTabRow
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
@@ -31,7 +34,9 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,11 +49,13 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aaron.compose.base.BaseComposeActivity
 import com.aaron.compose.ktx.clipToBackground
+import com.aaron.compose.ktx.currentPageDelayed
 import com.aaron.compose.ktx.isNotEmpty
 import com.aaron.compose.ktx.itemsIndexed
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ktx.toPx
 import com.aaron.compose.paging.LoadState
+import com.aaron.compose.ui.NonRippleTab
 import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.refresh.SmartRefresh
 import com.aaron.compose.ui.refresh.SmartRefreshState
@@ -57,8 +64,10 @@ import com.aaron.compose.ui.refresh.rememberSmartRefreshState
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
+import com.google.accompanist.pager.pagerTabIndicatorOffset
 import com.google.accompanist.pager.rememberPagerState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import kotlinx.coroutines.launch
 
 class MainActivity : BaseComposeActivity() {
 
@@ -96,8 +105,80 @@ class MainActivity : BaseComposeActivity() {
                         }
                     )
 //                    MyPager()
-                    ViewStateComponent()
+                    Pager()
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Pager() {
+    Column {
+        val pagerState = rememberPagerState()
+        val curPage by pagerState.currentPageDelayed()
+        val pageCount = 20
+
+        ScrollableTabRow(
+            modifier = Modifier.fillMaxWidth(),
+            selectedTabIndex = curPage,
+            edgePadding = 0.dp,
+            backgroundColor = Color.Transparent,
+            contentColor = Color.Black,
+            divider = {
+            },
+            indicator = {
+                Box(
+                    modifier = Modifier.pagerTabIndicatorOffset(pagerState, it)
+                ) {
+                    Box(
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .width(16.dp)
+                            .height(4.dp)
+                            .background(
+                                color = MaterialTheme.colors.primary,
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                    )
+                }
+            }
+        ) {
+            val scope = rememberCoroutineScope()
+            (1..pageCount).forEachIndexed { index, item ->
+                val selected = curPage == index
+                NonRippleTab(
+                    text = {
+                        Text(
+                            text = "$item",
+                            fontSize = 24.sp
+                        )
+                    },
+                    selected = selected,
+                    selectedContentColor = MaterialTheme.colors.primary,
+                    unselectedContentColor = Color.Black.copy(0.35f),
+                    onClick = {
+                        scope.launch {
+                            pagerState.animateScrollToPage(index)
+                        }
+                    },
+                )
+            }
+        }
+        HorizontalPager(
+            count = pageCount,
+            state = pagerState
+        ) { page ->
+            if (page % 2 == 0) {
+                ViewStateComponent()
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            color = if (page % 2 == 0) Color.Red.copy(0.5f) else Color.Green.copy(0.5f)
+                        )
+                )
             }
         }
     }

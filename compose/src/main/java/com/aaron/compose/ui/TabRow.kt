@@ -44,6 +44,36 @@ fun NonRippleTab(
 }
 
 /**
+ * 禁用 Ripple 的 Tab
+ */
+@Composable
+fun NonRippleTab(
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    text: @Composable (() -> Unit)? = null,
+    icon: @Composable (() -> Unit)? = null,
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    selectedContentColor: Color = LocalContentColor.current,
+    unselectedContentColor: Color = selectedContentColor.copy(alpha = ContentAlpha.medium)
+) {
+    CompositionLocalProvider(LocalRippleTheme provides NoRippleTheme) {
+        Tab(
+            selected = selected,
+            onClick = onClick,
+            modifier = modifier,
+            enabled = enabled,
+            text = text,
+            icon = icon,
+            interactionSource = interactionSource,
+            selectedContentColor = selectedContentColor,
+            unselectedContentColor = unselectedContentColor
+        )
+    }
+}
+
+/**
  * 禁用 Ripple 的 LeadingTab
  */
 @Composable
