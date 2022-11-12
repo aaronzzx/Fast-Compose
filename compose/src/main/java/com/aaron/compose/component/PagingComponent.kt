@@ -49,6 +49,7 @@ import com.aaron.compose.ktx.onClick
 import com.aaron.compose.paging.LoadResult
 import com.aaron.compose.paging.LoadState
 import com.aaron.compose.paging.PageData
+import com.aaron.compose.paging.PagingScope
 import kotlinx.coroutines.MainScope
 
 /**
@@ -523,7 +524,7 @@ private fun FooterText(
  * 分页状态组件
  */
 @Stable
-interface PagingComponent<K, V> {
+interface PagingComponent<K, V> : PagingScope {
 
     val pageData: PageData<K, V>
 

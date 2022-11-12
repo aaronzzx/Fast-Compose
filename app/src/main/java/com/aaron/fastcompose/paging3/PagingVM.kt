@@ -8,7 +8,6 @@ import com.aaron.compose.component.RefreshComponent
 import com.aaron.compose.component.StateComponent
 import com.aaron.compose.component.StateComponent.ViewState
 import com.aaron.compose.defaults.Defaults
-import com.aaron.compose.ktx.buildPageData
 import com.aaron.compose.ktx.isEmpty
 import com.aaron.compose.paging.PageConfigDefaults
 import com.aaron.compose.paging.PageData
@@ -42,7 +41,7 @@ class PagingVM : ViewModel(), StateComponent, RefreshComponent, PagingComponent<
     override val loading: SafeState<Boolean> = safeStateOf(false)
     override val viewState: SafeState<ViewState> = safeStateOf(ViewState.Idle)
     override val smartRefreshType: SafeState<SmartRefreshType> = safeStateOf(SmartRefreshType.Idle)
-    override val pageData: PageData<Int, Repo> = buildPageData(initialPage = 1) { page, pageSize ->
+    override val pageData: PageData<Int, Repo> = viewModelScope.buildPageData(initialPage = 1) { page, pageSize ->
         Log.d("zzx", "page: $page")
         delay(2000)
 

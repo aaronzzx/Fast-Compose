@@ -4,10 +4,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.aaron.compose.base.BasePagingResult
 import com.aaron.compose.defaults.Defaults
-import com.aaron.compose.ktx.buildPageData
 import com.aaron.compose.paging.PageConfigDefaults
+import com.aaron.compose.paging.PagingScope
 import com.aaron.compose.safestate.SafeStateScope
 import com.aaron.compose.ui.refresh.SmartRefreshType
 import com.aaron.fastcompose.paging3.Repo
@@ -21,7 +22,7 @@ import kotlin.random.Random
  * @since 2022/9/17
  */
 @HiltViewModel
-class MainVM @Inject constructor() : ViewModel(), SafeStateScope {
+class MainVM @Inject constructor() : ViewModel(), SafeStateScope, PagingScope {
 
     companion object {
         init {
@@ -37,7 +38,7 @@ class MainVM @Inject constructor() : ViewModel(), SafeStateScope {
 
     var init by mutableStateOf(true)
 
-    val repos = buildPageData(1, onRequest = ::buildFakeData2)
+    val repos = viewModelScope.buildPageData(1, onRequest = ::buildFakeData2)
 
     var smartRefreshType: SmartRefreshType by mutableStateOf(SmartRefreshType.Idle)
 
