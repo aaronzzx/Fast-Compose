@@ -105,7 +105,8 @@ class MainActivity : BaseComposeActivity() {
                         }
                     )
 //                    MyPager()
-                    Pager()
+//                    Pager()
+                    ViewStateComponent()
                 }
             }
         }
@@ -176,7 +177,9 @@ private fun Pager() {
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
-                            color = if (page % 2 == 0) Color.Red.copy(0.5f) else Color.Green.copy(0.5f)
+                            color = if (page % 2 == 0) Color.Red.copy(0.5f) else Color.Green.copy(
+                                0.5f
+                            )
                         )
                 )
             }

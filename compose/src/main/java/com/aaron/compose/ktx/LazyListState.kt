@@ -9,13 +9,13 @@ val LazyListState.lastIndex: Int
     get() = layoutInfo.totalItemsCount - 1
 
 /**
- * 判断能否垂直滚动
+ * 判断能否垂直、水平滚动
  *
- * @param direction 小于 0 向上滚动，大于 0 向下滚动
+ * @param direction 小于 0 向上滚动(向左滚动(LTR))，大于 0 向下滚动(向右滚动(LTR))
  */
-fun LazyListState.canScrollVertical(direction: Int): Boolean {
+fun LazyListState.canScroll(direction: Int): Boolean {
     if (direction < 0) {
-        val arriveTop = firstVisibleItemScrollOffset == 0
+        val arriveTop = firstVisibleItemIndex == 0 && firstVisibleItemScrollOffset == 0
         return !arriveTop
     } else if (direction > 0) {
         val viewportEndOffset = layoutInfo.viewportEndOffset
@@ -24,26 +24,6 @@ fun LazyListState.canScrollVertical(direction: Int): Boolean {
         val arriveBottom = lastItem.index == lastIndex
                 && (lastItem.offset + lastItem.size + paddingBottom) == viewportEndOffset
         return !arriveBottom
-    }
-    return true
-}
-
-/**
- * 判断能否水平滚动
- *
- * @param direction 小于 0 向左滚动，大于 0 向右滚动（LTR）
- */
-fun LazyListState.canScrollHorizontal(direction: Int): Boolean {
-    if (direction < 0) {
-        val arriveStart = firstVisibleItemScrollOffset == 0
-        return !arriveStart
-    } else if (direction > 0) {
-        val viewportEndOffset = layoutInfo.viewportEndOffset
-        val paddingEnd = layoutInfo.afterContentPadding
-        val lastItem = layoutInfo.visibleItemsInfo.lastOrNull() ?: return false
-        val arriveEnd = lastItem.index == lastIndex
-                && (lastItem.offset + lastItem.size + paddingEnd) == viewportEndOffset
-        return !arriveEnd
     }
     return true
 }

@@ -8,6 +8,8 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridItemScope
 import androidx.compose.foundation.lazy.grid.LazyGridItemSpanScope
 import androidx.compose.foundation.lazy.grid.LazyGridScope
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridItemScope
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.runtime.Composable
 import com.aaron.compose.paging.PageData
 
@@ -111,6 +113,54 @@ fun <K, V> LazyGridScope.itemsIndexed(
         },
         span = if (span == null) null else { index ->
             span(index, pageData.peek(index))
+        },
+        contentType = { index ->
+            contentType?.invoke(index, pageData.peek(index))
+        }
+    ) { index ->
+        itemContent(index, pageData[index])
+    }
+}
+
+fun <K, V> LazyStaggeredGridScope.items(
+    pageData: PageData<K, V>,
+    key: ((item: V) -> Any)? = null,
+    contentType: ((item: V) -> Any?)? = null,
+    itemContent: @Composable() (LazyStaggeredGridItemScope.(item: V) -> Unit)
+) {
+    items(
+        count = pageData.itemCount,
+        key = if (key == null) null else { index ->
+            val item = pageData.peek(index)
+            if (item == null) {
+                PagingDataKey(index)
+            } else {
+                key(item)
+            }
+        },
+        contentType = { index ->
+            contentType?.invoke(pageData.peek(index))
+        }
+    ) { index ->
+        itemContent(pageData[index])
+    }
+}
+
+fun <K, V> LazyStaggeredGridScope.itemsIndexed(
+    pageData: PageData<K, V>,
+    key: ((index: Int, item: V) -> Any)? = null,
+    contentType: ((index: Int, item: V) -> Any?)? = null,
+    itemContent: @Composable() (LazyStaggeredGridItemScope.(index: Int, item: V) -> Unit)
+) {
+    items(
+        count = pageData.itemCount,
+        key = if (key == null) null else { index ->
+            val item = pageData.peek(index)
+            if (item == null) {
+                PagingDataKey(index)
+            } else {
+                key(index, item)
+            }
         },
         contentType = { index ->
             contentType?.invoke(index, pageData.peek(index))
