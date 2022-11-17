@@ -2,6 +2,7 @@ package com.aaron.compose.component
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -21,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.aaron.compose.ktx.interceptClick
 import com.aaron.compose.safestate.SafeState
 import com.aaron.compose.safestate.safeStateOf
+import com.aaron.compose.utils.DevicePreview
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -51,6 +53,20 @@ fun LoadingComponent(
                 if (it) loading()
             }
         }
+    }
+}
+
+@DevicePreview
+@Composable
+private fun LoadingComponent() {
+    LoadingComponent(component = loadingComponent(true)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    color = Color(0xFFF0F0F0)
+                )
+        )
     }
 }
 

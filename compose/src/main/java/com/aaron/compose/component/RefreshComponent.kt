@@ -1,8 +1,12 @@
 package com.aaron.compose.component
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.aaron.compose.safestate.SafeState
@@ -12,9 +16,10 @@ import com.aaron.compose.ui.refresh.SmartRefreshState
 import com.aaron.compose.ui.refresh.SmartRefreshType
 import com.aaron.compose.ui.refresh.materialheader.MaterialRefreshIndicator
 import com.aaron.compose.ui.refresh.rememberSmartRefreshState
+import com.aaron.compose.utils.DevicePreview
 
 /**
- * 对 [com.aaron.compose.ui.refresh.SmartRefresh] 进行封装
+ * 对 [com.jialai.compose.ui.refresh.SmartRefresh] 进行封装
  */
 @Composable
 fun RefreshComponent(
@@ -62,6 +67,20 @@ fun RefreshComponent(
         indicator = indicator,
         content = content
     )
+}
+
+@DevicePreview
+@Composable
+private fun RefreshComponent() {
+    RefreshComponent(component = refreshComponent(SmartRefreshType.Refreshing)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    color = Color(0xFFF0F0F0)
+                )
+        )
+    }
 }
 
 /**

@@ -20,7 +20,7 @@ import com.aaron.compose.paging.PageData
 
 fun <K, V> LazyListScope.items(
     pageData: PageData<K, V>,
-    key: ((item: V) -> Any)? = null,
+    key: ((item: V) -> Any?)? = null,
     contentType: ((item: V) -> Any?)? = null,
     itemContent: @Composable LazyItemScope.(item: V) -> Unit
 ) {
@@ -31,7 +31,7 @@ fun <K, V> LazyListScope.items(
             if (item == null) {
                 PagingDataKey(index)
             } else {
-                key(item)
+                key(item) ?: PagingDataKey(index)
             }
         },
         contentType = { index ->
@@ -44,7 +44,7 @@ fun <K, V> LazyListScope.items(
 
 fun <K, V> LazyListScope.itemsIndexed(
     pageData: PageData<K, V>,
-    key: ((index: Int, item: V) -> Any)? = null,
+    key: ((index: Int, item: V) -> Any?)? = null,
     contentType: ((index: Int, item: V) -> Any?)? = null,
     itemContent: @Composable LazyItemScope.(index: Int, item: V) -> Unit
 ) {
@@ -55,7 +55,7 @@ fun <K, V> LazyListScope.itemsIndexed(
             if (item == null) {
                 PagingDataKey(index)
             } else {
-                key(index, item)
+                key(index, item) ?: PagingDataKey(index)
             }
         },
         contentType = { index ->
@@ -68,7 +68,7 @@ fun <K, V> LazyListScope.itemsIndexed(
 
 fun <K, V> LazyGridScope.items(
     pageData: PageData<K, V>,
-    key: ((item: V) -> Any)? = null,
+    key: ((item: V) -> Any?)? = null,
     contentType: ((item: V) -> Any?)? = null,
     span: (LazyGridItemSpanScope.(item: V) -> GridItemSpan)? = null,
     itemContent: @Composable LazyGridItemScope.(item: V) -> Unit
@@ -80,7 +80,7 @@ fun <K, V> LazyGridScope.items(
             if (item == null) {
                 PagingDataKey(index)
             } else {
-                key(item)
+                key(item) ?: PagingDataKey(index)
             }
         },
         span = if (span == null) null else { index ->
@@ -96,7 +96,7 @@ fun <K, V> LazyGridScope.items(
 
 fun <K, V> LazyGridScope.itemsIndexed(
     pageData: PageData<K, V>,
-    key: ((index: Int, item: V) -> Any)? = null,
+    key: ((index: Int, item: V) -> Any?)? = null,
     contentType: ((index: Int, item: V) -> Any?)? = null,
     span: (LazyGridItemSpanScope.(index: Int, item: V) -> GridItemSpan)? = null,
     itemContent: @Composable LazyGridItemScope.(index: Int, item: V) -> Unit
@@ -108,7 +108,7 @@ fun <K, V> LazyGridScope.itemsIndexed(
             if (item == null) {
                 PagingDataKey(index)
             } else {
-                key(index, item)
+                key(index, item) ?: PagingDataKey(index)
             }
         },
         span = if (span == null) null else { index ->
@@ -124,9 +124,9 @@ fun <K, V> LazyGridScope.itemsIndexed(
 
 fun <K, V> LazyStaggeredGridScope.items(
     pageData: PageData<K, V>,
-    key: ((item: V) -> Any)? = null,
+    key: ((item: V) -> Any?)? = null,
     contentType: ((item: V) -> Any?)? = null,
-    itemContent: @Composable() (LazyStaggeredGridItemScope.(item: V) -> Unit)
+    itemContent: @Composable (LazyStaggeredGridItemScope.(item: V) -> Unit)
 ) {
     items(
         count = pageData.itemCount,
@@ -135,7 +135,7 @@ fun <K, V> LazyStaggeredGridScope.items(
             if (item == null) {
                 PagingDataKey(index)
             } else {
-                key(item)
+                key(item) ?: PagingDataKey(index)
             }
         },
         contentType = { index ->
@@ -148,9 +148,9 @@ fun <K, V> LazyStaggeredGridScope.items(
 
 fun <K, V> LazyStaggeredGridScope.itemsIndexed(
     pageData: PageData<K, V>,
-    key: ((index: Int, item: V) -> Any)? = null,
+    key: ((index: Int, item: V) -> Any?)? = null,
     contentType: ((index: Int, item: V) -> Any?)? = null,
-    itemContent: @Composable() (LazyStaggeredGridItemScope.(index: Int, item: V) -> Unit)
+    itemContent: @Composable (LazyStaggeredGridItemScope.(index: Int, item: V) -> Unit)
 ) {
     items(
         count = pageData.itemCount,
@@ -159,7 +159,7 @@ fun <K, V> LazyStaggeredGridScope.itemsIndexed(
             if (item == null) {
                 PagingDataKey(index)
             } else {
-                key(index, item)
+                key(index, item) ?: PagingDataKey(index)
             }
         },
         contentType = { index ->

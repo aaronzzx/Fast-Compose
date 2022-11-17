@@ -18,12 +18,14 @@ interface PagingScope {
         successCode: Int = Defaults.SuccessCode,
         pageConfig: PageConfig = PageConfig(),
         lazyLoad: Boolean = false,
+        invokeCompletion: (suspend PageData<Int, V>.(LoadResult<Int, V>) -> Unit)? = null,
         onRequest: suspend (page: Int, pageSize: Int) -> BasePagingResult<V>
     ): PageData<Int, V> = buildMappingPageData(
         initialPage = initialPage,
         successCode = successCode,
         pageConfig = pageConfig,
         lazyLoad = lazyLoad,
+        invokeCompletion = invokeCompletion,
         onMapping = { it },
         onRequest = onRequest
     )
@@ -36,12 +38,14 @@ interface PagingScope {
         successCode: Int = Defaults.SuccessCode,
         pageConfig: PageConfig = PageConfig(),
         lazyLoad: Boolean = false,
+        invokeCompletion: (suspend PageData<Int, R>.(LoadResult<Int, R>) -> Unit)? = null,
         onMapping: suspend (data: List<V>) -> List<R>,
         onRequest: suspend (page: Int, pageSize: Int) -> BasePagingResult<V>
     ): PageData<Int, R> = PageData(
         coroutineScope = this,
         config = pageConfig,
-        lazyLoad = lazyLoad
+        lazyLoad = lazyLoad,
+        invokeCompletion = invokeCompletion
     ) { params ->
         val pageSize = params.pageSize
         val initialSize = params.initialSize

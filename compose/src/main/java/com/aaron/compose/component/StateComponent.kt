@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -20,7 +22,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -35,6 +41,7 @@ import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.safestate.SafeState
 import com.aaron.compose.safestate.safeStateOf
+import com.aaron.compose.utils.DevicePreview
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -53,7 +60,7 @@ fun StateComponent(
         CircularLoadingLayout()
     },
     failure: (@Composable (code: Int, msg: String?) -> Unit)? = { code, msg ->
-        ViewStateLayout(
+        MyStateView(
             text = "请求失败",
             modifier = Modifier
                 .onClick(enableRipple = false) {
@@ -62,7 +69,7 @@ fun StateComponent(
         )
     },
     error: (@Composable (ex: Throwable) -> Unit)? = { ex ->
-        ViewStateLayout(
+        MyStateView(
             text = "请求错误",
             modifier = Modifier
                 .onClick(enableRipple = false) {
@@ -71,7 +78,7 @@ fun StateComponent(
         )
     },
     empty: (@Composable () -> Unit)? = {
-        ViewStateLayout(text = "暂无数据")
+        MyStateView(text = "暂无数据")
     },
     content: @Composable () -> Unit
 ) {
@@ -101,57 +108,79 @@ fun StateComponent(
     }
 }
 
+@DevicePreview
 @Composable
-fun ViewStateLayout(
-    text: String,
-    modifier: Modifier = Modifier,
-    @DrawableRes iconRes: Int = R.drawable.details_image_wholea_normal,
-    iconSize: Dp = 160.dp,
-    spacing: Dp = 24.dp,
-    textColor: Color = Color(0xFF999999),
-    textSize: TextUnit = 16.sp
-) {
-    Box(
-        modifier = modifier
+private fun StateComponent() {
+    StateComponent(
+        modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(8.dp)
-            .clipToBackground(
-                color = Color.White,
-                shape = RoundedCornerShape(8.dp)
+            .background(
+                color = Color(0xFFF0F0F0)
             ),
-        contentAlignment = Alignment.Center
+        component = stateComponent(viewState = Empty)
     ) {
-        VerticalImageText(
-            text = text,
-            iconRes = iconRes,
-            iconSize = iconSize,
-            spacing = spacing,
-            textColor = textColor,
-            textSize = textSize
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    color = Color.White
+                )
         )
     }
 }
 
 @Composable
-private fun VerticalImageText(
+private fun MyStateView(text: String, modifier: Modifier = Modifier) {
+    StateView(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(8.dp),
+        text = text,
+        shape = RoundedCornerShape(8.dp)
+    )
+}
+
+@Composable
+fun StateView(
     text: String,
+    modifier: Modifier = Modifier,
+    backgroundColor: Color = Color.White,
+    shape: Shape = RectangleShape,
     @DrawableRes iconRes: Int = R.drawable.details_image_wholea_normal,
     iconSize: Dp = 160.dp,
-    spacing: Dp = 24.dp,
+    betweenPadding: Dp = 24.dp,
     textColor: Color = Color(0xFF999999),
-    textSize: TextUnit = 16.sp
+    textSize: TextUnit = 16.sp,
+    textWeight: FontWeight = FontWeight.Normal,
+    textStyle: TextStyle? = null
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(spacing)
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .clipToBackground(
+                color = backgroundColor,
+                shape = shape
+            ),
+        contentAlignment = Alignment.Center
     ) {
-        Image(
-            painter = painterResource(id = iconRes),
-            modifier = Modifier.size(iconSize),
-            contentDescription = null
-        )
-        Text(text = text, color = textColor, fontSize = textSize)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(betweenPadding)
+        ) {
+            Image(
+                painter = painterResource(id = iconRes),
+                modifier = Modifier.size(iconSize),
+                contentDescription = null
+            )
+            Text(
+                text = text,
+                color = textColor,
+                fontSize = textSize,
+                fontWeight = textWeight,
+                style = textStyle ?: LocalTextStyle.current
+            )
+        }
     }
 }
 

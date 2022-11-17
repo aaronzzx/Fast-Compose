@@ -1,19 +1,17 @@
 package com.aaron.compose.component
 
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
@@ -37,7 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.SubcomposeLayout
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -45,11 +44,13 @@ import androidx.compose.ui.unit.sp
 import com.aaron.compose.R
 import com.aaron.compose.ktx.isEmpty
 import com.aaron.compose.ktx.isNotEmpty
+import com.aaron.compose.ktx.items
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.paging.LoadResult
 import com.aaron.compose.paging.LoadState
 import com.aaron.compose.paging.PageData
 import com.aaron.compose.paging.PagingScope
+import com.aaron.compose.utils.DevicePreview
 import kotlinx.coroutines.MainScope
 
 /**
@@ -191,6 +192,32 @@ fun <K, V> PagingComponent(
             placeables.forEach {
                 it.placeRelative(0, 0)
             }
+        }
+    }
+}
+
+@DevicePreview
+@Composable
+private fun PagingComponent() {
+    PagingComponent<Int, String>(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(color = Color(0xFFF0F0F0)),
+        component = pagingComponent("1", "2", "3", "4", "5"),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) { pageData ->
+        items(pageData) { item ->
+            Text(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .background(
+                        color = Color.White,
+                    )
+                    .padding(16.dp)
+                    .wrapContentSize(),
+                text = item
+            )
         }
     }
 }
@@ -364,51 +391,29 @@ fun <K, V> PagingGridComponent(
 fun PagingEmptyLayout(
     modifier: Modifier = Modifier,
     text: String = "暂无数据",
-    @DrawableRes iconRes: Int = R.drawable.details_image_wholea_normal,
-    bgColor: Color = Color.White,
+    backgroundColor: Color = Color.White,
     shape: Shape = RoundedCornerShape(8.dp),
+    @DrawableRes iconRes: Int = R.drawable.details_image_wholea_normal,
     iconSize: Dp = 160.dp,
-    spacing: Dp = 24.dp,
+    betweenPadding: Dp = 24.dp,
     textColor: Color = Color(0xFF999999),
-    textSize: TextUnit = 16.sp
+    textSize: TextUnit = 16.sp,
+    textWeight: FontWeight = FontWeight.Normal,
+    textStyle: TextStyle? = null
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(color = bgColor, shape = shape),
-        contentAlignment = Alignment.Center
-    ) {
-        VerticalImageText(
-            text = text,
-            iconRes = iconRes,
-            iconSize = iconSize,
-            spacing = spacing,
-            textColor = textColor,
-            textSize = textSize
-        )
-    }
-}
-
-@Composable
-private fun VerticalImageText(
-    text: String,
-    @DrawableRes iconRes: Int,
-    iconSize: Dp = 160.dp,
-    spacing: Dp = 24.dp,
-    textColor: Color = Color(0xFF999999),
-    textSize: TextUnit = 16.sp
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(spacing)
-    ) {
-        Image(
-            painter = painterResource(id = iconRes),
-            modifier = Modifier.size(iconSize),
-            contentDescription = null
-        )
-        Text(text = text, color = textColor, fontSize = textSize)
-    }
+    StateView(
+        text = text,
+        modifier = modifier,
+        backgroundColor = backgroundColor,
+        shape = shape,
+        iconRes = iconRes,
+        iconSize = iconSize,
+        betweenPadding = betweenPadding,
+        textColor = textColor,
+        textSize = textSize,
+        textWeight = textWeight,
+        textStyle = textStyle
+    )
 }
 
 fun <K, V> getPagingFooterType(component: PagingComponent<K, V>): PagingFooterType {

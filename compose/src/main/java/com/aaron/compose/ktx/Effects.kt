@@ -5,7 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
-import com.jialai.compose.component.ComposeLifecycleComponent
+import com.aaron.compose.component.ComposeLifecycleComponent
 import kotlinx.coroutines.CoroutineScope
 
 /**
