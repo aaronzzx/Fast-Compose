@@ -26,7 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ScrollableTabRow
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
@@ -55,16 +54,17 @@ import com.aaron.compose.ktx.itemsIndexed
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ktx.toPx
 import com.aaron.compose.paging.LoadState
-import com.aaron.compose.ui.NonRippleTab
 import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.refresh.SmartRefresh
 import com.aaron.compose.ui.refresh.SmartRefreshState
 import com.aaron.compose.ui.refresh.SmartRefreshType
 import com.aaron.compose.ui.refresh.rememberSmartRefreshState
+import com.aaron.compose.ui.tabrow.NonRippleTab2
+import com.aaron.compose.ui.tabrow.ScrollableTabRow2
+import com.aaron.compose.ui.tabrow.pagerTabIndicatorOffset2
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
-import com.google.accompanist.pager.pagerTabIndicatorOffset
 import com.google.accompanist.pager.rememberPagerState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import kotlinx.coroutines.launch
@@ -120,7 +120,7 @@ private fun Pager() {
         val curPage by pagerState.currentPageDelayed()
         val pageCount = 20
 
-        ScrollableTabRow(
+        ScrollableTabRow2(
             modifier = Modifier.fillMaxWidth(),
             selectedTabIndex = curPage,
             edgePadding = 0.dp,
@@ -130,7 +130,7 @@ private fun Pager() {
             },
             indicator = {
                 Box(
-                    modifier = Modifier.pagerTabIndicatorOffset(pagerState, it)
+                    modifier = Modifier.pagerTabIndicatorOffset2(pagerState, it)
                 ) {
                     Box(
                         Modifier
@@ -148,7 +148,7 @@ private fun Pager() {
             val scope = rememberCoroutineScope()
             (1..pageCount).forEachIndexed { index, item ->
                 val selected = curPage == index
-                NonRippleTab(
+                NonRippleTab2(
                     text = {
                         Text(
                             text = "$item",

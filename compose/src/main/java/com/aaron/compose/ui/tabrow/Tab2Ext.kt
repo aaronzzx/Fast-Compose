@@ -1,11 +1,9 @@
-package com.aaron.compose.ui
+package com.aaron.compose.ui.tabrow
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.material.ContentAlpha
-import androidx.compose.material.LeadingIconTab
 import androidx.compose.material.LocalContentColor
-import androidx.compose.material.Tab
 import androidx.compose.material.ripple.LocalRippleTheme
 import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.material.ripple.RippleTheme
@@ -19,7 +17,7 @@ import androidx.compose.ui.graphics.Color
  * 禁用 Ripple 的 Tab
  */
 @Composable
-fun NonRippleTab(
+fun NonRippleTab2(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -30,7 +28,7 @@ fun NonRippleTab(
     content: @Composable ColumnScope.() -> Unit
 ) {
     CompositionLocalProvider(LocalRippleTheme provides NoRippleTheme) {
-        Tab(
+        Tab2(
             selected = selected,
             onClick = onClick,
             modifier = modifier,
@@ -47,7 +45,7 @@ fun NonRippleTab(
  * 禁用 Ripple 的 Tab
  */
 @Composable
-fun NonRippleTab(
+fun NonRippleTab2(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -59,7 +57,7 @@ fun NonRippleTab(
     unselectedContentColor: Color = selectedContentColor.copy(alpha = ContentAlpha.medium)
 ) {
     CompositionLocalProvider(LocalRippleTheme provides NoRippleTheme) {
-        Tab(
+        Tab2(
             selected = selected,
             onClick = onClick,
             modifier = modifier,
@@ -77,7 +75,7 @@ fun NonRippleTab(
  * 禁用 Ripple 的 LeadingTab
  */
 @Composable
-fun NonRippleLeadingIconTab(
+fun NonRippleLeadingIconTab2(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -89,7 +87,7 @@ fun NonRippleLeadingIconTab(
     text: @Composable (() -> Unit)
 ) {
     CompositionLocalProvider(LocalRippleTheme provides NoRippleTheme) {
-        LeadingIconTab(
+        LeadingIconTab2(
             selected = selected,
             onClick = onClick,
             text = text,
