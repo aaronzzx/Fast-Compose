@@ -4,13 +4,16 @@ import android.os.Bundle
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,6 +43,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -54,6 +59,7 @@ import com.aaron.compose.ktx.itemsIndexed
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ktx.toPx
 import com.aaron.compose.paging.LoadState
+import com.aaron.compose.ui.NestedScroll
 import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.refresh.SmartRefresh
 import com.aaron.compose.ui.refresh.SmartRefreshState
@@ -67,6 +73,7 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : BaseComposeActivity() {
@@ -106,7 +113,85 @@ class MainActivity : BaseComposeActivity() {
                     )
 //                    MyPager()
 //                    Pager()
-                    ViewStateComponent()
+//                    ViewStateComponent()
+                    val refreshState = rememberSmartRefreshState(type = SmartRefreshType.Idle)
+                    val scope = rememberCoroutineScope()
+                    SmartRefresh(
+                        state = refreshState,
+                        onRefresh = {
+                            scope.launch {
+                                refreshState.type = SmartRefreshType.Refreshing
+                                delay(1000)
+                                refreshState.type = SmartRefreshType.Success()
+                            }
+                        },
+                        onIdle = { refreshState.type = SmartRefreshType.Idle }
+                    ) {
+                        NestedScroll(
+                            modifier = Modifier.fillMaxSize(),
+                            header = { NestedHeader() }
+                        ) {
+                            NestedContent()
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NestedHeader() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1f)
+            .background(
+                color = Color.Green.copy(0.5f)
+            )
+    )
+}
+
+@Composable
+private fun NestedContent() {
+    Column {
+        Image(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(2f)
+                .border(
+                    width = 2.dp,
+                    color = Color.Black
+                ),
+            painter = painterResource(id = R.drawable.ide_bg),
+            contentScale = ContentScale.Crop,
+            contentDescription = null
+        )
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2)
+        ) {
+            items(24) { index ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .background(
+                            color = when (index % 2) {
+                                0 -> Color.Red.copy(0.5f)
+                                else -> Color.Blue.copy(0.5f)
+                            }
+                        )
+                        .border(
+                            width = 2.dp,
+                            color = Color.Black
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "$index",
+                        color = Color.White,
+                        fontSize = 20.sp
+                    )
                 }
             }
         }
