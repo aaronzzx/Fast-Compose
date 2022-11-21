@@ -101,7 +101,7 @@ fun Tab2(
         selectedContentColor,
         unselectedContentColor
     ) {
-        TabBaselineLayout(icon = icon, text = styledText)
+        TabBaselineLayout2(icon = icon, text = styledText)
     }
 }
 
@@ -150,10 +150,10 @@ fun LeadingIconTab2(
 ) {
     // The color of the Ripple should always the be selected color, as we want to show the color
     // before the item is considered selected, and hence before the new contentColor is
-    // provided by TabTransition.
+    // provided by TabTransition2.
     val ripple = rememberRipple(bounded = true, color = selectedContentColor)
 
-    TabTransition(selectedContentColor, unselectedContentColor, selected) {
+    TabTransition2(selectedContentColor, unselectedContentColor, selected) {
         Row(
             modifier = modifier
                 .height(SmallTabHeight)
@@ -220,10 +220,10 @@ fun Tab2(
 ) {
     // The color of the Ripple should always the selected color, as we want to show the color
     // before the item is considered selected, and hence before the new contentColor is
-    // provided by TabTransition.
+    // provided by TabTransition2.
     val ripple = rememberRipple(bounded = true, color = selectedContentColor)
 
-    TabTransition(selectedContentColor, unselectedContentColor, selected) {
+    TabTransition2(selectedContentColor, unselectedContentColor, selected) {
         Column(
             modifier = modifier
                 .selectable(
@@ -248,7 +248,7 @@ fun Tab2(
  * and [inactiveColor] depending on the animation status.
  */
 @Composable
-private fun TabTransition(
+private fun TabTransition2(
     activeColor: Color,
     inactiveColor: Color,
     selected: Boolean,
@@ -286,7 +286,7 @@ private fun TabTransition(
  * place the text and/or icon inside with the correct baseline alignment.
  */
 @Composable
-private fun TabBaselineLayout(
+private fun TabBaselineLayout2(
     text: @Composable (() -> Unit)?,
     icon: @Composable (() -> Unit)?
 ) {
@@ -329,7 +329,7 @@ private fun TabBaselineLayout(
 
         layout(tabWidth, tabHeight) {
             when {
-                textPlaceable != null && iconPlaceable != null -> placeTextAndIcon(
+                textPlaceable != null && iconPlaceable != null -> placeTextAndIcon2(
                     density = this@Layout,
                     textPlaceable = textPlaceable,
                     iconPlaceable = iconPlaceable,
@@ -338,8 +338,8 @@ private fun TabBaselineLayout(
                     firstBaseline = firstBaseline!!,
                     lastBaseline = lastBaseline!!
                 )
-                textPlaceable != null -> placeTextOrIcon(textPlaceable, tabHeight)
-                iconPlaceable != null -> placeTextOrIcon(iconPlaceable, tabHeight)
+                textPlaceable != null -> placeTextOrIcon2(textPlaceable, tabHeight)
+                iconPlaceable != null -> placeTextOrIcon2(iconPlaceable, tabHeight)
                 else -> {
                 }
             }
@@ -351,7 +351,7 @@ private fun TabBaselineLayout(
  * Places the provided [textOrIconPlaceable] in the vertical center of the provided
  * [tabHeight].
  */
-private fun Placeable.PlacementScope.placeTextOrIcon(
+private fun Placeable.PlacementScope.placeTextOrIcon2(
     textOrIconPlaceable: Placeable,
     tabHeight: Int
 ) {
@@ -364,7 +364,7 @@ private fun Placeable.PlacementScope.placeTextOrIcon(
  * baseline offset, with the provided [iconPlaceable] placed above the text using the correct
  * baseline offset.
  */
-private fun Placeable.PlacementScope.placeTextAndIcon(
+private fun Placeable.PlacementScope.placeTextAndIcon2(
     density: Density,
     textPlaceable: Placeable,
     iconPlaceable: Placeable,

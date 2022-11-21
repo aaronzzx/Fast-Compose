@@ -128,7 +128,7 @@ fun TabRow2(
     backgroundColor: Color = MaterialTheme.colors.primarySurface,
     contentColor: Color = contentColorFor(backgroundColor),
     indicator: @Composable @UiComposable
-        (tabPositions: List<TabPosition>) -> Unit = @Composable { tabPositions ->
+        (tabPositions: List<TabPosition2>) -> Unit = @Composable { tabPositions ->
         TabRow2Defaults.Indicator(
             Modifier.tabIndicatorOffset2(tabPositions[selectedTabIndex])
         )
@@ -146,7 +146,7 @@ fun TabRow2(
     ) {
         SubcomposeLayout(Modifier.fillMaxWidth()) { constraints ->
             val tabRowWidth = constraints.maxWidth
-            val tabMeasurables = subcompose(TabSlots.Tabs, tabs)
+            val tabMeasurables = subcompose(TabSlots2.Tabs, tabs)
             val tabCount = tabMeasurables.size
             val tabWidth = (tabRowWidth / tabCount)
             val tabPlaceables = tabMeasurables.map {
@@ -156,7 +156,7 @@ fun TabRow2(
             val tabRowHeight = tabPlaceables.maxByOrNull { it.height }?.height ?: 0
 
             val tabPositions = List(tabCount) { index ->
-                TabPosition(tabWidth.toDp() * index, tabWidth.toDp())
+                TabPosition2(tabWidth.toDp() * index, tabWidth.toDp())
             }
 
             layout(tabRowWidth, tabRowHeight) {
@@ -164,12 +164,12 @@ fun TabRow2(
                     placeable.placeRelative(index * tabWidth, 0)
                 }
 
-                subcompose(TabSlots.Divider, divider).forEach {
+                subcompose(TabSlots2.Divider, divider).forEach {
                     val placeable = it.measure(constraints.copy(minHeight = 0))
                     placeable.placeRelative(0, tabRowHeight - placeable.height)
                 }
 
-                subcompose(TabSlots.Indicator) {
+                subcompose(TabSlots2.Indicator) {
                     indicator(tabPositions)
                 }.forEach {
                     it.measure(Constraints.fixed(tabRowWidth, tabRowHeight)).placeRelative(0, 0)
@@ -224,7 +224,7 @@ fun ScrollableTabRow2(
     edgePadding: Dp = TabRow2Defaults.ScrollableTabRowPadding,
     minTabWidth: Dp = TabRow2Defaults.ScrollableTabRowMinimumTabWidth,
     indicator: @Composable @UiComposable
-        (tabPositions: List<TabPosition>) -> Unit = @Composable { tabPositions ->
+        (tabPositions: List<TabPosition2>) -> Unit = @Composable { tabPositions ->
         TabRow2Defaults.Indicator(
             Modifier.tabIndicatorOffset2(tabPositions[selectedTabIndex])
         )
@@ -243,7 +243,7 @@ fun ScrollableTabRow2(
         val scrollState = rememberScrollState()
         val coroutineScope = rememberCoroutineScope()
         val scrollableTabData = remember(scrollState, coroutineScope) {
-            ScrollableTabData(
+            ScrollableTabData2(
                 scrollState = scrollState,
                 coroutineScope = coroutineScope
             )
@@ -260,7 +260,7 @@ fun ScrollableTabRow2(
             val padding = edgePadding.roundToPx()
             val tabConstraints = constraints.copy(minWidth = minTabWidthPx)
 
-            val tabPlaceables = subcompose(TabSlots.Tabs, tabs)
+            val tabPlaceables = subcompose(TabSlots2.Tabs, tabs)
                 .map { it.measure(tabConstraints) }
 
             var layoutWidth = padding * 2
@@ -273,17 +273,17 @@ fun ScrollableTabRow2(
             // Position the children.
             layout(layoutWidth, layoutHeight) {
                 // Place the tabs
-                val tabPositions = mutableListOf<TabPosition>()
+                val tabPositions = mutableListOf<TabPosition2>()
                 var left = padding
                 tabPlaceables.forEach {
                     it.placeRelative(left, 0)
-                    tabPositions.add(TabPosition(left = left.toDp(), width = it.width.toDp()))
+                    tabPositions.add(TabPosition2(left = left.toDp(), width = it.width.toDp()))
                     left += it.width
                 }
 
                 // The divider is measured with its own height, and width equal to the total width
                 // of the tab row, and then placed on top of the tabs.
-                subcompose(TabSlots.Divider, divider).forEach {
+                subcompose(TabSlots2.Divider, divider).forEach {
                     val placeable = it.measure(
                         constraints.copy(
                             minHeight = 0,
@@ -296,7 +296,7 @@ fun ScrollableTabRow2(
 
                 // The indicator container is measured to fill the entire space occupied by the tab
                 // row, and then placed on top of the divider.
-                subcompose(TabSlots.Indicator) {
+                subcompose(TabSlots2.Indicator) {
                     indicator(tabPositions)
                 }.forEach {
                     it.measure(Constraints.fixed(layoutWidth, layoutHeight)).placeRelative(0, 0)
@@ -322,7 +322,7 @@ fun ScrollableTabRow2(
 @ExperimentalPagerApi
 fun Modifier.pagerTabIndicatorOffset2(
     pagerState: PagerState,
-    tabPositions: List<TabPosition>,
+    tabPositions: List<TabPosition2>,
     pageIndexMapping: (Int) -> Int = { it },
 ): Modifier = layout { measurable, constraints ->
     if (tabPositions.isEmpty()) {
@@ -374,12 +374,12 @@ fun Modifier.pagerTabIndicatorOffset2(
  * @property width the width of this tab
  */
 @Immutable
-class TabPosition internal constructor(val left: Dp, val width: Dp) {
+class TabPosition2 internal constructor(val left: Dp, val width: Dp) {
     val right: Dp get() = left + width
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is TabPosition) return false
+        if (other !is TabPosition2) return false
 
         if (left != other.left) return false
         if (width != other.width) return false
@@ -445,11 +445,11 @@ object TabRow2Defaults {
      * [Modifier] that takes up all the available width inside the [TabRow], and then animates
      * the offset of the indicator it is applied to, depending on the [currentTabPosition].
      *
-     * @param currentTabPosition [TabPosition] of the currently selected tab. This is used to
+     * @param currentTabPosition [TabPosition2] of the currently selected tab. This is used to
      * calculate the offset of the indicator this modifier is applied to, as well as its width.
      */
     fun Modifier.tabIndicatorOffset2(
-        currentTabPosition: TabPosition
+        currentTabPosition: TabPosition2
     ): Modifier = composed(
         inspectorInfo = debugInspectorInfo {
             name = "tabIndicatorOffset"
@@ -501,7 +501,7 @@ object TabRow2Defaults {
     )
 }
 
-private enum class TabSlots {
+private enum class TabSlots2 {
     Tabs,
     Divider,
     Indicator
@@ -510,7 +510,7 @@ private enum class TabSlots {
 /**
  * Class holding onto state needed for [ScrollableTabRow]
  */
-private class ScrollableTabData(
+private class ScrollableTabData2(
     private val scrollState: ScrollState,
     private val coroutineScope: CoroutineScope
 ) {
@@ -519,7 +519,7 @@ private class ScrollableTabData(
     fun onLaidOut(
         density: Density,
         edgeOffset: Int,
-        tabPositions: List<TabPosition>,
+        tabPositions: List<TabPosition2>,
         selectedTab: Int
     ) {
         // Animate if the new tab is different from the old tab, or this is called for the first
@@ -547,10 +547,10 @@ private class ScrollableTabData(
      * If the tab is at the start / end, and there is not enough space to fully centre the tab, this
      * will just clamp to the min / max position given the max width.
      */
-    private fun TabPosition.calculateTabOffset(
+    private fun TabPosition2.calculateTabOffset(
         density: Density,
         edgeOffset: Int,
-        tabPositions: List<TabPosition>
+        tabPositions: List<TabPosition2>
     ): Int = with(density) {
         val totalTabRowWidth = tabPositions.last().right.roundToPx() + edgeOffset
         val visibleWidth = totalTabRowWidth - scrollState.maxValue
