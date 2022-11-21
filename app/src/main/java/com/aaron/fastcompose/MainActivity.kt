@@ -23,10 +23,12 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -52,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aaron.compose.base.BaseComposeActivity
+import com.aaron.compose.ktx.canScroll
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.currentPageDelayed
 import com.aaron.compose.ktx.isNotEmpty
@@ -59,15 +62,17 @@ import com.aaron.compose.ktx.itemsIndexed
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ktx.toPx
 import com.aaron.compose.paging.LoadState
-import com.aaron.compose.ui.NestedScroll
+import com.aaron.compose.ui.CollapsingScroll
 import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.refresh.SmartRefresh
 import com.aaron.compose.ui.refresh.SmartRefreshState
 import com.aaron.compose.ui.refresh.SmartRefreshType
 import com.aaron.compose.ui.refresh.rememberSmartRefreshState
+import com.aaron.compose.ui.rememberCollapsingScrollState
 import com.aaron.compose.ui.tabrow.NonRippleTab2
 import com.aaron.compose.ui.tabrow.ScrollableTabRow2
 import com.aaron.compose.ui.tabrow.pagerTabIndicatorOffset2
+import com.aaron.compose.utils.OverScrollHandler
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
@@ -116,22 +121,69 @@ class MainActivity : BaseComposeActivity() {
 //                    ViewStateComponent()
                     val refreshState = rememberSmartRefreshState(type = SmartRefreshType.Idle)
                     val scope = rememberCoroutineScope()
-                    SmartRefresh(
-                        state = refreshState,
-                        onRefresh = {
-                            scope.launch {
-                                refreshState.type = SmartRefreshType.Refreshing
-                                delay(1000)
-                                refreshState.type = SmartRefreshType.Success()
-                            }
-                        },
-                        onIdle = { refreshState.type = SmartRefreshType.Idle }
-                    ) {
-                        NestedScroll(
-                            modifier = Modifier.fillMaxSize(),
-                            header = { NestedHeader() }
+                    OverScrollHandler(enabled = false) {
+                        SmartRefresh(
+                            state = refreshState,
+                            onRefresh = {
+                                scope.launch {
+                                    refreshState.type = SmartRefreshType.Refreshing
+                                    delay(1000)
+                                    refreshState.type = SmartRefreshType.Success()
+                                }
+                            },
+                            onIdle = { refreshState.type = SmartRefreshType.Idle }
                         ) {
-                            NestedContent()
+                            Box {
+                                val collapsingScrollState = rememberCollapsingScrollState()
+//                                LaunchedEffect(key1 = collapsingScrollState) {
+//                                    launch {
+//                                        snapshotFlow { collapsingScrollState.animationState }
+//                                            .collect {
+//                                                Log.d("zzx", "animationState: $it")
+//                                            }
+//                                    }
+//                                    launch {
+//                                        snapshotFlow { collapsingScrollState.isCollapsed }
+//                                            .collect {
+//                                                Log.d("zzx", "isCollapsed: $it")
+//                                            }
+//                                    }
+//                                }
+                                val listState = rememberLazyGridState()
+                                CollapsingScroll(
+                                    modifier = Modifier.fillMaxSize(),
+                                    state = collapsingScrollState,
+                                    allowScrollToExpandedWhenCollapsed = {
+                                        !listState.canScroll(-1)
+                                    },
+                                    header = {
+                                        NestedHeader()
+                                    }
+                                ) {
+                                    NestedContent(listState)
+                                }
+
+                                FloatingActionButton(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(24.dp),
+                                    onClick = {
+                                        scope.launch {
+                                            if (collapsingScrollState.isCollapsed) {
+                                                launch {
+                                                    listState.scrollToItem(0)
+                                                }
+                                            }
+                                            collapsingScrollState.toggle()
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Home,
+                                        contentDescription = null
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -153,7 +205,7 @@ private fun NestedHeader() {
 }
 
 @Composable
-private fun NestedContent() {
+private fun NestedContent(lazyGridState: LazyGridState) {
     Column {
         Image(
             modifier = Modifier
@@ -168,7 +220,8 @@ private fun NestedContent() {
             contentDescription = null
         )
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2)
+            columns = GridCells.Fixed(2),
+            state = lazyGridState
         ) {
             items(24) { index ->
                 Box(
