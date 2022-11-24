@@ -119,22 +119,31 @@ class MainActivity : BaseComposeActivity() {
 //                    MyPager()
 //                    Pager()
 //                    ViewStateComponent()
-                    val refreshState = rememberSmartRefreshState(type = SmartRefreshType.Idle)
-                    val scope = rememberCoroutineScope()
-                    OverScrollHandler(enabled = false) {
-                        SmartRefresh(
-                            state = refreshState,
-                            onRefresh = {
-                                scope.launch {
-                                    refreshState.type = SmartRefreshType.Refreshing
-                                    delay(1000)
-                                    refreshState.type = SmartRefreshType.Success()
-                                }
-                            },
-                            onIdle = { refreshState.type = SmartRefreshType.Idle }
-                        ) {
-                            Box {
-                                val collapsingScrollState = rememberCollapsingScrollState()
+                    Collapsing()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Collapsing() {
+    val refreshState = rememberSmartRefreshState(type = SmartRefreshType.Idle)
+    val scope = rememberCoroutineScope()
+    OverScrollHandler(enabled = false) {
+        SmartRefresh(
+            state = refreshState,
+            onRefresh = {
+                scope.launch {
+                    refreshState.type = SmartRefreshType.Refreshing
+                    delay(1000)
+                    refreshState.type = SmartRefreshType.Success()
+                }
+            },
+            onIdle = { refreshState.type = SmartRefreshType.Idle }
+        ) {
+            Box {
+                val collapsingScrollState = rememberCollapsingScrollState()
 //                                LaunchedEffect(key1 = collapsingScrollState) {
 //                                    launch {
 //                                        snapshotFlow { collapsingScrollState.animationState }
@@ -149,43 +158,39 @@ class MainActivity : BaseComposeActivity() {
 //                                            }
 //                                    }
 //                                }
-                                val listState = rememberLazyGridState()
-                                CollapsingScroll(
-                                    modifier = Modifier.fillMaxSize(),
-                                    state = collapsingScrollState,
-                                    allowScrollToExpandedWhenCollapsed = {
-                                        !listState.canScroll(-1)
-                                    },
-                                    header = {
-                                        NestedHeader()
-                                    }
-                                ) {
-                                    NestedContent(listState)
-                                }
+                val listState = rememberLazyGridState()
+                CollapsingScroll(
+                    modifier = Modifier.fillMaxSize(),
+                    state = collapsingScrollState,
+                    allowScrollToExpandedWhenCollapsed = {
+                        !listState.canScroll(-1)
+                    },
+                    header = {
+                        NestedHeader()
+                    }
+                ) {
+                    NestedContent(listState)
+                }
 
-                                FloatingActionButton(
-                                    modifier = Modifier
-                                        .align(Alignment.BottomEnd)
-                                        .padding(24.dp),
-                                    onClick = {
-                                        scope.launch {
-                                            if (collapsingScrollState.isCollapsed) {
-                                                launch {
-                                                    listState.scrollToItem(0)
-                                                }
-                                            }
-                                            collapsingScrollState.toggle()
-                                        }
-                                    }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Home,
-                                        contentDescription = null
-                                    )
+                FloatingActionButton(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(24.dp),
+                    onClick = {
+                        scope.launch {
+                            if (collapsingScrollState.isCollapsed) {
+                                launch {
+                                    listState.scrollToItem(0)
                                 }
                             }
+                            collapsingScrollState.toggle()
                         }
                     }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Home,
+                        contentDescription = null
+                    )
                 }
             }
         }

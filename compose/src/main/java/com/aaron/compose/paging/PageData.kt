@@ -25,6 +25,12 @@ class PageData<K, V>(
     private val onRequest: suspend PageData<K, V>.(params: LoadParams<K>) -> LoadResult<K, V>
 ) {
 
+    /**
+     * 是否成功加载过数据
+     */
+    var isInitialized: Boolean by mutableStateOf(false)
+        private set
+
     var page: Int by mutableStateOf(1)
         private set
 
@@ -117,6 +123,7 @@ class PageData<K, V>(
                     clear()
                     addAll(dataList)
                 }
+                isInitialized = true
             }
             is LoadResult.Error -> {
                 pageList = emptyList()

@@ -28,6 +28,9 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.ProgressIndicatorDefaults
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -51,6 +54,8 @@ import com.aaron.compose.ktx.isEmpty
 import com.aaron.compose.ktx.isNotEmpty
 import com.aaron.compose.ktx.items
 import com.aaron.compose.ktx.onClick
+import com.aaron.compose.ktx.toDp
+import com.aaron.compose.ktx.toPx
 import com.aaron.compose.paging.LoadResult
 import com.aaron.compose.paging.LoadState
 import com.aaron.compose.paging.PageData
@@ -76,128 +81,493 @@ fun <K, V> PagingComponent(
     pagingStateFooter: PagingStateFooter? = pagingStateFooterSingleton,
     headerContent: (@Composable () -> Unit)? = null,
     footerContent: (@Composable () -> Unit)? = null,
+    loadingContent: (@Composable () -> Unit)? = null,
     emptyContent: (@Composable () -> Unit)? = {
-        PagingEmptyLayout()
+        PagingEmpty()
     },
     content: LazyListScope.(PageData<K, V>) -> Unit
 ) {
-    var listHeightPx by remember {
-        mutableStateOf(0)
-    }
-    var headerHeightPx by remember {
-        mutableStateOf(0)
-    }
-    var footerHeightPx by remember {
-        mutableStateOf(0)
-    }
-    SubcomposeLayout(modifier = modifier) { constraint ->
-        val placeables = subcompose("LazyColumn") {
-            LazyColumn(
-                state = state,
-                contentPadding = contentPadding,
-                reverseLayout = reverseLayout,
-                verticalArrangement = verticalArrangement,
-                horizontalAlignment = horizontalAlignment,
-                flingBehavior = flingBehavior,
-                userScrollEnabled = userScrollEnabled
-            ) {
-                if (headerContent != null) {
-                    item(contentType = "Header") {
-                        SubcomposeLayout { constraint ->
-                            val placeables = subcompose("Header", headerContent).map {
-                                val placeable = it.measure(constraint)
-                                headerHeightPx = placeable.height.coerceAtLeast(headerHeightPx)
-                                placeable
-                            }
-                            layout(constraint.maxWidth, headerHeightPx) {
-                                placeables.forEach {
-                                    it.placeRelative(0, 0)
-                                }
+    SubcomposeList(
+        slotId = "${component}-LazyColumn",
+        modifier = modifier
+    ) { listHeightPixels ->
+        var headerHeightPixels by remember {
+            mutableStateOf(0)
+        }
+        var footerHeightPixels by remember {
+            mutableStateOf(0)
+        }
+        LazyColumn(
+            state = state,
+            contentPadding = contentPadding,
+            reverseLayout = reverseLayout,
+            verticalArrangement = verticalArrangement,
+            horizontalAlignment = horizontalAlignment,
+            flingBehavior = flingBehavior,
+            userScrollEnabled = userScrollEnabled
+        ) {
+            if (headerContent != null) {
+                item(
+                    key = "${component}-Header",
+                    contentType = "Header"
+                ) {
+                    SubcomposeLayout { constraint ->
+                        val placeables = subcompose("${component}-Header", headerContent).map {
+                            it.measure(constraint).apply {
+                                headerHeightPixels = height.coerceAtLeast(headerHeightPixels)
                             }
                         }
-                    }
-                }
-
-                val pageData = component.pageData
-                if (pageData.isEmpty && emptyContent != null) {
-                    item(contentType = "EmptyContent") {
-                        val verticalPaddingPx = with(contentPadding) {
-                            calculateTopPadding() + calculateBottomPadding()
-                        }.toPx()
-                        val spacingPx = verticalArrangement.spacing.toPx()
-                        val totalSpacingPx = run {
-                            if (headerContent != null && footerContent != null) {
-                                spacingPx * 2
-                            } else if (headerContent != null || footerContent != null) {
-                                spacingPx
-                            } else {
-                                0f
+                        layout(constraint.maxWidth, headerHeightPixels) {
+                            placeables.forEach {
+                                it.placeRelative(0, 0)
                             }
                         }
-                        val emptyContentHeightPx =
-                            listHeightPx - headerHeightPx - footerHeightPx - verticalPaddingPx - totalSpacingPx
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(emptyContentHeightPx.toDp())
-                        ) {
-                            emptyContent()
-                        }
-                    }
-                } else {
-                    content(pageData)
-                }
-
-                if (footerContent != null) {
-                    item(contentType = "Footer") {
-                        SubcomposeLayout { constraint ->
-                            val placeables = subcompose("Footer", footerContent).map {
-                                val placeable = it.measure(constraint)
-                                footerHeightPx = placeable.height.coerceAtLeast(footerHeightPx)
-                                placeable
-                            }
-                            layout(constraint.maxWidth, footerHeightPx) {
-                                placeables.forEach {
-                                    it.placeRelative(0, 0)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (pagingStateFooter != null) {
-                    fun trySetFooter(
-                        lazyListScope: LazyListScope,
-                        component: PagingComponent<*, *>,
-                        content: (@Composable (PagingComponent<*, *>) -> Unit)?
-                    ) {
-                        if (content != null) {
-                            lazyListScope.item(contentType = "PagingStateFooter") {
-                                content(component)
-                            }
-                        }
-                    }
-                    when (getPagingFooterType(component)) {
-                        PagingFooterType.Loading -> trySetFooter(this, component, pagingStateFooter.loading)
-                        PagingFooterType.LoadMore -> trySetFooter(this, component, pagingStateFooter.loadMore)
-                        PagingFooterType.LoadError -> trySetFooter(this, component, pagingStateFooter.loadError)
-                        PagingFooterType.NoMoreData -> trySetFooter(this, component, pagingStateFooter.noMoreData)
-                        PagingFooterType.WaitingRefresh -> trySetFooter(this, component, pagingStateFooter.waitingRefresh)
-                        else -> Unit
                     }
                 }
             }
+
+            val pageData = component.pageData
+            if (loadingContent != null && pageData.isInitialized.not()) {
+                item(
+                    key = "${component}-Loading",
+                    contentType = "Loading"
+                ) {
+                    CentralContent(
+                        contentPadding = contentPadding,
+                        verticalArrangement = verticalArrangement,
+                        existsHeader = headerContent != null,
+                        existsFooter = footerContent != null,
+                        listHeightPixels = listHeightPixels,
+                        headerHeightPixels = headerHeightPixels,
+                        footerHeightPixels = footerHeightPixels
+                    ) {
+                        loadingContent()
+                    }
+                }
+            } else if (emptyContent != null && pageData.isEmpty) {
+                item(
+                    key = "${component}-Empty",
+                    contentType = "Empty"
+                ) {
+                    CentralContent(
+                        contentPadding = contentPadding,
+                        verticalArrangement = verticalArrangement,
+                        existsHeader = headerContent != null,
+                        existsFooter = footerContent != null,
+                        listHeightPixels = listHeightPixels,
+                        headerHeightPixels = headerHeightPixels,
+                        footerHeightPixels = footerHeightPixels
+                    ) {
+                        emptyContent()
+                    }
+                }
+            } else {
+                content(pageData)
+            }
+
+            if (footerContent != null) {
+                item(
+                    key = "${component}-Footer",
+                    contentType = "Footer"
+                ) {
+                    SubcomposeLayout { constraint ->
+                        val placeables = subcompose("${component}-Footer", footerContent).map {
+                            it.measure(constraint).apply {
+                                footerHeightPixels = height.coerceAtLeast(footerHeightPixels)
+                            }
+                        }
+                        layout(constraint.maxWidth, footerHeightPixels) {
+                            placeables.forEach {
+                                it.placeRelative(0, 0)
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (pagingStateFooter != null) {
+                fun trySetFooter(
+                    lazyListScope: LazyListScope,
+                    component: PagingComponent<*, *>,
+                    content: (@Composable (PagingComponent<*, *>) -> Unit)?
+                ) {
+                    if (content != null) {
+                        lazyListScope.item(
+                            key = "${component}-PagingStateFooter",
+                            contentType = "PagingStateFooter"
+                        ) {
+                            content(component)
+                        }
+                    }
+                }
+                when (getPagingFooterType(component)) {
+                    PagingFooterType.Loading -> trySetFooter(
+                        this,
+                        component,
+                        pagingStateFooter.loading
+                    )
+                    PagingFooterType.LoadMore -> trySetFooter(
+                        this,
+                        component,
+                        pagingStateFooter.loadMore
+                    )
+                    PagingFooterType.LoadError -> trySetFooter(
+                        this,
+                        component,
+                        pagingStateFooter.loadError
+                    )
+                    PagingFooterType.NoMoreData -> trySetFooter(
+                        this,
+                        component,
+                        pagingStateFooter.noMoreData
+                    )
+                    PagingFooterType.WaitingRefresh -> trySetFooter(
+                        this,
+                        component,
+                        pagingStateFooter.waitingRefresh
+                    )
+                    else -> Unit
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 网格分页
+ */
+@Composable
+fun <K, V> PagingGridComponent(
+    component: PagingComponent<K, V>,
+    columns: GridCells,
+    modifier: Modifier = Modifier,
+    state: LazyGridState = rememberLazyGridState(),
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+    reverseLayout: Boolean = false,
+    verticalArrangement: Arrangement.Vertical =
+        if (!reverseLayout) Arrangement.Top else Arrangement.Bottom,
+    horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
+    flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
+    userScrollEnabled: Boolean = true,
+    pagingStateFooter: PagingStateFooter? = pagingStateFooterSingleton,
+    headerContent: (@Composable () -> Unit)? = null,
+    footerContent: (@Composable () -> Unit)? = null,
+    loadingContent: (@Composable () -> Unit)? = null,
+    emptyContent: (@Composable () -> Unit)? = {
+        PagingEmpty()
+    },
+    content: LazyGridScope.(PageData<K, V>) -> Unit
+) {
+    SubcomposeList(
+        slotId = "${component}-LazyVerticalGrid",
+        modifier = modifier
+    ) { listHeightPixels ->
+        var headerHeightPixels by remember {
+            mutableStateOf(0)
+        }
+        var footerHeightPixels by remember {
+            mutableStateOf(0)
+        }
+        LazyVerticalGrid(
+            columns = columns,
+            state = state,
+            contentPadding = contentPadding,
+            reverseLayout = reverseLayout,
+            verticalArrangement = verticalArrangement,
+            horizontalArrangement = horizontalArrangement,
+            flingBehavior = flingBehavior,
+            userScrollEnabled = userScrollEnabled
+        ) {
+            if (headerContent != null) {
+                item(
+                    span = {
+                        GridItemSpan(maxLineSpan)
+                    },
+                    key = "${component}-Header",
+                    contentType = "Header"
+                ) {
+                    SubcomposeLayout { constraint ->
+                        val placeables = subcompose("${component}-Header", headerContent).map {
+                            it.measure(constraint).apply {
+                                headerHeightPixels = height.coerceAtLeast(headerHeightPixels)
+                            }
+                        }
+                        layout(constraint.maxWidth, headerHeightPixels) {
+                            placeables.forEach {
+                                it.placeRelative(0, 0)
+                            }
+                        }
+                    }
+                }
+            }
+
+            val pageData = component.pageData
+            if (loadingContent != null && pageData.isInitialized.not()) {
+                item(
+                    span = {
+                        GridItemSpan(maxLineSpan)
+                    },
+                    key = "${component}-Loading",
+                    contentType = "Loading"
+                ) {
+                    CentralContent(
+                        contentPadding = contentPadding,
+                        verticalArrangement = verticalArrangement,
+                        existsHeader = headerContent != null,
+                        existsFooter = footerContent != null,
+                        listHeightPixels = listHeightPixels,
+                        headerHeightPixels = headerHeightPixels,
+                        footerHeightPixels = footerHeightPixels
+                    ) {
+                        loadingContent()
+                    }
+                }
+            } else if (emptyContent != null && pageData.isEmpty) {
+                item(
+                    span = {
+                        GridItemSpan(maxLineSpan)
+                    },
+                    key = "${component}-Empty",
+                    contentType = "Empty"
+                ) {
+                    CentralContent(
+                        contentPadding = contentPadding,
+                        verticalArrangement = verticalArrangement,
+                        existsHeader = headerContent != null,
+                        existsFooter = footerContent != null,
+                        listHeightPixels = listHeightPixels,
+                        headerHeightPixels = headerHeightPixels,
+                        footerHeightPixels = footerHeightPixels
+                    ) {
+                        emptyContent()
+                    }
+                }
+            } else {
+                content(pageData)
+            }
+
+            if (footerContent != null) {
+                item(
+                    span = {
+                        GridItemSpan(maxLineSpan)
+                    },
+                    key = "$component-Footer",
+                    contentType = "Footer"
+                ) {
+                    SubcomposeLayout { constraint ->
+                        val placeables = subcompose("$component-Footer", footerContent).map {
+                            it.measure(constraint).apply {
+                                footerHeightPixels = height.coerceAtLeast(footerHeightPixels)
+                            }
+                        }
+                        layout(constraint.maxWidth, footerHeightPixels) {
+                            placeables.forEach {
+                                it.placeRelative(0, 0)
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (pagingStateFooter != null) {
+                fun trySetFooter(
+                    lazyGridScope: LazyGridScope,
+                    component: PagingComponent<*, *>,
+                    content: (@Composable (PagingComponent<*, *>) -> Unit)?
+                ) {
+                    if (content != null) {
+                        lazyGridScope.item(
+                            span = {
+                                GridItemSpan(maxLineSpan)
+                            },
+                            key = "${component}-PagingStateFooter",
+                            contentType = "PagingStateFooter"
+                        ) {
+                            content(component)
+                        }
+                    }
+                }
+                when (getPagingFooterType(component)) {
+                    PagingFooterType.Loading -> trySetFooter(
+                        this,
+                        component,
+                        pagingStateFooter.loading
+                    )
+                    PagingFooterType.LoadMore -> trySetFooter(
+                        this,
+                        component,
+                        pagingStateFooter.loadMore
+                    )
+                    PagingFooterType.LoadError -> trySetFooter(
+                        this,
+                        component,
+                        pagingStateFooter.loadError
+                    )
+                    PagingFooterType.NoMoreData -> trySetFooter(
+                        this,
+                        component,
+                        pagingStateFooter.noMoreData
+                    )
+                    PagingFooterType.WaitingRefresh -> trySetFooter(
+                        this,
+                        component,
+                        pagingStateFooter.waitingRefresh
+                    )
+                    else -> Unit
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 瀑布流分页
+ */
+@Composable
+fun <K, V> PagingStaggeredGridComponent(
+    component: PagingComponent<K, V>,
+    columns: StaggeredGridCells,
+    modifier: Modifier = Modifier,
+    state: LazyStaggeredGridState = rememberLazyStaggeredGridState(),
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+    verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(0.dp),
+    horizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(0.dp),
+    flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
+    userScrollEnabled: Boolean = true,
+    pagingStateFooter: PagingStateFooter? = pagingStateFooterSingleton,
+    headerContent: (@Composable () -> Unit)? = null,
+    footerContent: (@Composable () -> Unit)? = null,
+    loadingContent: (@Composable () -> Unit)? = null,
+    emptyContent: (@Composable () -> Unit)? = {
+        PagingEmpty()
+    },
+    content: LazyStaggeredGridScope.(PageData<K, V>) -> Unit
+) {
+    val pageData = component.pageData
+    if (loadingContent != null && pageData.isInitialized.not()) {
+        loadingContent()
+    } else if (emptyContent != null && pageData.isEmpty) {
+        emptyContent()
+    } else {
+        LazyVerticalStaggeredGrid(
+            columns = columns,
+            modifier = modifier,
+            state = state,
+            contentPadding = contentPadding,
+            verticalArrangement = verticalArrangement,
+            horizontalArrangement = horizontalArrangement,
+            flingBehavior = flingBehavior,
+            userScrollEnabled = userScrollEnabled
+        ) {
+            content(pageData)
+        }
+    }
+}
+
+@Composable
+private fun SubcomposeList(
+    slotId: Any?,
+    modifier: Modifier = Modifier,
+    content: @Composable (listHeightPixels: Int) -> Unit
+) {
+    var listHeightPixels by remember {
+        mutableStateOf(0)
+    }
+    SubcomposeLayout(modifier = modifier) { constraint ->
+        val placeables = subcompose(slotId) {
+            content(listHeightPixels)
         }.map {
-            val placeable = it.measure(constraint)
-            listHeightPx = placeable.height.coerceAtLeast(listHeightPx)
-            placeable
+            it.measure(constraint).apply {
+                listHeightPixels = height.coerceAtLeast(listHeightPixels)
+            }
         }
         layout(constraint.maxWidth, constraint.maxHeight) {
             placeables.forEach {
                 it.placeRelative(0, 0)
             }
         }
+    }
+}
+
+@Composable
+fun PagingLoading(
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colors.primary,
+    strokeWidth: Dp = ProgressIndicatorDefaults.StrokeWidth
+) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            color = color,
+            strokeWidth = strokeWidth
+        )
+    }
+}
+
+@Composable
+fun PagingEmpty(
+    modifier: Modifier = Modifier,
+    text: String = "暂无数据",
+    backgroundColor: Color = Color.White,
+    shape: Shape = RoundedCornerShape(8.dp),
+    @DrawableRes iconRes: Int = R.drawable.details_image_wholea_normal,
+    iconSize: Dp = 160.dp,
+    betweenPadding: Dp = 24.dp,
+    textColor: Color = Color(0xFF999999),
+    textSize: TextUnit = 16.sp,
+    textWeight: FontWeight = FontWeight.Normal,
+    textStyle: TextStyle? = null
+) {
+    StateView(
+        text = text,
+        modifier = modifier,
+        backgroundColor = backgroundColor,
+        shape = shape,
+        iconRes = iconRes,
+        iconSize = iconSize,
+        betweenPadding = betweenPadding,
+        textColor = textColor,
+        textSize = textSize,
+        textWeight = textWeight,
+        textStyle = textStyle
+    )
+}
+
+@Composable
+private fun CentralContent(
+    contentPadding: PaddingValues,
+    verticalArrangement: Arrangement.Vertical,
+    existsHeader: Boolean,
+    existsFooter: Boolean,
+    listHeightPixels: Int,
+    headerHeightPixels: Int,
+    footerHeightPixels: Int,
+    content: @Composable () -> Unit
+) {
+    val verticalPaddingPx = with(contentPadding) {
+        calculateTopPadding() + calculateBottomPadding()
+    }.toPx()
+    val spacingPx = verticalArrangement.spacing.toPx()
+    val totalSpacingPx = run {
+        if (existsHeader && existsFooter) {
+            spacingPx * 2
+        } else if (existsHeader || existsFooter) {
+            spacingPx
+        } else {
+            0f
+        }
+    }
+    val emptyContentHeightPx =
+        listHeightPixels - headerHeightPixels - footerHeightPixels - verticalPaddingPx - totalSpacingPx
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(emptyContentHeightPx.toDp())
+    ) {
+        content()
     }
 }
 
@@ -225,231 +595,6 @@ private fun PagingComponent() {
             )
         }
     }
-}
-
-/**
- * 网格分页
- */
-@Composable
-fun <K, V> PagingGridComponent(
-    component: PagingComponent<K, V>,
-    columns: GridCells,
-    modifier: Modifier = Modifier,
-    state: LazyGridState = rememberLazyGridState(),
-    contentPadding: PaddingValues = PaddingValues(0.dp),
-    reverseLayout: Boolean = false,
-    verticalArrangement: Arrangement.Vertical =
-        if (!reverseLayout) Arrangement.Top else Arrangement.Bottom,
-    horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
-    flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
-    userScrollEnabled: Boolean = true,
-    pagingStateFooter: PagingStateFooter? = pagingStateFooterSingleton,
-    headerContent: (@Composable () -> Unit)? = null,
-    footerContent: (@Composable () -> Unit)? = null,
-    emptyContent: (@Composable () -> Unit)? = {
-        PagingEmptyLayout()
-    },
-    content: LazyGridScope.(PageData<K, V>) -> Unit
-) {
-    var listHeightPx by remember {
-        mutableStateOf(0)
-    }
-    var headerHeightPx by remember {
-        mutableStateOf(0)
-    }
-    var footerHeightPx by remember {
-        mutableStateOf(0)
-    }
-    SubcomposeLayout(modifier = modifier) { constraint ->
-        val placeables = subcompose("LazyVerticalGrid") {
-            LazyVerticalGrid(
-                columns = columns,
-                state = state,
-                contentPadding = contentPadding,
-                reverseLayout = reverseLayout,
-                verticalArrangement = verticalArrangement,
-                horizontalArrangement = horizontalArrangement,
-                flingBehavior = flingBehavior,
-                userScrollEnabled = userScrollEnabled
-            ) {
-                if (headerContent != null) {
-                    item(
-                        span = {
-                            GridItemSpan(maxLineSpan)
-                        },
-                        contentType = "Header"
-                    ) {
-                        SubcomposeLayout { constraint ->
-                            val placeables = subcompose("Header", headerContent).map {
-                                val placeable = it.measure(constraint)
-                                headerHeightPx = placeable.height.coerceAtLeast(headerHeightPx)
-                                placeable
-                            }
-                            layout(constraint.maxWidth, headerHeightPx) {
-                                placeables.forEach {
-                                    it.placeRelative(0, 0)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                val pageData = component.pageData
-                if (pageData.isEmpty && emptyContent != null) {
-                    item(
-                        span = {
-                            GridItemSpan(maxLineSpan)
-                        },
-                        contentType = "EmptyContent"
-                    ) {
-                        val verticalPaddingPx = with(contentPadding) {
-                            calculateTopPadding() + calculateBottomPadding()
-                        }.toPx()
-                        val spacingPx = verticalArrangement.spacing.toPx()
-                        val totalSpacingPx = run {
-                            if (headerContent != null && footerContent != null) {
-                                spacingPx * 2
-                            } else if (headerContent != null || footerContent != null) {
-                                spacingPx
-                            } else {
-                                0f
-                            }
-                        }
-                        val emptyContentHeightPx =
-                            listHeightPx - headerHeightPx - footerHeightPx - verticalPaddingPx - totalSpacingPx
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(emptyContentHeightPx.toDp())
-                        ) {
-                            emptyContent()
-                        }
-                    }
-                } else {
-                    content(pageData)
-                }
-
-                if (footerContent != null) {
-                    item(
-                        span = {
-                            GridItemSpan(maxLineSpan)
-                        },
-                        contentType = "Footer"
-                    ) {
-                        SubcomposeLayout { constraint ->
-                            val placeables = subcompose("Footer", footerContent).map {
-                                val placeable = it.measure(constraint)
-                                footerHeightPx = placeable.height.coerceAtLeast(footerHeightPx)
-                                placeable
-                            }
-                            layout(constraint.maxWidth, footerHeightPx) {
-                                placeables.forEach {
-                                    it.placeRelative(0, 0)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (pagingStateFooter != null) {
-                    fun trySetFooter(
-                        lazyGridScope: LazyGridScope,
-                        component: PagingComponent<*, *>,
-                        content: (@Composable (PagingComponent<*, *>) -> Unit)?
-                    ) {
-                        if (content != null) {
-                            lazyGridScope.item(
-                                span = {
-                                    GridItemSpan(maxLineSpan)
-                                },
-                                contentType = "PagingStateFooter"
-                            ) {
-                                content(component)
-                            }
-                        }
-                    }
-                    when (getPagingFooterType(component)) {
-                        PagingFooterType.Loading -> trySetFooter(this, component, pagingStateFooter.loading)
-                        PagingFooterType.LoadMore -> trySetFooter(this, component, pagingStateFooter.loadMore)
-                        PagingFooterType.LoadError -> trySetFooter(this, component, pagingStateFooter.loadError)
-                        PagingFooterType.NoMoreData -> trySetFooter(this, component, pagingStateFooter.noMoreData)
-                        PagingFooterType.WaitingRefresh -> trySetFooter(this, component, pagingStateFooter.waitingRefresh)
-                        else -> Unit
-                    }
-                }
-            }
-        }.map {
-            val placeable = it.measure(constraint)
-            listHeightPx = placeable.height.coerceAtLeast(listHeightPx)
-            placeable
-        }
-        layout(constraint.maxWidth, constraint.maxHeight) {
-            placeables.forEach {
-                it.placeRelative(0, 0)
-            }
-        }
-    }
-}
-
-/**
- * 瀑布流分页
- */
-@Composable
-fun <K, V> PagingStaggeredGridComponent(
-    component: PagingComponent<K, V>,
-    columns: StaggeredGridCells,
-    modifier: Modifier = Modifier,
-    state: LazyStaggeredGridState = rememberLazyStaggeredGridState(),
-    contentPadding: PaddingValues = PaddingValues(0.dp),
-    verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(0.dp),
-    horizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(0.dp),
-    flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
-    userScrollEnabled: Boolean = true,
-    content: LazyStaggeredGridScope.(PageData<K, V>) -> Unit
-) {
-    LazyVerticalStaggeredGrid(
-        columns = columns,
-        modifier = modifier,
-        state = state,
-        contentPadding = contentPadding,
-        verticalArrangement = verticalArrangement,
-        horizontalArrangement = horizontalArrangement,
-        flingBehavior = flingBehavior,
-        userScrollEnabled = userScrollEnabled
-    ) {
-        val pageData = component.pageData
-        content(pageData)
-    }
-}
-
-@Composable
-fun PagingEmptyLayout(
-    modifier: Modifier = Modifier,
-    text: String = "暂无数据",
-    backgroundColor: Color = Color.White,
-    shape: Shape = RoundedCornerShape(8.dp),
-    @DrawableRes iconRes: Int = R.drawable.details_image_wholea_normal,
-    iconSize: Dp = 160.dp,
-    betweenPadding: Dp = 24.dp,
-    textColor: Color = Color(0xFF999999),
-    textSize: TextUnit = 16.sp,
-    textWeight: FontWeight = FontWeight.Normal,
-    textStyle: TextStyle? = null
-) {
-    StateView(
-        text = text,
-        modifier = modifier,
-        backgroundColor = backgroundColor,
-        shape = shape,
-        iconRes = iconRes,
-        iconSize = iconSize,
-        betweenPadding = betweenPadding,
-        textColor = textColor,
-        textSize = textSize,
-        textWeight = textWeight,
-        textStyle = textStyle
-    )
 }
 
 fun <K, V> getPagingFooterType(component: PagingComponent<K, V>): PagingFooterType {
@@ -569,6 +714,11 @@ interface PagingComponent<K, V> : PagingScope {
 
     val pageData: PageData<K, V>
 
+    /**
+     * PageData 是否已经初始化，即成功加载过数据
+     */
+    val isInitialized: Boolean get() = pageData.isInitialized
+
     fun pagingRefresh() {
         pageData.refresh()
     }
@@ -585,9 +735,10 @@ interface PagingComponent<K, V> : PagingScope {
 @Stable
 interface PagingMultiComponent : PagingScope {
 
-    fun <K, V> PageData<K, V>.toPagingComponent(): PagingComponent<K, V> = object : PagingComponent<K, V> {
-        override val pageData: PageData<K, V> = this@toPagingComponent
-    }
+    fun <K, V> PageData<K, V>.toPagingComponent(): PagingComponent<K, V> =
+        object : PagingComponent<K, V> {
+            override val pageData: PageData<K, V> = this@toPagingComponent
+        }
 }
 
 @Composable
