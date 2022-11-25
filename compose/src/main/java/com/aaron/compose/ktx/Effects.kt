@@ -15,6 +15,22 @@ import kotlinx.coroutines.CoroutineScope
 @NonRestartableComposable
 fun LaunchedLifecycleEffect(
     state: Lifecycle.State,
+    key1: Any?,
+    block: suspend CoroutineScope.() -> Unit
+) {
+    ComposeLifecycleComponent {
+        LaunchedEffect(key1) {
+            repeatOnLifecycle(state) {
+                block()
+            }
+        }
+    }
+}
+
+@Composable
+@NonRestartableComposable
+fun LaunchedLifecycleEffect(
+    state: Lifecycle.State,
     vararg key: Any?,
     block: suspend CoroutineScope.() -> Unit
 ) {

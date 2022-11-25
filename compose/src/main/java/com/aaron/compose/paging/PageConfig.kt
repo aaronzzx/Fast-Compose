@@ -2,7 +2,6 @@ package com.aaron.compose.paging
 
 import androidx.compose.runtime.Stable
 import com.aaron.compose.paging.PageConfigDefaults.DefaultEnableLoadMore
-import com.aaron.compose.paging.PageConfigDefaults.DefaultInitialSize
 import com.aaron.compose.paging.PageConfigDefaults.DefaultMaxPage
 import com.aaron.compose.paging.PageConfigDefaults.DefaultPageSize
 import com.aaron.compose.paging.PageConfigDefaults.DefaultPrefetchDistance
@@ -18,9 +17,6 @@ object PageConfigDefaults {
 
     /** 默认最大页数 */
     var DefaultMaxPage = Int.MAX_VALUE
-
-    /** 默认初始化个数 */
-    var DefaultInitialSize = 15
 
     /** 默认预取距离，在倒数第几个时进行加载操作 */
     var DefaultPrefetchDistance = DefaultPageSize
@@ -44,7 +40,7 @@ data class PageConfig(
     val maxPage: Int = DefaultMaxPage,
 
     /** 初始化个数 */
-    val initialSize: Int = DefaultInitialSize,
+    val initialSize: Int = pageSize,
 
     /** 预取距离，在倒数第几个时进行加载操作 */
     val prefetchDistance:Int = DefaultPrefetchDistance,
