@@ -29,7 +29,6 @@ class MainVM @Inject constructor() : ViewModel(), SafeStateScope, PagingScope {
             Defaults.SuccessCode = 200
             with(PageConfigDefaults) {
                 DefaultPrefetchDistance = 1
-                DefaultInitialSize = 5
                 DefaultPageSize = 5
 //                DefaultMaxPage = 5
             }

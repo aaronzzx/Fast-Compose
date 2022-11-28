@@ -31,7 +31,6 @@ class PagingVM : ViewModel(), StateComponent, RefreshComponent, PagingComponent<
             Defaults.SuccessCode = 200
             with(PageConfigDefaults) {
                 DefaultPrefetchDistance = 1
-                DefaultInitialSize = 10
                 DefaultPageSize = 10
                 DefaultMaxPage = 1
             }
