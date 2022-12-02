@@ -28,7 +28,9 @@ abstract class BaseComposeActivity : FragmentActivity() {
 
     @Composable
     protected open fun MainContent() {
-        Content()
+        BaseComposeDefaults.entrance {
+            Content()
+        }
     }
 
     @Composable
