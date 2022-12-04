@@ -92,7 +92,7 @@ fun <K, V> PagingComponent(
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
     userScrollEnabled: Boolean = true,
-    pagingStateFooter: PagingStateFooter? = PagingComponentDefaults.pagingStateFooter,
+    pagingStateFooter: PagingStateFooter? = PagingComponentDefaults.verticalPagingStateFooter,
     headerContent: (@Composable () -> Unit)? = null,
     footerContent: (@Composable () -> Unit)? = null,
     loadingContent: (@Composable () -> Unit)? = null,
@@ -265,7 +265,7 @@ fun <K, V> PagingGridComponent(
     horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
     flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
     userScrollEnabled: Boolean = true,
-    pagingStateFooter: PagingStateFooter? = PagingComponentDefaults.pagingStateFooter,
+    pagingStateFooter: PagingStateFooter? = PagingComponentDefaults.verticalPagingStateFooter,
     headerContent: (@Composable () -> Unit)? = null,
     footerContent: (@Composable () -> Unit)? = null,
     loadingContent: (@Composable () -> Unit)? = null,
@@ -452,7 +452,7 @@ fun <K, V> PagingStaggeredGridComponent(
     horizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(0.dp),
     flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
     userScrollEnabled: Boolean = true,
-    pagingStateFooter: PagingStateFooter? = PagingComponentDefaults.pagingStateFooter,
+    pagingStateFooter: PagingStateFooter? = PagingComponentDefaults.verticalPagingStateFooter,
     headerContent: (@Composable () -> Unit)? = null,
     footerContent: (@Composable () -> Unit)? = null,
     loadingContent: (@Composable () -> Unit)? = null,
@@ -497,23 +497,14 @@ fun <K, V> PagingHorizontalComponent(
     verticalAlignment: Alignment.Vertical = Alignment.Top,
     flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
     userScrollEnabled: Boolean = true,
-    loadingContent: (@Composable () -> Unit)? = {
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .padding(8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(24.dp)
-            )
-        }
-    },
+    pagingStateFooter: PagingStateFooter? = PagingComponentDefaults.horizontalPagingStateFooter,
     content: LazyListScope.(PageData<K, V>) -> Unit
 ) {
     val density = LocalDensity.current
     var lastIndex = remember(component) { component.pageData.lastIndex }
-    val curLoadingContent by rememberUpdatedState(newValue = loadingContent)
+    val hasLoadingContent by rememberUpdatedState(newValue = pagingStateFooter?.loading != null)
+    val hasLoadMoreContent by rememberUpdatedState(newValue = pagingStateFooter?.loadMore != null)
+    val hasLoadErrorContent by rememberUpdatedState(newValue = pagingStateFooter?.loadError != null)
     val pagingFooterType by rememberPagingFooterType(component = component)
     val isDragged by state.interactionSource.collectIsDraggedAsState()
 
@@ -521,7 +512,7 @@ fun <K, V> PagingHorizontalComponent(
         // 当没有设置 loading 时，监听到加载完成时自动滑动列表以提示新数据
         launch {
             snapshotFlow { component.pageData.lastIndex }
-                .filter { curLoadingContent == null }
+                .filter { !hasLoadingContent }
                 .filter { pagingLastIndex ->
                     val curLastIndex = lastIndex
                     lastIndex = pagingLastIndex
@@ -548,8 +539,11 @@ fun <K, V> PagingHorizontalComponent(
                     val pageConfig = component.pageData.config
                     val prefetchEnabled = pageConfig.prefetchDistance > 0
                     when {
-                        !prefetchEnabled && pagingFooterType == PagingFooterType.LoadMore -> component.pagingLoadMore()
-                        pagingFooterType == PagingFooterType.LoadError -> component.pagingRetry()
+                        !hasLoadMoreContent
+                                && !prefetchEnabled
+                                && pagingFooterType == PagingFooterType.LoadMore -> component.pagingLoadMore()
+                        !hasLoadErrorContent
+                                && pagingFooterType == PagingFooterType.LoadError -> component.pagingRetry()
                         else -> Unit
                     }
                 }
@@ -567,12 +561,48 @@ fun <K, V> PagingHorizontalComponent(
     ) {
         content(component.pageData)
 
-        if (loadingContent != null && pagingFooterType == PagingFooterType.Loading) {
-            item(
-                key = "${component}-Loading",
-                contentType = "Loading"
+        if (pagingStateFooter != null) {
+            fun trySetFooter(
+                lazyListScope: LazyListScope,
+                component: PagingComponent<*, *>,
+                content: (@Composable (PagingComponent<*, *>) -> Unit)?
             ) {
-                loadingContent()
+                if (content != null) {
+                    lazyListScope.item(
+                        key = "${component}-PagingStateFooter",
+                        contentType = "PagingStateFooter"
+                    ) {
+                        content(component)
+                    }
+                }
+            }
+            when (pagingFooterType) {
+                PagingFooterType.Loading -> trySetFooter(
+                    this,
+                    component,
+                    pagingStateFooter.loading
+                )
+                PagingFooterType.LoadMore -> trySetFooter(
+                    this,
+                    component,
+                    pagingStateFooter.loadMore
+                )
+                PagingFooterType.LoadError -> trySetFooter(
+                    this,
+                    component,
+                    pagingStateFooter.loadError
+                )
+                PagingFooterType.NoMoreData -> trySetFooter(
+                    this,
+                    component,
+                    pagingStateFooter.noMoreData
+                )
+                PagingFooterType.WaitingRefresh -> trySetFooter(
+                    this,
+                    component,
+                    pagingStateFooter.waitingRefresh
+                )
+                else -> Unit
             }
         }
     }
@@ -745,7 +775,27 @@ enum class PagingFooterType {
 
 object PagingComponentDefaults {
 
-    var pagingStateFooter: PagingStateFooter = PagingStateFooter()
+    var verticalPagingStateFooter: PagingStateFooter = PagingStateFooter()
+
+    var horizontalPagingStateFooter: PagingStateFooter = object : PagingStateFooter() {
+        override val loading: @Composable (PagingComponent<*, *>) -> Unit = {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .padding(8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
+        override val loadMore: ((PagingComponent<*, *>) -> Unit)? = null
+        override val loadError: ((PagingComponent<*, *>) -> Unit)? = null
+        override val noMoreData: ((PagingComponent<*, *>) -> Unit)? = null
+        override val waitingRefresh: ((PagingComponent<*, *>) -> Unit)? = null
+    }
 }
 
 @Stable
