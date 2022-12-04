@@ -73,6 +73,7 @@ import com.aaron.compose.ui.tabrow.NonRippleTab2
 import com.aaron.compose.ui.tabrow.ScrollableTabRow2
 import com.aaron.compose.ui.tabrow.pagerTabIndicatorOffset2
 import com.aaron.compose.utils.OverScrollHandler
+import com.aaron.fastcompose.paging3.PagingActivity
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
@@ -86,7 +87,7 @@ class MainActivity : BaseComposeActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 //        SecondActivity.start(this)
-//        PagingActivity.start(this)
+        PagingActivity.start(this)
     }
 
     @Composable

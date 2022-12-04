@@ -19,7 +19,7 @@ import kotlin.coroutines.suspendCoroutine
 @Stable
 class PageData<K, V>(
     private val coroutineScope: CoroutineScope,
-    private val config: PageConfig = PageConfig(),
+    val config: PageConfig = PageConfig(),
     lazyLoad: Boolean = false,
     private val invokeCompletion: (suspend PageData<K, V>.(LoadResult<K, V>) -> Unit)? = null,
     private val onRequest: suspend PageData<K, V>.(params: LoadParams<K>) -> LoadResult<K, V>

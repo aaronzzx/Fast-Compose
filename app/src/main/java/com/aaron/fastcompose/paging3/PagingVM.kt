@@ -32,7 +32,7 @@ class PagingVM : ViewModel(), StateComponent, RefreshComponent, PagingComponent<
             with(PageConfigDefaults) {
                 DefaultPrefetchDistance = 1
                 DefaultPageSize = 10
-                DefaultMaxPage = 1
+                DefaultMaxPage = 5
             }
         }
     }
@@ -83,6 +83,10 @@ class PagingVM : ViewModel(), StateComponent, RefreshComponent, PagingComponent<
 
     override fun finishRefresh(success: Boolean, delay: Long) {
         super.finishRefresh(success, delay.coerceAtLeast(300))
+    }
+
+    override fun pagingLoadMore() {
+        pageData.loadMore(retryIfCurrentError = true)
     }
 
     fun deleteItem(index: Int) {

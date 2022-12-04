@@ -4,17 +4,22 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.ScrollableDefaults
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
@@ -33,16 +38,21 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProgressIndicatorDefaults
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -50,9 +60,11 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aaron.compose.R
+import com.aaron.compose.ktx.canScroll
 import com.aaron.compose.ktx.isEmpty
 import com.aaron.compose.ktx.isNotEmpty
 import com.aaron.compose.ktx.items
+import com.aaron.compose.ktx.lastIndex
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ktx.toDp
 import com.aaron.compose.ktx.toPx
@@ -62,6 +74,8 @@ import com.aaron.compose.paging.PageData
 import com.aaron.compose.paging.PagingScope
 import com.aaron.compose.utils.DevicePreview
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 
 /**
  * 分页
@@ -78,7 +92,7 @@ fun <K, V> PagingComponent(
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
     userScrollEnabled: Boolean = true,
-    pagingStateFooter: PagingStateFooter? = pagingStateFooterSingleton,
+    pagingStateFooter: PagingStateFooter? = PagingComponentDefaults.pagingStateFooter,
     headerContent: (@Composable () -> Unit)? = null,
     footerContent: (@Composable () -> Unit)? = null,
     loadingContent: (@Composable () -> Unit)? = null,
@@ -97,6 +111,8 @@ fun <K, V> PagingComponent(
         var footerHeightPixels by remember {
             mutableStateOf(0)
         }
+
+        val pagingFooterType by rememberPagingFooterType(component = component)
         LazyColumn(
             state = state,
             contentPadding = contentPadding,
@@ -200,7 +216,7 @@ fun <K, V> PagingComponent(
                         }
                     }
                 }
-                when (getPagingFooterType(component)) {
+                when (pagingFooterType) {
                     PagingFooterType.Loading -> trySetFooter(
                         this,
                         component,
@@ -249,7 +265,7 @@ fun <K, V> PagingGridComponent(
     horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
     flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
     userScrollEnabled: Boolean = true,
-    pagingStateFooter: PagingStateFooter? = pagingStateFooterSingleton,
+    pagingStateFooter: PagingStateFooter? = PagingComponentDefaults.pagingStateFooter,
     headerContent: (@Composable () -> Unit)? = null,
     footerContent: (@Composable () -> Unit)? = null,
     loadingContent: (@Composable () -> Unit)? = null,
@@ -268,6 +284,8 @@ fun <K, V> PagingGridComponent(
         var footerHeightPixels by remember {
             mutableStateOf(0)
         }
+
+        val pagingFooterType by rememberPagingFooterType(component = component)
         LazyVerticalGrid(
             columns = columns,
             state = state,
@@ -387,7 +405,7 @@ fun <K, V> PagingGridComponent(
                         }
                     }
                 }
-                when (getPagingFooterType(component)) {
+                when (pagingFooterType) {
                     PagingFooterType.Loading -> trySetFooter(
                         this,
                         component,
@@ -434,7 +452,7 @@ fun <K, V> PagingStaggeredGridComponent(
     horizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(0.dp),
     flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
     userScrollEnabled: Boolean = true,
-    pagingStateFooter: PagingStateFooter? = pagingStateFooterSingleton,
+    pagingStateFooter: PagingStateFooter? = PagingComponentDefaults.pagingStateFooter,
     headerContent: (@Composable () -> Unit)? = null,
     footerContent: (@Composable () -> Unit)? = null,
     loadingContent: (@Composable () -> Unit)? = null,
@@ -460,6 +478,102 @@ fun <K, V> PagingStaggeredGridComponent(
             userScrollEnabled = userScrollEnabled
         ) {
             content(pageData)
+        }
+    }
+}
+
+/**
+ * 水平分页
+ */
+@Composable
+fun <K, V> PagingHorizontalComponent(
+    component: PagingComponent<K, V>,
+    modifier: Modifier = Modifier,
+    state: LazyListState = rememberLazyListState(),
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+    reverseLayout: Boolean = false,
+    horizontalArrangement: Arrangement.Horizontal =
+        if (!reverseLayout) Arrangement.Start else Arrangement.End,
+    verticalAlignment: Alignment.Vertical = Alignment.Top,
+    flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
+    userScrollEnabled: Boolean = true,
+    loadingContent: (@Composable () -> Unit)? = {
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .padding(8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    },
+    content: LazyListScope.(PageData<K, V>) -> Unit
+) {
+    val density = LocalDensity.current
+    var lastIndex = remember(component) { component.pageData.lastIndex }
+    val curLoadingContent by rememberUpdatedState(newValue = loadingContent)
+    val pagingFooterType by rememberPagingFooterType(component = component)
+    val isDragged by state.interactionSource.collectIsDraggedAsState()
+
+    LaunchedEffect(component, state) {
+        // 当没有设置 loading 时，监听到加载完成时自动滑动列表以提示新数据
+        launch {
+            snapshotFlow { component.pageData.lastIndex }
+                .filter { curLoadingContent == null }
+                .filter { pagingLastIndex ->
+                    val curLastIndex = lastIndex
+                    lastIndex = pagingLastIndex
+                    pagingLastIndex != -1
+                            && curLastIndex != -1
+                            && curLastIndex < pagingLastIndex
+                }
+                .filter { !state.isScrollInProgress && !state.canScroll(1) }
+                .collect {
+                    // 滑出 item 的一半
+                    val lastHalfSize = state.layoutInfo.visibleItemsInfo.last().size / 2f
+                    val spacing = with(density) { horizontalArrangement.spacing.toPx() }
+                    val offset = lastHalfSize + spacing
+                    state.animateScrollBy(offset)
+                }
+        }
+        // 拖拽到底部触发加载、重试
+        launch {
+            snapshotFlow { state.isScrollInProgress to state.firstVisibleItemScrollOffset }
+                .filter {
+                    isDragged && !state.canScroll(1)
+                }
+                .collect {
+                    val pageConfig = component.pageData.config
+                    val prefetchEnabled = pageConfig.prefetchDistance > 0
+                    when {
+                        !prefetchEnabled && pagingFooterType == PagingFooterType.LoadMore -> component.pagingLoadMore()
+                        pagingFooterType == PagingFooterType.LoadError -> component.pagingRetry()
+                        else -> Unit
+                    }
+                }
+        }
+    }
+    LazyRow(
+        modifier = modifier,
+        state = state,
+        contentPadding = contentPadding,
+        reverseLayout = reverseLayout,
+        horizontalArrangement = horizontalArrangement,
+        verticalAlignment = verticalAlignment,
+        flingBehavior = flingBehavior,
+        userScrollEnabled = userScrollEnabled
+    ) {
+        content(component.pageData)
+
+        if (loadingContent != null && pagingFooterType == PagingFooterType.Loading) {
+            item(
+                key = "${component}-Loading",
+                contentType = "Loading"
+            ) {
+                loadingContent()
+            }
         }
     }
 }
@@ -597,7 +711,8 @@ private fun PagingComponent() {
     }
 }
 
-fun <K, V> getPagingFooterType(component: PagingComponent<K, V>): PagingFooterType {
+@Composable
+fun <K, V> rememberPagingFooterType(component: PagingComponent<K, V>): State<PagingFooterType> {
     val pageData = component.pageData
     val loadMoreState = pageData.loadState.loadMore
     val waitingRefresh = loadMoreState is LoadState.Waiting
@@ -608,7 +723,10 @@ fun <K, V> getPagingFooterType(component: PagingComponent<K, V>): PagingFooterTy
     val loadError = loadMoreState is LoadState.Error
     val noMoreData = loadMoreState.noMoreData
 
-    return when {
+    val state = remember {
+        mutableStateOf(PagingFooterType.None)
+    }
+    state.value = when {
         pageData.isEmpty -> PagingFooterType.None
         loading -> PagingFooterType.Loading
         loadMore -> PagingFooterType.LoadMore
@@ -617,6 +735,7 @@ fun <K, V> getPagingFooterType(component: PagingComponent<K, V>): PagingFooterTy
         waitingRefresh -> PagingFooterType.WaitingRefresh
         else -> PagingFooterType.None
     }
+    return state
 }
 
 enum class PagingFooterType {
@@ -624,12 +743,13 @@ enum class PagingFooterType {
     None, Loading, LoadMore, LoadError, NoMoreData, WaitingRefresh
 }
 
-private val pagingStateFooterSingleton = PagingStateFooterImpl()
+object PagingComponentDefaults {
 
-private class PagingStateFooterImpl : PagingStateFooter()
+    var pagingStateFooter: PagingStateFooter = PagingStateFooter()
+}
 
 @Stable
-abstract class PagingStateFooter {
+open class PagingStateFooter {
 
     open val loading: (@Composable (PagingComponent<*, *>) -> Unit)? = {
         FooterText(
@@ -735,10 +855,25 @@ interface PagingComponent<K, V> : PagingScope {
 @Stable
 interface PagingMultiComponent : PagingScope {
 
-    fun <K, V> PageData<K, V>.toPagingComponent(): PagingComponent<K, V> =
-        object : PagingComponent<K, V> {
-            override val pageData: PageData<K, V> = this@toPagingComponent
+    fun <K, V> PageData<K, V>.toPagingComponent(
+        onRefresh: ((PageData<K, V>) -> Unit)? = null,
+        onLoadMore: ((PageData<K, V>) -> Unit)? = null,
+        onRetry: ((PageData<K, V>) -> Unit)? = null
+    ): PagingComponent<K, V> = object : PagingComponent<K, V> {
+        override val pageData: PageData<K, V> = this@toPagingComponent
+
+        override fun pagingRefresh() {
+            onRefresh?.invoke(pageData) ?: super.pagingRefresh()
         }
+
+        override fun pagingLoadMore() {
+            onLoadMore?.invoke(pageData) ?: super.pagingLoadMore()
+        }
+
+        override fun pagingRetry() {
+            onRetry?.invoke(pageData) ?: super.pagingRetry()
+        }
+    }
 }
 
 @Composable
