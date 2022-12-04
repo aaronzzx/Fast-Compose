@@ -229,7 +229,7 @@ private fun PagingPage() {
 //                                    },
 //                                    pagingStateFooter = MyFooter
                                 ) { pageData ->
-                                    itemsIndexed(pageData, key = { _, item -> item.id }) { index, item ->
+                                    itemsIndexed(vm, key = { _, item -> item.id }) { index, item ->
                                         Box(
                                             modifier = Modifier
                                                 .animateItemPlacement()

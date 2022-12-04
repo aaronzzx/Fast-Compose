@@ -1,7 +1,5 @@
 package com.aaron.compose.ktx
 
-import android.os.Parcel
-import android.os.Parcelable
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -11,19 +9,20 @@ import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridItemScope
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.runtime.Composable
-import com.aaron.compose.paging.PageData
+import com.aaron.compose.component.PagingComponent
 
 /**
  * @author aaronzzxup@gmail.com
- * @since 2022/9/21
+ * @since 2022/12/5
  */
 
 fun <K, V> LazyListScope.items(
-    pageData: PageData<K, V>,
+    component: PagingComponent<K, V>,
     key: ((item: V) -> Any?)? = null,
     contentType: ((item: V) -> Any?)? = null,
     itemContent: @Composable LazyItemScope.(item: V) -> Unit
 ) {
+    val pageData = component.pageData
     items(
         count = pageData.itemCount,
         key = if (key == null) null else { index ->
@@ -38,16 +37,17 @@ fun <K, V> LazyListScope.items(
             contentType?.invoke(pageData.peek(index))
         }
     ) { index ->
-        itemContent(pageData[index])
+        itemContent(getItem(component, index))
     }
 }
 
 fun <K, V> LazyListScope.itemsIndexed(
-    pageData: PageData<K, V>,
+    component: PagingComponent<K, V>,
     key: ((index: Int, item: V) -> Any?)? = null,
     contentType: ((index: Int, item: V) -> Any?)? = null,
     itemContent: @Composable LazyItemScope.(index: Int, item: V) -> Unit
 ) {
+    val pageData = component.pageData
     items(
         count = pageData.itemCount,
         key = if (key == null) null else { index ->
@@ -62,17 +62,18 @@ fun <K, V> LazyListScope.itemsIndexed(
             contentType?.invoke(index, pageData.peek(index))
         }
     ) { index ->
-        itemContent(index, pageData[index])
+        itemContent(index, getItem(component, index))
     }
 }
 
 fun <K, V> LazyGridScope.items(
-    pageData: PageData<K, V>,
+    component: PagingComponent<K, V>,
     key: ((item: V) -> Any?)? = null,
     contentType: ((item: V) -> Any?)? = null,
     span: (LazyGridItemSpanScope.(item: V) -> GridItemSpan)? = null,
     itemContent: @Composable LazyGridItemScope.(item: V) -> Unit
 ) {
+    val pageData = component.pageData
     items(
         count = pageData.itemCount,
         key = if (key == null) null else { index ->
@@ -90,17 +91,18 @@ fun <K, V> LazyGridScope.items(
             contentType?.invoke(pageData.peek(index))
         }
     ) { index ->
-        itemContent(pageData[index])
+        itemContent(getItem(component, index))
     }
 }
 
 fun <K, V> LazyGridScope.itemsIndexed(
-    pageData: PageData<K, V>,
+    component: PagingComponent<K, V>,
     key: ((index: Int, item: V) -> Any?)? = null,
     contentType: ((index: Int, item: V) -> Any?)? = null,
     span: (LazyGridItemSpanScope.(index: Int, item: V) -> GridItemSpan)? = null,
     itemContent: @Composable LazyGridItemScope.(index: Int, item: V) -> Unit
 ) {
+    val pageData = component.pageData
     items(
         count = pageData.itemCount,
         key = if (key == null) null else { index ->
@@ -118,16 +120,17 @@ fun <K, V> LazyGridScope.itemsIndexed(
             contentType?.invoke(index, pageData.peek(index))
         }
     ) { index ->
-        itemContent(index, pageData[index])
+        itemContent(index, getItem(component, index))
     }
 }
 
 fun <K, V> LazyStaggeredGridScope.items(
-    pageData: PageData<K, V>,
+    component: PagingComponent<K, V>,
     key: ((item: V) -> Any?)? = null,
     contentType: ((item: V) -> Any?)? = null,
     itemContent: @Composable (LazyStaggeredGridItemScope.(item: V) -> Unit)
 ) {
+    val pageData = component.pageData
     items(
         count = pageData.itemCount,
         key = if (key == null) null else { index ->
@@ -142,16 +145,17 @@ fun <K, V> LazyStaggeredGridScope.items(
             contentType?.invoke(pageData.peek(index))
         }
     ) { index ->
-        itemContent(pageData[index])
+        itemContent(getItem(component, index))
     }
 }
 
 fun <K, V> LazyStaggeredGridScope.itemsIndexed(
-    pageData: PageData<K, V>,
+    component: PagingComponent<K, V>,
     key: ((index: Int, item: V) -> Any?)? = null,
     contentType: ((index: Int, item: V) -> Any?)? = null,
     itemContent: @Composable (LazyStaggeredGridItemScope.(index: Int, item: V) -> Unit)
 ) {
+    val pageData = component.pageData
     items(
         count = pageData.itemCount,
         key = if (key == null) null else { index ->
@@ -166,29 +170,18 @@ fun <K, V> LazyStaggeredGridScope.itemsIndexed(
             contentType?.invoke(index, pageData.peek(index))
         }
     ) { index ->
-        itemContent(index, pageData[index])
+        itemContent(index, getItem(component, index))
     }
 }
 
-data class PagingDataKey(private val index: Int) : Parcelable {
-
-    companion object {
-        @Suppress("unused")
-        @JvmField
-        val CREATOR: Parcelable.Creator<PagingDataKey> =
-            object : Parcelable.Creator<PagingDataKey> {
-                override fun createFromParcel(parcel: Parcel) =
-                    PagingDataKey(parcel.readInt())
-
-                override fun newArray(size: Int) = arrayOfNulls<PagingDataKey?>(size)
-            }
+private fun <K, V> getItem(component: PagingComponent<K, V>, index: Int): V {
+    // 判断是否触发加载
+    val pageData = component.pageData
+    val config = pageData.config
+    val itemCount = pageData.itemCount
+    val prefetchDistance = config.prefetchDistance
+    if (prefetchDistance > 0 && itemCount - index == prefetchDistance) {
+        component.pagingLoadMore()
     }
-
-    override fun writeToParcel(parcel: Parcel, flags: Int) {
-        parcel.writeInt(index)
-    }
-
-    override fun describeContents(): Int {
-        return 0
-    }
+    return pageData.peek(index)
 }
