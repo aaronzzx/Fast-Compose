@@ -59,8 +59,8 @@ import com.aaron.compose.base.BaseComposeActivity
 import com.aaron.compose.component.LoadingComponent
 import com.aaron.compose.component.PagingComponent
 import com.aaron.compose.component.PagingHorizontalComponent
-import com.aaron.compose.component.PagingStateFooter
 import com.aaron.compose.component.RefreshComponent
+import com.aaron.compose.component.VerticalPagingStateFooter
 import com.aaron.compose.component.pagingComponent
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.itemsIndexed
@@ -287,7 +287,7 @@ private fun PagingPage() {
     }
 }
 
-private object MyFooter : PagingStateFooter() {
+private object MyFooter : VerticalPagingStateFooter() {
 
     override val loading: (@Composable (PagingComponent<*, *>) -> Unit) = {
         Box(

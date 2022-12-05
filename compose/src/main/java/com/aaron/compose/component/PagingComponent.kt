@@ -775,33 +775,29 @@ enum class PagingFooterType {
 
 object PagingComponentDefaults {
 
-    var verticalPagingStateFooter: PagingStateFooter = PagingStateFooter()
+    var verticalPagingStateFooter: PagingStateFooter? = VerticalPagingStateFooter()
 
-    var horizontalPagingStateFooter: PagingStateFooter = object : PagingStateFooter() {
-        override val loading: @Composable (PagingComponent<*, *>) -> Unit = {
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .padding(8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
-
-        override val loadMore: ((PagingComponent<*, *>) -> Unit)? = null
-        override val loadError: ((PagingComponent<*, *>) -> Unit)? = null
-        override val noMoreData: ((PagingComponent<*, *>) -> Unit)? = null
-        override val waitingRefresh: ((PagingComponent<*, *>) -> Unit)? = null
-    }
+    var horizontalPagingStateFooter: PagingStateFooter? = HorizontalPagingStateFooter()
 }
 
 @Stable
-open class PagingStateFooter {
+abstract class PagingStateFooter {
 
-    open val loading: (@Composable (PagingComponent<*, *>) -> Unit)? = {
+    abstract val loading: (@Composable (PagingComponent<*, *>) -> Unit)?
+
+    abstract val loadMore: (@Composable (PagingComponent<*, *>) -> Unit)?
+
+    abstract val loadError: (@Composable (PagingComponent<*, *>) -> Unit)?
+
+    abstract val noMoreData: (@Composable (PagingComponent<*, *>) -> Unit)?
+
+    abstract val waitingRefresh: (@Composable (PagingComponent<*, *>) -> Unit)?
+}
+
+@Stable
+open class VerticalPagingStateFooter : PagingStateFooter() {
+
+    override val loading: (@Composable (PagingComponent<*, *>) -> Unit)? = {
         FooterText(
             text = "加载中...",
             component = it,
@@ -809,7 +805,7 @@ open class PagingStateFooter {
         )
     }
 
-    open val loadMore: (@Composable (PagingComponent<*, *>) -> Unit)? = {
+    override val loadMore: (@Composable (PagingComponent<*, *>) -> Unit)? = {
         FooterText(
             text = "点击加载更多",
             component = it,
@@ -817,7 +813,7 @@ open class PagingStateFooter {
         )
     }
 
-    open val loadError: (@Composable (PagingComponent<*, *>) -> Unit)? = {
+    override val loadError: (@Composable (PagingComponent<*, *>) -> Unit)? = {
         FooterText(
             text = "加载失败，点击重试",
             component = it,
@@ -825,7 +821,7 @@ open class PagingStateFooter {
         )
     }
 
-    open val noMoreData: (@Composable (PagingComponent<*, *>) -> Unit)? = {
+    override val noMoreData: (@Composable (PagingComponent<*, *>) -> Unit)? = {
         FooterText(
             text = "已经到底了",
             component = it,
@@ -833,13 +829,35 @@ open class PagingStateFooter {
         )
     }
 
-    open val waitingRefresh: (@Composable (PagingComponent<*, *>) -> Unit)? = {
+    override val waitingRefresh: (@Composable (PagingComponent<*, *>) -> Unit)? = {
         FooterText(
             text = "等待刷新完成",
             component = it,
             footerType = PagingFooterType.WaitingRefresh
         )
     }
+}
+
+@Stable
+open class HorizontalPagingStateFooter : PagingStateFooter() {
+
+    override val loading: @Composable (PagingComponent<*, *>) -> Unit = {
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .padding(8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
+
+    override val loadMore: ((PagingComponent<*, *>) -> Unit)? = null
+    override val loadError: ((PagingComponent<*, *>) -> Unit)? = null
+    override val noMoreData: ((PagingComponent<*, *>) -> Unit)? = null
+    override val waitingRefresh: ((PagingComponent<*, *>) -> Unit)? = null
 }
 
 @Composable
