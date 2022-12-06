@@ -28,9 +28,9 @@ fun <K, V> LazyListScope.items(
         key = if (key == null) null else { index ->
             val item = pageData.peek(index)
             if (item == null) {
-                PagingDataKey(index)
+                LazyListKey(index)
             } else {
-                key(item) ?: PagingDataKey(index)
+                key(item) ?: LazyListKey(index)
             }
         },
         contentType = { index ->
@@ -53,9 +53,9 @@ fun <K, V> LazyListScope.itemsIndexed(
         key = if (key == null) null else { index ->
             val item = pageData.peek(index)
             if (item == null) {
-                PagingDataKey(index)
+                LazyListKey(index)
             } else {
-                key(index, item) ?: PagingDataKey(index)
+                key(index, item) ?: LazyListKey(index)
             }
         },
         contentType = { index ->
@@ -79,9 +79,9 @@ fun <K, V> LazyGridScope.items(
         key = if (key == null) null else { index ->
             val item = pageData.peek(index)
             if (item == null) {
-                PagingDataKey(index)
+                LazyListKey(index)
             } else {
-                key(item) ?: PagingDataKey(index)
+                key(item) ?: LazyListKey(index)
             }
         },
         span = if (span == null) null else { index ->
@@ -108,9 +108,9 @@ fun <K, V> LazyGridScope.itemsIndexed(
         key = if (key == null) null else { index ->
             val item = pageData.peek(index)
             if (item == null) {
-                PagingDataKey(index)
+                LazyListKey(index)
             } else {
-                key(index, item) ?: PagingDataKey(index)
+                key(index, item) ?: LazyListKey(index)
             }
         },
         span = if (span == null) null else { index ->
@@ -136,9 +136,9 @@ fun <K, V> LazyStaggeredGridScope.items(
         key = if (key == null) null else { index ->
             val item = pageData.peek(index)
             if (item == null) {
-                PagingDataKey(index)
+                LazyListKey(index)
             } else {
-                key(item) ?: PagingDataKey(index)
+                key(item) ?: LazyListKey(index)
             }
         },
         contentType = { index ->
@@ -161,9 +161,9 @@ fun <K, V> LazyStaggeredGridScope.itemsIndexed(
         key = if (key == null) null else { index ->
             val item = pageData.peek(index)
             if (item == null) {
-                PagingDataKey(index)
+                LazyListKey(index)
             } else {
-                key(index, item) ?: PagingDataKey(index)
+                key(index, item) ?: LazyListKey(index)
             }
         },
         contentType = { index ->

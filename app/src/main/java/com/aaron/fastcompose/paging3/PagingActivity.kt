@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.FloatingActionButton
@@ -35,6 +36,7 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,6 +67,7 @@ import com.aaron.compose.component.pagingComponent
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.itemsIndexed
 import com.aaron.compose.ktx.onClick
+import com.aaron.compose.ktx.sectionsIndexed
 import com.aaron.compose.ktx.toPx
 import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.refresh.SmartRefreshIndicator
@@ -122,7 +125,56 @@ class PagingActivity : BaseComposeActivity() {
                                 finishAfterTransition()
                             }
                         )
-                        PagingPage()
+//                        PagingPage()
+
+                        val list = remember {
+                            List(10) { a ->
+                                List(10) { b ->
+                                    "${a + 1}-${b + 1}"
+                                }
+                            }
+                        }
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(8.dp)
+                        ) {
+                            sectionsIndexed(
+                                sections = list,
+                                sectionSpacing = 8.dp,
+                                sectionBackgroundColor = Color.White,
+                                sectionShape = CutCornerShape(16.dp),
+                                itemKey = { _, item -> item },
+                                itemContentType = { _, _ -> "Item" }
+                            ) { sectionIndex, itemIndex, item ->
+                                Column {
+                                    if (itemIndex == 0) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillParentMaxWidth()
+                                                .height(60.dp)
+                                                .background(color = Color.Red.copy(0.1f)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = "Title-${sectionIndex + 1}",
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .fillParentMaxWidth()
+                                            .height(60.dp)
+                                            .onClick {
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(text = item)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
