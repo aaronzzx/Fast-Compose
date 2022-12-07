@@ -145,6 +145,8 @@ private fun MyStateView(text: String, modifier: Modifier = Modifier) {
 fun StateView(
     text: String,
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    enableClickRipple: Boolean = true,
     backgroundColor: Color = Color.White,
     shape: Shape = RectangleShape,
     @DrawableRes iconRes: Int = R.drawable.details_image_wholea_normal,
@@ -161,7 +163,13 @@ fun StateView(
             .clipToBackground(
                 color = backgroundColor,
                 shape = shape
-            ),
+            )
+            .onClick(
+                enabled = onClick != null,
+                enableRipple = enableClickRipple
+            ) {
+                onClick?.invoke()
+            },
         contentAlignment = Alignment.Center
     ) {
         Column(

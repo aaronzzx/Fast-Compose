@@ -3,14 +3,8 @@ package com.aaron.fastcompose.paging3
 import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.animateScrollBy
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,34 +21,21 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.FloatingActionButton
-import androidx.compose.material.Icon
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Done
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -63,25 +44,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aaron.compose.base.BaseComposeActivity
 import com.aaron.compose.component.LazyLoadPagerComponent
 import com.aaron.compose.component.LazyPagingComponent
-import com.aaron.compose.component.LoadingComponent
 import com.aaron.compose.component.PagingComponent
 import com.aaron.compose.component.PagingGridComponent
-import com.aaron.compose.component.PagingLoading
 import com.aaron.compose.component.RefreshComponent
 import com.aaron.compose.component.VerticalPagingStateFooter
-import com.aaron.compose.component.pagingComponent
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.lazylist.itemsIndexed
 import com.aaron.compose.ktx.lazylist.sections
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ktx.toPx
-import com.aaron.compose.paging.LoadState
 import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.WithDivider
-import com.aaron.compose.ui.refresh.SmartRefresh
 import com.aaron.compose.ui.refresh.SmartRefreshIndicator
-import com.aaron.compose.ui.refresh.SmartRefreshType
-import com.aaron.compose.ui.refresh.rememberSmartRefreshState
 import com.aaron.compose.utils.OverScrollHandler
 import com.aaron.fastcompose.R
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
@@ -89,7 +63,6 @@ import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.coroutines.launch
 
 /**
  * @author aaronzzxup@gmail.com
@@ -127,26 +100,26 @@ class PagingActivity : BaseComposeActivity() {
                             )
                         )
                 ) {
+                    TopBar(
+                        modifier = Modifier.zIndex(1f),
+                        title = "",
+                        startIcon = R.drawable.back,
+                        backgroundColor = Color.Transparent,
+                        elevation = 0.dp,
+                        contentPadding = WindowInsets.statusBars.asPaddingValues(),
+                        onStartIconClick = {
+                            finishAfterTransition()
+                        }
+                    )
                     Column(modifier = Modifier.fillMaxSize()) {
-                        TopBar(
-                            modifier = Modifier.zIndex(1f),
-                            title = "",
-                            startIcon = R.drawable.back,
-                            backgroundColor = Color.Transparent,
-                            elevation = 0.dp,
-                            contentPadding = WindowInsets.statusBars.asPaddingValues(),
-                            onStartIconClick = {
-                                finishAfterTransition()
-                            }
-                        )
 
 //                        LazySection()
 
                         val vm = viewModel<PagingVM>()
+                        val pagingDelegate by vm.pagingDelegates
                         LazyLoadPagingPage(
-                            lazyPagingComponents = vm.lazyPagingComponents.value,
-                            refreshComponent = vm,
-                            loadingComponent = vm
+                            lazyPagingComponents = pagingDelegate,
+                            refreshComponents = pagingDelegate
                         )
                     }
                 }
@@ -157,36 +130,37 @@ class PagingActivity : BaseComposeActivity() {
 
 @Composable
 private fun LazyLoadPagingPage(
-    refreshComponent: RefreshComponent,
-    loadingComponent: LoadingComponent,
+    refreshComponents: ImmutableList<RefreshComponent>,
     lazyPagingComponents: ImmutableList<LazyPagingComponent<Int, Repo>>
 ) {
+    val scrollPositions = remember {
+        MutableList(lazyPagingComponents.size) {
+            0 to 0
+        }
+    }
     val pagerState = rememberPagerState()
     HorizontalPager(
         modifier = Modifier.fillMaxSize(),
         count = lazyPagingComponents.size,
         state = pagerState
     ) { page ->
+        val (index, offset) = scrollPositions[page]
+        val listState = rememberLazyGridState(index, offset)
         val lazyPagingComponent = lazyPagingComponents[page]
-        val refreshState = rememberSmartRefreshState(type = SmartRefreshType.Idle)
-        LaunchedEffect(key1 = Unit) {
-            snapshotFlow { lazyPagingComponent.pageData.loadState.refresh }
+        val refreshComponent = refreshComponents[page]
+
+        LaunchedEffect(key1 = listState) {
+            snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
                 .collect {
-                    refreshState.type = when {
-                        it is LoadState.Loading -> SmartRefreshType.Refreshing
-                        it is LoadState.Idle -> SmartRefreshType.Success()
-                        it is LoadState.Error -> SmartRefreshType.Failure()
-                        else -> SmartRefreshType.Idle
-                    }
+                    scrollPositions[page] = it
                 }
         }
-        SmartRefresh(
-            modifier = Modifier.fillMaxSize(),
-            state = refreshState,
-            onRefresh = {
-                lazyPagingComponent.pagingRefresh()
-            },
-            onIdle = { refreshState.type = SmartRefreshType.Idle },
+
+        RefreshComponent(
+            component = refreshComponent,
+            modifier = Modifier
+                .padding(top = 80.dp)
+                .fillMaxSize(),
             clipHeaderEnabled = false,
             translateBodyEnabled = true,
             indicator = { smartRefreshState, triggerDistance, maxDragDistance, indicatorHeight ->
@@ -210,37 +184,13 @@ private fun LazyLoadPagingPage(
             ) {
                 OverScrollHandler(enabled = false) {
                     PagingGridComponent(
+                        state = listState,
                         component = lazyPagingComponent,
                         columns = GridCells.Fixed(2),
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        headerContent = {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(100.dp)
-                                    .background(
-                                        color = Color.Green.copy(0.5f),
-                                        shape = RoundedCornerShape(8.dp)
-                                    )
-                            )
-                        },
-                        footerContent = {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(100.dp)
-                                    .background(
-                                        color = Color.Blue.copy(0.5f),
-                                        shape = RoundedCornerShape(8.dp)
-                                    )
-                            )
-                        },
-                        loadingContent = {
-                            PagingLoading()
-                        },
                         pagingStateFooter = MyFooter
                     ) {
                         itemsIndexed(lazyPagingComponent, key = { _, item -> item.id }) { index, item ->
@@ -365,164 +315,6 @@ private fun LazySection() {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun PagingPage(
-    refreshComponent: RefreshComponent,
-    loadingComponent: LoadingComponent,
-    pagingComponent: PagingComponent<Int, Repo>
-) {
-    RefreshComponent(
-        component = refreshComponent,
-        clipHeaderEnabled = false,
-        translateBodyEnabled = true,
-        indicator = { smartRefreshState, triggerDistance, maxDragDistance, indicatorHeight ->
-            val indicatorHeightPx = indicatorHeight.toPx()
-            SmartRefreshIndicator(
-                modifier = Modifier.graphicsLayer {
-                    alpha = smartRefreshState.indicatorOffset / (indicatorHeightPx / 2f)
-                },
-                state = smartRefreshState,
-                triggerDistance = triggerDistance,
-                maxDragDistance = maxDragDistance,
-                height = indicatorHeight
-            )
-        },
-        modifier = Modifier.fillMaxSize()
-    ) {
-        LoadingComponent(component = loadingComponent) {
-            Box {
-                val outerListState = rememberLazyListState()
-                val innerListState = rememberLazyGridState()
-                val scope = rememberCoroutineScope()
-
-                OverScrollHandler(enabled = false) {
-                    LazyColumn(
-                        state = outerListState,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        item {
-                            Image(
-                                painter = painterResource(id = R.drawable.ide_bg),
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(250.dp)
-                                    .background(
-                                        color = Color.Red.copy(0.5f),
-                                    )
-                            )
-                        }
-                        item(key = "HorizontalList") {
-                            OverScrollHandler(enabled = false) {
-                                PagingGridComponent(
-                                    component = pagingComponent,
-                                    columns = GridCells.Fixed(2),
-                                    state = innerListState,
-                                    modifier = Modifier
-                                        .fillParentMaxSize()
-                                        .nestedScroll(object : NestedScrollConnection {
-                                            override fun onPreScroll(
-                                                available: Offset,
-                                                source: NestedScrollSource
-                                            ): Offset {
-                                                if (available.y < 0
-                                                    && outerListState.firstVisibleItemIndex == 0
-                                                ) {
-                                                    scope.launch {
-                                                        outerListState.scrollBy(-available.y)
-                                                    }
-                                                    return available
-                                                }
-                                                return super.onPreScroll(available, source)
-                                            }
-                                        }),
-//                                    flingBehavior = rememberSnapFlingBehavior(innerListState),
-                                    contentPadding = PaddingValues(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    headerContent = {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(100.dp)
-                                                .background(
-                                                    color = Color.Green.copy(0.5f),
-                                                    shape = RoundedCornerShape(8.dp)
-                                                )
-                                        )
-                                    },
-                                    footerContent = {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(100.dp)
-                                                .background(
-                                                    color = Color.Blue.copy(0.5f),
-                                                    shape = RoundedCornerShape(8.dp)
-                                                )
-                                        )
-                                    },
-                                    pagingStateFooter = MyFooter
-                                ) { pageData ->
-                                    itemsIndexed(pagingComponent, key = { _, item -> item.id }) { index, item ->
-                                        Box(
-                                            modifier = Modifier
-                                                .animateItemPlacement()
-                                                .clipToBackground(
-                                                    color = Color.White,
-                                                    shape = RoundedCornerShape(8.dp)
-                                                )
-                                                .onClick {
-                                                }
-                                                .fillParentMaxWidth()
-                                                .aspectRatio(2f)
-                                                .padding(16.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = item.name,
-                                                color = Color(0xFF333333),
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 12.sp
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                val density = LocalDensity.current
-                FloatingActionButton(
-                    onClick = {
-                        if (outerListState.firstVisibleItemIndex == 0) {
-                            scope.launch {
-                                outerListState.animateScrollToItem(1)
-                            }
-                        } else {
-                            scope.launch {
-                                innerListState.scrollToItem(0)
-                                outerListState.animateScrollBy(with(density) { -250.dp.toPx() }, spring(stiffness = Spring.StiffnessMediumLow))
-                            }
-                        }
-                    },
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(
-                            horizontal = 16.dp,
-                            vertical = 32.dp
-                        )
-                ) {
-                    Icon(imageVector = Icons.Default.Done, contentDescription = null)
-                }
-            }
-        }
-    }
-}
-
 private object MyFooter : VerticalPagingStateFooter() {
 
     override val loading: (@Composable (PagingComponent<*, *>) -> Unit) = {
@@ -577,51 +369,6 @@ private object MyFooter : VerticalPagingStateFooter() {
                     .aspectRatio(20f)
                     .background(color = Color(0x4D999999))
             )
-        }
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Preview
-@Composable
-private fun Test() {
-    val pagingComponent = pagingComponent<Int, String>(
-        "Michael",
-        "James",
-        "Kobe",
-        "ABC",
-        "CBA",
-        "NBA"
-    )
-    PagingComponent(
-        component = pagingComponent,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        pagingStateFooter = MyFooter
-    ) { pageData ->
-        itemsIndexed(pageData, key = { _, item -> item }) { index, item ->
-            Box(
-                modifier = Modifier
-                    .animateItemPlacement()
-                    .clipToBackground(
-                        color = Color.White,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                    .onClick {
-                    }
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = item,
-                    color = Color(0xFF333333),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp
-                )
-            }
         }
     }
 }
