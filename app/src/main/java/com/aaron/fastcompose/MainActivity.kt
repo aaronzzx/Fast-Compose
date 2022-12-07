@@ -58,7 +58,7 @@ import com.aaron.compose.ktx.canScroll
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.currentPageDelayed
 import com.aaron.compose.ktx.isNotEmpty
-import com.aaron.compose.ktx.itemsIndexed
+import com.aaron.compose.ktx.lazylist.itemsIndexed
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ktx.toPx
 import com.aaron.compose.paging.LoadState

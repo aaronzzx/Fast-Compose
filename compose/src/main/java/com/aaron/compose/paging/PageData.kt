@@ -61,6 +61,7 @@ class PageData<K, V>(
         }
     }
 
+    @PublishedApi
     internal operator fun get(index: Int): V {
         // 判断是否触发加载
         val prefetchDistance = config.prefetchDistance
@@ -70,6 +71,7 @@ class PageData<K, V>(
         return data[index]
     }
 
+    @PublishedApi
     internal fun peek(index: Int): V {
         return data[index]
     }

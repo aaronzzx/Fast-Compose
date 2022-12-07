@@ -63,8 +63,8 @@ import com.aaron.compose.R
 import com.aaron.compose.ktx.canScroll
 import com.aaron.compose.ktx.isEmpty
 import com.aaron.compose.ktx.isNotEmpty
-import com.aaron.compose.ktx.items
 import com.aaron.compose.ktx.lastIndex
+import com.aaron.compose.ktx.lazylist.items
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ktx.toDp
 import com.aaron.compose.ktx.toPx

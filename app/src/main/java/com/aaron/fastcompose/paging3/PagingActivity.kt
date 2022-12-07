@@ -8,6 +8,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
@@ -26,7 +27,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.FloatingActionButton
@@ -65,11 +65,12 @@ import com.aaron.compose.component.RefreshComponent
 import com.aaron.compose.component.VerticalPagingStateFooter
 import com.aaron.compose.component.pagingComponent
 import com.aaron.compose.ktx.clipToBackground
-import com.aaron.compose.ktx.itemsIndexed
+import com.aaron.compose.ktx.lazylist.itemsIndexed
+import com.aaron.compose.ktx.lazylist.sections
 import com.aaron.compose.ktx.onClick
-import com.aaron.compose.ktx.sectionsIndexed
 import com.aaron.compose.ktx.toPx
 import com.aaron.compose.ui.TopBar
+import com.aaron.compose.ui.WithDivider
 import com.aaron.compose.ui.refresh.SmartRefreshIndicator
 import com.aaron.compose.utils.OverScrollHandler
 import com.aaron.fastcompose.R
@@ -138,30 +139,70 @@ class PagingActivity : BaseComposeActivity() {
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(8.dp)
                         ) {
-                            sectionsIndexed(
+                            sections(
                                 sections = list,
-                                sectionSpacing = 8.dp,
+                                orientation = Orientation.Vertical,
+                                sectionSpacing = 16.dp,
                                 sectionBackgroundColor = Color.White,
-                                sectionShape = CutCornerShape(16.dp),
-                                itemKey = { _, item -> item },
-                                itemContentType = { _, _ -> "Item" }
-                            ) { sectionIndex, itemIndex, item ->
-                                Column {
-                                    if (itemIndex == 0) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillParentMaxWidth()
-                                                .height(60.dp)
-                                                .background(color = Color.Red.copy(0.1f)),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = "Title-${sectionIndex + 1}",
-                                                fontSize = 18.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
+                                sectionShape = RoundedCornerShape(16.dp),
+                                outerHeader = { sectionIndex ->
+                                    Box(
+                                        modifier = Modifier.fillParentMaxWidth(),
+                                        contentAlignment = Alignment.CenterStart
+                                    ) {
+                                        Text(
+                                            text = "Header-${sectionIndex + 1}",
+                                            fontSize = 28.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
                                     }
+                                },
+                                outerFooter = { sectionIndex ->
+                                    Box(
+                                        modifier = Modifier.fillParentMaxWidth(),
+                                        contentAlignment = Alignment.CenterEnd
+                                    ) {
+                                        Text(
+                                            text = "Footer-${sectionIndex + 1}",
+                                            fontSize = 28.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                },
+                                innerHeader = { sectionIndex ->
+                                    Box(
+                                        modifier = Modifier
+                                            .fillParentMaxWidth()
+                                            .height(60.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "Title-${sectionIndex + 1}",
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                },
+                                innerFooter = { sectionIndex ->
+                                    Box(
+                                        modifier = Modifier
+                                            .fillParentMaxWidth()
+                                            .height(60.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "Ending-${sectionIndex + 1}",
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            ) { item ->
+                                WithDivider(
+                                    color = Color(0xFFF0F0F0),
+                                    startIndent = 24.dp,
+                                    endIndent = 24.dp
+                                ) {
                                     Box(
                                         modifier = Modifier
                                             .fillParentMaxWidth()
