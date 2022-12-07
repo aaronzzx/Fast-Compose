@@ -65,6 +65,7 @@ import com.aaron.compose.paging.LoadState
 import com.aaron.compose.ui.CollapsingScroll
 import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.refresh.SmartRefresh
+import com.aaron.compose.ui.refresh.SmartRefreshIndicator
 import com.aaron.compose.ui.refresh.SmartRefreshState
 import com.aaron.compose.ui.refresh.SmartRefreshType
 import com.aaron.compose.ui.refresh.rememberSmartRefreshState
@@ -110,7 +111,7 @@ class MainActivity : BaseComposeActivity() {
                         modifier = Modifier.zIndex(1f),
                         title = "ComposeActivity",
                         startIcon = R.drawable.back,
-                        backgroundColor = Color(0xFFF0F0F0),
+                        backgroundColor = Color.Transparent,
                         elevation = 0.dp,
                         contentPadding = WindowInsets.statusBars.asPaddingValues(),
                         onStartIconClick = {
@@ -141,7 +142,20 @@ private fun Collapsing() {
                     refreshState.type = SmartRefreshType.Success()
                 }
             },
-            onIdle = { refreshState.type = SmartRefreshType.Idle }
+            onIdle = { refreshState.type = SmartRefreshType.Idle },
+            clipHeaderEnabled = false,
+            indicator = { smartRefreshState, triggerDistance, maxDragDistance, indicatorHeight ->
+                val indicatorHeightPx = indicatorHeight.toPx()
+                SmartRefreshIndicator(
+                    modifier = Modifier.graphicsLayer {
+                        alpha = smartRefreshState.indicatorOffset / (indicatorHeightPx / 2f)
+                    },
+                    state = smartRefreshState,
+                    triggerDistance = triggerDistance,
+                    maxDragDistance = maxDragDistance,
+                    height = indicatorHeight
+                )
+            }
         ) {
             Box {
                 val collapsingScrollState = rememberCollapsingScrollState()

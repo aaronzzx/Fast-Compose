@@ -19,7 +19,7 @@ interface PagingScope {
         pageConfig: PageConfig = PageConfig(),
         lazyLoad: Boolean = false,
         invokeCompletion: (suspend PageData<Int, V>.(LoadResult<Int, V>) -> Unit)? = null,
-        onRequest: suspend (page: Int, pageSize: Int) -> BasePagingResult<V>
+        onRequest: suspend PageData<Int, V>.(page: Int, pageSize: Int) -> BasePagingResult<V>
     ): PageData<Int, V> = buildMappingPageData(
         initialPage = initialPage,
         successCode = successCode,
@@ -40,7 +40,7 @@ interface PagingScope {
         lazyLoad: Boolean = false,
         invokeCompletion: (suspend PageData<Int, R>.(LoadResult<Int, R>) -> Unit)? = null,
         onMapping: suspend (data: List<V>) -> List<R>,
-        onRequest: suspend (page: Int, pageSize: Int) -> BasePagingResult<V>
+        onRequest: suspend PageData<Int, R>.(page: Int, pageSize: Int) -> BasePagingResult<V>
     ): PageData<Int, R> = PageData(
         coroutineScope = this,
         config = pageConfig,

@@ -18,7 +18,7 @@ import kotlin.coroutines.suspendCoroutine
  */
 @Stable
 class PageData<K, V>(
-    private val coroutineScope: CoroutineScope,
+    internal val coroutineScope: CoroutineScope,
     val config: PageConfig = PageConfig(),
     lazyLoad: Boolean = false,
     private val invokeCompletion: (suspend PageData<K, V>.(LoadResult<K, V>) -> Unit)? = null,
@@ -125,7 +125,6 @@ class PageData<K, V>(
                     clear()
                     addAll(dataList)
                 }
-                isInitialized = true
             }
             is LoadResult.Error -> {
                 pageList = emptyList()
@@ -136,6 +135,7 @@ class PageData<K, V>(
                 }
             }
         }
+        isInitialized = true
         invokeCompletion?.invoke(this, result)
         return if (result is LoadResult.Error) {
             Result.failure(result.throwable)

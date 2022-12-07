@@ -72,6 +72,8 @@ import com.aaron.compose.paging.LoadResult
 import com.aaron.compose.paging.LoadState
 import com.aaron.compose.paging.PageData
 import com.aaron.compose.paging.PagingScope
+import com.aaron.compose.safestate.SafeState
+import com.aaron.compose.safestate.safeStateOf
 import com.aaron.compose.utils.DevicePreview
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.filter
@@ -921,14 +923,33 @@ interface PagingComponent<K, V> : PagingScope {
 }
 
 @Stable
+interface LazyPagingComponent<K, V> : PagingComponent<K, V>, LazyLoadComponent
+
+@Stable
 interface PagingMultiComponent : PagingScope {
 
-    fun <K, V> PageData<K, V>.toPagingComponent(
+    fun <K, V> PageData<K, V>.toLazyPagingComponent(
         onRefresh: ((PageData<K, V>) -> Unit)? = null,
         onLoadMore: ((PageData<K, V>) -> Unit)? = null,
         onRetry: ((PageData<K, V>) -> Unit)? = null
-    ): PagingComponent<K, V> = object : PagingComponent<K, V> {
-        override val pageData: PageData<K, V> = this@toPagingComponent
+    ): LazyPagingComponent<K, V> = object : LazyPagingComponent<K, V> {
+        override val pageData: PageData<K, V> = this@toLazyPagingComponent
+
+        override val initialized: SafeState<Boolean> = safeStateOf(pageData.isInitialized)
+
+        init {
+            val pageData = pageData
+            pageData.coroutineScope.launch {
+                snapshotFlow { pageData.isInitialized }
+                    .collect {
+                        initialized.setValueInternal(it)
+                    }
+            }
+        }
+
+        override fun initialize() {
+            pagingRefresh()
+        }
 
         override fun pagingRefresh() {
             onRefresh?.invoke(pageData) ?: super.pagingRefresh()

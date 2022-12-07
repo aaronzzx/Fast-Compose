@@ -37,7 +37,9 @@ class MainVM @Inject constructor() : ViewModel(), SafeStateScope, PagingScope {
 
     var init by mutableStateOf(true)
 
-    val repos = viewModelScope.buildPageData(1, onRequest = ::buildFakeData2)
+    val repos = viewModelScope.buildPageData(initialPage = 1) { page, pageSize ->
+        buildFakeData2(page, pageSize)
+    }
 
     var smartRefreshType: SmartRefreshType by mutableStateOf(SmartRefreshType.Idle)
 
