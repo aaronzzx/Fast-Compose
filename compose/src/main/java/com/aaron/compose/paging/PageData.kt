@@ -260,6 +260,10 @@ class PageData<K, V>(
     private fun tryLaunch(loadType: LoadType, block: suspend () -> Unit) {
         // 刷新操作必须覆盖加载更多，因为这时候加载更多没意义
         if (loadType == LoadType.Refresh) {
+            // 正在刷新，直接返回
+            if (this.loadType == LoadType.Refresh) {
+                return
+            }
             curLoadJob?.cancel()
             curLoadJob = null
         }
