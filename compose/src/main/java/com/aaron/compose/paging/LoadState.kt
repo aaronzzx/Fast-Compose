@@ -12,7 +12,7 @@ import androidx.compose.runtime.setValue
 @Stable
 sealed class LoadState(val noMoreData: Boolean) {
 
-    class Idle(noMoreData: Boolean) : LoadState(noMoreData) {
+    class Idle(noMoreData: Boolean, val loadCompleted: Boolean) : LoadState(noMoreData) {
         override fun toString(): String {
             return "Idle(noMoreData=$noMoreData)"
         }
@@ -58,8 +58,8 @@ sealed class LoadState(val noMoreData: Boolean) {
 
 @Stable
 class CombinedLoadState(
-    refresh: LoadState = LoadState.Idle(false),
-    loadMore: LoadState = LoadState.Idle(false)
+    refresh: LoadState = LoadState.Idle(false, false),
+    loadMore: LoadState = LoadState.Idle(false, false)
 ) {
 
     var refresh: LoadState by mutableStateOf(refresh)

@@ -77,6 +77,8 @@ import com.aaron.compose.paging.PagingScope
 import com.aaron.compose.utils.DevicePreview
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 /**
@@ -136,6 +138,16 @@ fun <K, V> PagingComponent(
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
+            LaunchedEffect(pageData, state) {
+                snapshotFlow { pageData.loadState.refresh }
+                    .filter {
+                        it is LoadState.Idle && it.loadCompleted
+                    }
+                    .onEach {
+                        state.scrollToItem(0)
+                    }
+                    .launchIn(this)
+            }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 state = state,
@@ -356,6 +368,16 @@ fun <K, V> PagingGridComponent(
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
+            LaunchedEffect(pageData, state) {
+                snapshotFlow { pageData.loadState.refresh }
+                    .filter {
+                        it is LoadState.Idle && it.loadCompleted
+                    }
+                    .onEach {
+                        state.scrollToItem(0)
+                    }
+                    .launchIn(this)
+            }
             LazyVerticalGrid(
                 modifier = Modifier.fillMaxSize(),
                 columns = columns,
@@ -581,6 +603,17 @@ fun <K, V> PagingStaggeredGridComponent(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        LaunchedEffect(pageData, state) {
+            snapshotFlow { pageData.loadState.refresh }
+                .filter {
+                    it is LoadState.Idle && it.loadCompleted
+                }
+                .onEach {
+                    state.scrollToItem(0)
+                }
+                .launchIn(this)
+        }
+
         if (loadingContent != null
             && pageData.isEmpty
             && (pageData.isInitialized.not() || refreshLoading)
@@ -678,6 +711,17 @@ fun <K, V> PagingHorizontalComponent(
                         else -> Unit
                     }
                 }
+        }
+
+        launch {
+            snapshotFlow { component.pageData.loadState.refresh }
+                .filter {
+                    it is LoadState.Idle && it.loadCompleted
+                }
+                .onEach {
+                    state.scrollToItem(0)
+                }
+                .launchIn(this)
         }
     }
     LazyRow(

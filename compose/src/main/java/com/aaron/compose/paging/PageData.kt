@@ -18,7 +18,7 @@ import kotlin.coroutines.suspendCoroutine
  */
 @Stable
 class PageData<K, V>(
-    private val coroutineScope: CoroutineScope,
+    internal val coroutineScope: CoroutineScope,
     val config: PageConfig = PageConfig(),
     val lazyLoad: Boolean = false,
     private val invokeCompletion: (suspend PageData<K, V>.(LoadResult<K, V>) -> Unit)? = null,
@@ -119,8 +119,8 @@ class PageData<K, V>(
                 val nextKey = result.nextKey
                 this.page = 1
                 this.nextKey = nextKey
-                loadState.refresh = LoadState.Idle(false)
-                loadState.loadMore = LoadState.Idle(isLoadEnd())
+                loadState.refresh = LoadState.Idle(false, true)
+                loadState.loadMore = LoadState.Idle(isLoadEnd(), false)
                 with(data.editInternal()) {
                     clear()
                     addAll(dataList)
@@ -131,7 +131,7 @@ class PageData<K, V>(
                 val throwable = result.throwable
                 loadState.refresh = LoadState.Error(throwable)
                 if (loadState.loadMore is LoadState.Waiting) {
-                    loadState.loadMore = LoadState.Idle(isLoadEnd())
+                    loadState.loadMore = LoadState.Idle(isLoadEnd(), false)
                 }
             }
         }
@@ -195,7 +195,7 @@ class PageData<K, V>(
                 val nextKey = result.nextKey
                 this.page++
                 this.nextKey = nextKey
-                loadState.loadMore = LoadState.Idle(isLoadEnd())
+                loadState.loadMore = LoadState.Idle(isLoadEnd(), true)
                 data.editInternal().addAll(dataList)
             }
             is LoadResult.Error -> {
