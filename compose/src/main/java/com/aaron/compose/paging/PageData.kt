@@ -26,7 +26,7 @@ class PageData<K, V>(
 ) {
 
     /**
-     * 是否成功加载过数据
+     * 是否成功加载过数据，即使加载失败
      */
     var isInitialized: Boolean by mutableStateOf(false)
         private set

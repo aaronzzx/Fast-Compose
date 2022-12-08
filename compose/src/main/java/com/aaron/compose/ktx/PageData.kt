@@ -1,5 +1,7 @@
 package com.aaron.compose.ktx
 
+import com.aaron.compose.component.LazyPagingComponent
+import com.aaron.compose.component.LazyPagingComponentHelper
 import com.aaron.compose.paging.PageData
 
 /**
@@ -12,3 +14,9 @@ val PageData<*, *>.lastIndex: Int get() = itemCount - 1
 val PageData<*, *>.isEmpty: Boolean get() = itemCount == 0
 
 val PageData<*, *>.isNotEmpty: Boolean get() = !isEmpty
+
+fun <K, V> PageData<K, V>.toLazyPagingComponent(
+    finishRefreshDelayMillis: Long = 0L
+): LazyPagingComponent<K, V> {
+    return LazyPagingComponentHelper(this, finishRefreshDelayMillis)
+}

@@ -26,10 +26,8 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -42,8 +40,7 @@ import androidx.compose.ui.zIndex
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aaron.compose.base.BaseComposeActivity
-import com.aaron.compose.component.LazyLoadPagerComponent
-import com.aaron.compose.component.LazyPagingComponent
+import com.aaron.compose.component.LazyPagerPagingComponent
 import com.aaron.compose.component.PagingComponent
 import com.aaron.compose.component.PagingGridComponent
 import com.aaron.compose.component.RefreshComponent
@@ -59,10 +56,7 @@ import com.aaron.compose.ui.refresh.SmartRefreshIndicator
 import com.aaron.compose.utils.OverScrollHandler
 import com.aaron.fastcompose.R
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
-import com.google.accompanist.pager.HorizontalPager
-import com.google.accompanist.pager.rememberPagerState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
-import kotlinx.collections.immutable.ImmutableList
 
 /**
  * @author aaronzzxup@gmail.com
@@ -115,12 +109,8 @@ class PagingActivity : BaseComposeActivity() {
 
 //                        LazySection()
 
-                        val vm = viewModel<PagingVM>()
-                        val pagingDelegate by vm.pagingDelegates
-                        LazyLoadPagingPage(
-                            lazyPagingComponents = pagingDelegate,
-                            refreshComponents = pagingDelegate
-                        )
+                        val vm = viewModel<VMPaging>()
+                        LazyLoadPagingPage(lazyPagerPagingComponent = vm)
                     }
                 }
             }
@@ -129,98 +119,91 @@ class PagingActivity : BaseComposeActivity() {
 }
 
 @Composable
-private fun LazyLoadPagingPage(
-    refreshComponents: ImmutableList<RefreshComponent>,
-    lazyPagingComponents: ImmutableList<LazyPagingComponent<Int, Repo>>
-) {
-    val scrollPositions = remember {
-        MutableList(lazyPagingComponents.size) {
+private fun LazyLoadPagingPage(lazyPagerPagingComponent: LazyPagerPagingComponent<Int, Repo>) {
+    val scrollPosition = remember(lazyPagerPagingComponent) {
+        MutableList(lazyPagerPagingComponent.lazyPagingComponents.value.size) {
             0 to 0
         }
     }
-    val pagerState = rememberPagerState()
-    HorizontalPager(
-        modifier = Modifier.fillMaxSize(),
-        count = lazyPagingComponents.size,
-        state = pagerState
-    ) { page ->
-        val (index, offset) = scrollPositions[page]
+    LazyPagerPagingComponent(component = lazyPagerPagingComponent) { page, lazyPagingComponent ->
+        val (index, offset) = scrollPosition[page]
         val listState = rememberLazyGridState(index, offset)
-        val lazyPagingComponent = lazyPagingComponents[page]
-        val refreshComponent = refreshComponents[page]
 
-        LaunchedEffect(key1 = listState) {
-            snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
-                .collect {
-                    scrollPositions[page] = it
-                }
+        DisposableEffect(key1 = listState) {
+            onDispose {
+                scrollPosition[page] = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
+            }
         }
 
-        RefreshComponent(
-            component = refreshComponent,
-            modifier = Modifier
-                .padding(top = 80.dp)
-                .fillMaxSize(),
-            clipHeaderEnabled = false,
-            translateBodyEnabled = true,
-            indicator = { smartRefreshState, triggerDistance, maxDragDistance, indicatorHeight ->
-                val indicatorHeightPx = indicatorHeight.toPx()
-                SmartRefreshIndicator(
-                    modifier = Modifier.graphicsLayer {
-                        alpha = smartRefreshState.indicatorOffset / (indicatorHeightPx / 2f)
-                    },
-                    state = smartRefreshState,
-                    triggerDistance = triggerDistance,
-                    maxDragDistance = maxDragDistance,
-                    height = indicatorHeight
-                )
-            }
-        ) {
-            LazyLoadPagerComponent(
-                modifier = Modifier.fillMaxSize(),
-                component = lazyPagingComponent,
-                page = page,
-                pagerState = pagerState
-            ) {
-                OverScrollHandler(enabled = false) {
-                    PagingGridComponent(
-                        state = listState,
-                        component = lazyPagingComponent,
-                        columns = GridCells.Fixed(2),
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        pagingStateFooter = MyFooter
-                    ) {
-                        itemsIndexed(lazyPagingComponent, key = { _, item -> item.id }) { index, item ->
-                            Box(
-                                modifier = Modifier
-                                    .animateItemPlacement()
-                                    .clipToBackground(
-                                        color = Color.White,
-                                        shape = RoundedCornerShape(8.dp)
-                                    )
-                                    .onClick {
-                                    }
-                                    .fillMaxWidth()
-                                    .aspectRatio(1f)
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = item.name,
-                                    color = Color(0xFF333333),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
+        RefreshContent(refreshEnabled = true, refreshComponent = lazyPagingComponent) {
+            OverScrollHandler(enabled = false) {
+                PagingGridComponent(
+                    component = lazyPagingComponent,
+                    state = listState,
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    pagingStateFooter = MyFooter
+                ) {
+                    itemsIndexed(lazyPagingComponent, key = { _, item -> item.id }) { index, item ->
+                        Box(
+                            modifier = Modifier
+                                .animateItemPlacement()
+                                .clipToBackground(
+                                    color = Color.White,
+                                    shape = RoundedCornerShape(8.dp)
                                 )
-                            }
+                                .onClick {
+                                }
+                                .fillMaxWidth()
+                                .aspectRatio(1f)
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = item.name,
+                                color = Color(0xFF333333),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
                         }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun RefreshContent(
+    refreshEnabled: Boolean,
+    refreshComponent: RefreshComponent,
+    content: @Composable () -> Unit
+) {
+    RefreshComponent(
+        component = refreshComponent,
+        modifier = Modifier
+            .padding(top = 80.dp)
+            .fillMaxSize(),
+        swipeEnabled = refreshEnabled,
+        clipHeaderEnabled = false,
+        translateBodyEnabled = true,
+        indicator = { smartRefreshState, triggerDistance, maxDragDistance, indicatorHeight ->
+            val indicatorHeightPx = indicatorHeight.toPx()
+            SmartRefreshIndicator(
+                modifier = Modifier.graphicsLayer {
+                    alpha = smartRefreshState.indicatorOffset / (indicatorHeightPx / 2f)
+                },
+                state = smartRefreshState,
+                triggerDistance = triggerDistance,
+                maxDragDistance = maxDragDistance,
+                height = indicatorHeight
+            )
+        },
+        content = content
+    )
 }
 
 @Composable
