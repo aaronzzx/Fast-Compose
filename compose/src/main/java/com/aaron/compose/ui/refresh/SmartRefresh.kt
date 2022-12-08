@@ -433,8 +433,8 @@ fun SmartRefresh(
     }
 
     // Our nested scroll connection, which updates our state.
-    val nestedScrollConnection = remember(state, translateBodyEnabled, coroutineScope) {
-        SmartRefreshNestedScrollConnection(state, translateBodyEnabled, coroutineScope) {
+    val nestedScrollConnection = remember(state, swipeEnabled, translateBodyEnabled, coroutineScope) {
+        SmartRefreshNestedScrollConnection(state, swipeEnabled && translateBodyEnabled, coroutineScope) {
             // On refresh, re-dispatch to the update onRefresh block
             updatedOnRefresh.value.invoke()
         }
