@@ -22,15 +22,15 @@ import kotlin.random.Random
  * @author aaronzzxup@gmail.com
  * @since 2022/10/24
  */
-class VMPaging : ViewModel(), LazyPagerPagingComponent<Int, Repo>, SafeStateScope {
+class PagingVM : ViewModel(), LazyPagerPagingComponent<Int, Repo>, SafeStateScope {
 
     companion object {
         init {
             Defaults.SuccessCode = 200
             with(PageConfigDefaults) {
-                DefaultPrefetchDistance = 1
+                DefaultPrefetchDistance = 0
                 DefaultPageSize = 10
-                DefaultMaxPage = 5
+                DefaultMaxPage = 3
             }
         }
     }

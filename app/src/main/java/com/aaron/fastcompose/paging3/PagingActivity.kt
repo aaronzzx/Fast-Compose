@@ -20,13 +20,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +52,7 @@ import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.WithDivider
 import com.aaron.compose.ui.refresh.SmartRefreshIndicator
 import com.aaron.compose.utils.OverScrollHandler
+import com.aaron.compose.utils.rememberLazyListCachedValue
 import com.aaron.fastcompose.R
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
@@ -109,7 +108,7 @@ class PagingActivity : BaseComposeActivity() {
 
 //                        LazySection()
 
-                        val vm = viewModel<VMPaging>()
+                        val vm = viewModel<PagingVM>()
                         LazyLoadPagingPage(lazyPagerPagingComponent = vm)
                     }
                 }
@@ -120,22 +119,13 @@ class PagingActivity : BaseComposeActivity() {
 
 @Composable
 private fun LazyLoadPagingPage(lazyPagerPagingComponent: LazyPagerPagingComponent<Int, Repo>) {
-    val scrollPosition = remember(lazyPagerPagingComponent) {
-        MutableList(lazyPagerPagingComponent.lazyPagingComponents.value.size) {
-            0 to 0
-        }
-    }
+    val lazyListCachedValue = rememberLazyListCachedValue()
     LazyPagerPagingComponent(component = lazyPagerPagingComponent) { page, lazyPagingComponent ->
-        val (index, offset) = scrollPosition[page]
-        val listState = rememberLazyGridState(index, offset)
-
-        DisposableEffect(key1 = listState) {
-            onDispose {
-                scrollPosition[page] = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
-            }
-        }
-
-        RefreshContent(refreshEnabled = true, refreshComponent = lazyPagingComponent) {
+        val listState = lazyListCachedValue.rememberLazyGridState(page.toString())
+        RefreshContent(
+            refreshComponent = lazyPagingComponent,
+            refreshEnabled = true
+        ) {
             OverScrollHandler(enabled = false) {
                 PagingGridComponent(
                     component = lazyPagingComponent,
