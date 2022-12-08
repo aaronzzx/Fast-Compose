@@ -70,6 +70,7 @@ import com.aaron.compose.ktx.lazylist.items
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ktx.toDp
 import com.aaron.compose.ktx.toPx
+import com.aaron.compose.paging.CombinedLoadState
 import com.aaron.compose.paging.LoadResult
 import com.aaron.compose.paging.LoadState
 import com.aaron.compose.paging.PageData
@@ -137,20 +138,7 @@ fun <K, V> PagingComponent(
             }
         }
 
-        var loading by remember {
-            mutableStateOf(false)
-        }
-        LaunchedEffect(loadState.refresh, state) {
-            loading = loadState.refresh is LoadState.Loading
-            snapshotFlow { loadState.refresh }
-                .filter {
-                    loading && it is LoadState.Idle && it.loadCompleted
-                }
-                .onEach {
-                    state.scrollToItem(0)
-                }
-                .launchIn(this)
-        }
+        ScrollToTopWhenRefreshEffect(state, loadState)
 
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
@@ -372,20 +360,7 @@ fun <K, V> PagingGridComponent(
             }
         }
 
-        var loading by remember {
-            mutableStateOf(false)
-        }
-        LaunchedEffect(loadState.refresh, state) {
-            loading = loadState.refresh is LoadState.Loading
-            snapshotFlow { loadState.refresh }
-                .filter {
-                    loading && it is LoadState.Idle && it.loadCompleted
-                }
-                .onEach {
-                    state.scrollToItem(0)
-                }
-                .launchIn(this)
-        }
+        ScrollToTopWhenRefreshEffect(state, loadState)
 
         Box(modifier = Modifier.fillMaxSize()) {
             LazyVerticalGrid(
@@ -612,20 +587,7 @@ fun <K, V> PagingStaggeredGridComponent(
         }
     }
 
-    var loading by remember {
-        mutableStateOf(false)
-    }
-    LaunchedEffect(loadState.refresh, state) {
-        loading = loadState.refresh is LoadState.Loading
-        snapshotFlow { loadState.refresh }
-            .filter {
-                loading && it is LoadState.Idle && it.loadCompleted
-            }
-            .onEach {
-                state.scrollToItem(0)
-            }
-            .launchIn(this)
-    }
+    ScrollToTopWhenRefreshEffect(state, loadState)
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (loadingContent != null
@@ -728,21 +690,7 @@ fun <K, V> PagingHorizontalComponent(
         }
     }
 
-    var loading by remember {
-        mutableStateOf(false)
-    }
-    val loadState = component.pageData.loadState
-    LaunchedEffect(loadState.refresh, state) {
-        loading = loadState.refresh is LoadState.Loading
-        snapshotFlow { loadState.refresh }
-            .filter {
-                loading && it is LoadState.Idle && it.loadCompleted
-            }
-            .onEach {
-                state.scrollToItem(0)
-            }
-            .launchIn(this)
-    }
+    ScrollToTopWhenRefreshEffect(state, component.pageData.loadState)
 
     LazyRow(
         modifier = modifier,
@@ -800,6 +748,33 @@ fun <K, V> PagingHorizontalComponent(
                 else -> Unit
             }
         }
+    }
+}
+
+@Composable
+private fun ScrollToTopWhenRefreshEffect(state: Any, loadState: CombinedLoadState) {
+    var loading by remember {
+        mutableStateOf(false)
+    }
+    LaunchedEffect(loadState.refresh, state) {
+        loading = loadState.refresh is LoadState.Loading
+        snapshotFlow { loadState.refresh }
+            .filter {
+                loading && it is LoadState.Idle && it.loadCompleted
+            }
+            .onEach {
+                scrollToTop(state)
+            }
+            .launchIn(this)
+    }
+}
+
+private suspend fun scrollToTop(listState: Any) {
+    when (listState) {
+        is LazyListState -> listState.scrollToItem(0)
+        is LazyGridState -> listState.scrollToItem(0)
+        is LazyStaggeredGridState -> listState.scrollToItem(0)
+        else -> error("Unknown listState: $listState.")
     }
 }
 
