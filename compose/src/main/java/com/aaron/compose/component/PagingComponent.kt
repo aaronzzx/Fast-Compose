@@ -140,7 +140,11 @@ fun <K, V> PagingComponent(
 
         ScrollToTopWhenRefreshEffect(state, loadState)
 
-        Box(modifier = Modifier.fillMaxSize()) {
+        LoadingBox(
+            component = component,
+            refreshLoading = refreshLoading,
+            loadingContent = loadingContent
+        ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 state = state,
@@ -152,152 +156,58 @@ fun <K, V> PagingComponent(
                 userScrollEnabled = userScrollEnabled
             ) {
                 if (headerContent != null) {
-                    item(
+                    itemHeaderFooter(
+                        scope = this,
                         key = "${component}-Header",
-                        contentType = "Header"
-                    ) {
-                        SubcomposeLayout { constraint ->
-                            val placeables = subcompose("${component}-Header", headerContent).map {
-                                it.measure(constraint).apply {
-                                    headerHeightPixels = height.coerceAtLeast(headerHeightPixels)
-                                }
-                            }
-                            layout(constraint.maxWidth, headerHeightPixels) {
-                                placeables.forEach {
-                                    it.placeRelative(0, 0)
-                                }
-                            }
-                        }
-                    }
+                        contentType = "Header",
+                        slotId = "${component}-Header",
+                        onHeightChange = {
+                            headerHeightPixels = it
+                        },
+                        content = headerContent
+                    )
                 }
 
-                if (loadingContent != null
-                    && pageData.isEmpty
-                    && (pageData.isInitialized.not() || refreshLoading)
+                handleCentralContent(
+                    scope = this,
+                    component = component,
+                    refreshLoading = refreshLoading,
+                    refreshError = refreshError,
+                    listHeightPixels = listHeightPixels,
+                    headerHeightPixels = headerHeightPixels,
+                    footerHeightPixels = footerHeightPixels,
+                    contentPadding = contentPadding,
+                    verticalArrangement = verticalArrangement,
+                    headerContent = headerContent,
+                    footerContent = footerContent,
+                    loadingContent = loadingContent,
+                    emptyContent = emptyContent,
+                    errorContent = errorContent
                 ) {
-                    item(
-                        key = "${component}-Loading",
-                        contentType = "Loading"
-                    ) {
-                        CentralContent(
-                            contentPadding = contentPadding,
-                            verticalArrangement = verticalArrangement,
-                            existsHeader = headerContent != null,
-                            existsFooter = footerContent != null,
-                            listHeightPixels = listHeightPixels,
-                            headerHeightPixels = headerHeightPixels,
-                            footerHeightPixels = footerHeightPixels
-                        ) {
-                        }
-                    }
-                } else if (errorContent != null && refreshError && pageData.isEmpty) {
-                    item(
-                        key = "${component}-Error",
-                        contentType = "Error"
-                    ) {
-                        CentralContent(
-                            contentPadding = contentPadding,
-                            verticalArrangement = verticalArrangement,
-                            existsHeader = headerContent != null,
-                            existsFooter = footerContent != null,
-                            listHeightPixels = listHeightPixels,
-                            headerHeightPixels = headerHeightPixels,
-                            footerHeightPixels = footerHeightPixels
-                        ) {
-                            errorContent()
-                        }
-                    }
-                } else if (emptyContent != null && pageData.isEmpty) {
-                    item(
-                        key = "${component}-Empty",
-                        contentType = "Empty"
-                    ) {
-                        CentralContent(
-                            contentPadding = contentPadding,
-                            verticalArrangement = verticalArrangement,
-                            existsHeader = headerContent != null,
-                            existsFooter = footerContent != null,
-                            listHeightPixels = listHeightPixels,
-                            headerHeightPixels = headerHeightPixels,
-                            footerHeightPixels = footerHeightPixels
-                        ) {
-                            emptyContent()
-                        }
-                    }
-                } else {
-                    content(pageData)
+                    content(it)
                 }
 
                 if (footerContent != null) {
-                    item(
+                    itemHeaderFooter(
+                        scope = this,
                         key = "${component}-Footer",
-                        contentType = "Footer"
-                    ) {
-                        SubcomposeLayout { constraint ->
-                            val placeables = subcompose("${component}-Footer", footerContent).map {
-                                it.measure(constraint).apply {
-                                    footerHeightPixels = height.coerceAtLeast(footerHeightPixels)
-                                }
-                            }
-                            layout(constraint.maxWidth, footerHeightPixels) {
-                                placeables.forEach {
-                                    it.placeRelative(0, 0)
-                                }
-                            }
-                        }
-                    }
+                        contentType = "Footer",
+                        slotId = "${component}-Footer",
+                        onHeightChange = {
+                            footerHeightPixels = it
+                        },
+                        content = footerContent
+                    )
                 }
 
                 if (pagingStateFooter != null) {
-                    fun trySetFooter(
-                        lazyListScope: LazyListScope,
-                        component: PagingComponent<*, *>,
-                        content: (@Composable (PagingComponent<*, *>) -> Unit)?
-                    ) {
-                        if (content != null) {
-                            lazyListScope.item(
-                                key = "${component}-PagingStateFooter",
-                                contentType = "PagingStateFooter"
-                            ) {
-                                content(component)
-                            }
-                        }
-                    }
-                    when (pagingFooterType) {
-                        PagingFooterType.Loading -> trySetFooter(
-                            this,
-                            component,
-                            pagingStateFooter.loading
-                        )
-                        PagingFooterType.LoadMore -> trySetFooter(
-                            this,
-                            component,
-                            pagingStateFooter.loadMore
-                        )
-                        PagingFooterType.LoadError -> trySetFooter(
-                            this,
-                            component,
-                            pagingStateFooter.loadError
-                        )
-                        PagingFooterType.NoMoreData -> trySetFooter(
-                            this,
-                            component,
-                            pagingStateFooter.noMoreData
-                        )
-                        PagingFooterType.WaitingRefresh -> trySetFooter(
-                            this,
-                            component,
-                            pagingStateFooter.waitingRefresh
-                        )
-                        else -> Unit
-                    }
+                    trySetPagingStateFooter(
+                        scope = this,
+                        component = component,
+                        pagingFooterType = pagingFooterType,
+                        pagingStateFooter = pagingStateFooter
+                    )
                 }
-            }
-
-            if (loadingContent != null
-                && (pageData.isInitialized.not() || refreshLoading)
-            ) {
-                loadingContent()
             }
         }
     }
@@ -362,7 +272,11 @@ fun <K, V> PagingGridComponent(
 
         ScrollToTopWhenRefreshEffect(state, loadState)
 
-        Box(modifier = Modifier.fillMaxSize()) {
+        LoadingBox(
+            component = component,
+            refreshLoading = refreshLoading,
+            loadingContent = loadingContent
+        ) {
             LazyVerticalGrid(
                 modifier = Modifier.fillMaxSize(),
                 columns = columns,
@@ -375,26 +289,16 @@ fun <K, V> PagingGridComponent(
                 userScrollEnabled = userScrollEnabled
             ) {
                 if (headerContent != null) {
-                    item(
-                        span = {
-                            GridItemSpan(maxLineSpan)
-                        },
+                    itemHeaderFooter(
+                        scope = this,
                         key = "${component}-Header",
-                        contentType = "Header"
-                    ) {
-                        SubcomposeLayout { constraint ->
-                            val placeables = subcompose("${component}-Header", headerContent).map {
-                                it.measure(constraint).apply {
-                                    headerHeightPixels = height.coerceAtLeast(headerHeightPixels)
-                                }
-                            }
-                            layout(constraint.maxWidth, headerHeightPixels) {
-                                placeables.forEach {
-                                    it.placeRelative(0, 0)
-                                }
-                            }
-                        }
-                    }
+                        contentType = "Header",
+                        slotId = "${component}-Header",
+                        onHeightChange = {
+                            headerHeightPixels = it
+                        },
+                        content = headerContent
+                    )
                 }
 
                 if (loadingContent != null
@@ -465,81 +369,26 @@ fun <K, V> PagingGridComponent(
                 }
 
                 if (footerContent != null) {
-                    item(
-                        span = {
-                            GridItemSpan(maxLineSpan)
+                    itemHeaderFooter(
+                        scope = this,
+                        key = "${component}-Footer",
+                        contentType = "Footer",
+                        slotId = "${component}-Footer",
+                        onHeightChange = {
+                            footerHeightPixels = it
                         },
-                        key = "$component-Footer",
-                        contentType = "Footer"
-                    ) {
-                        SubcomposeLayout { constraint ->
-                            val placeables = subcompose("$component-Footer", footerContent).map {
-                                it.measure(constraint).apply {
-                                    footerHeightPixels = height.coerceAtLeast(footerHeightPixels)
-                                }
-                            }
-                            layout(constraint.maxWidth, footerHeightPixels) {
-                                placeables.forEach {
-                                    it.placeRelative(0, 0)
-                                }
-                            }
-                        }
-                    }
+                        content = footerContent
+                    )
                 }
 
                 if (pagingStateFooter != null) {
-                    fun trySetFooter(
-                        lazyGridScope: LazyGridScope,
-                        component: PagingComponent<*, *>,
-                        content: (@Composable (PagingComponent<*, *>) -> Unit)?
-                    ) {
-                        if (content != null) {
-                            lazyGridScope.item(
-                                span = {
-                                    GridItemSpan(maxLineSpan)
-                                },
-                                key = "${component}-PagingStateFooter",
-                                contentType = "PagingStateFooter"
-                            ) {
-                                content(component)
-                            }
-                        }
-                    }
-                    when (pagingFooterType) {
-                        PagingFooterType.Loading -> trySetFooter(
-                            this,
-                            component,
-                            pagingStateFooter.loading
-                        )
-                        PagingFooterType.LoadMore -> trySetFooter(
-                            this,
-                            component,
-                            pagingStateFooter.loadMore
-                        )
-                        PagingFooterType.LoadError -> trySetFooter(
-                            this,
-                            component,
-                            pagingStateFooter.loadError
-                        )
-                        PagingFooterType.NoMoreData -> trySetFooter(
-                            this,
-                            component,
-                            pagingStateFooter.noMoreData
-                        )
-                        PagingFooterType.WaitingRefresh -> trySetFooter(
-                            this,
-                            component,
-                            pagingStateFooter.waitingRefresh
-                        )
-                        else -> Unit
-                    }
+                    trySetPagingStateFooter(
+                        scope = this,
+                        component = component,
+                        pagingFooterType = pagingFooterType,
+                        pagingStateFooter = pagingStateFooter
+                    )
                 }
-            }
-
-            if (loadingContent != null
-                && (pageData.isInitialized.not() || refreshLoading)
-            ) {
-                loadingContent()
             }
         }
     }
@@ -589,7 +438,11 @@ fun <K, V> PagingStaggeredGridComponent(
 
     ScrollToTopWhenRefreshEffect(state, loadState)
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    LoadingBox(
+        component = component,
+        refreshLoading = refreshLoading,
+        loadingContent = loadingContent
+    ) {
         if (loadingContent != null
             && pageData.isEmpty
             && (pageData.isInitialized.not() || refreshLoading)
@@ -613,9 +466,20 @@ fun <K, V> PagingStaggeredGridComponent(
                 content(pageData)
             }
         }
+    }
+}
 
+@Composable
+private fun <K, V> LoadingBox(
+    component: PagingComponent<K, V>,
+    refreshLoading: Boolean,
+    loadingContent: (@Composable () -> Unit)?,
+    content: @Composable () -> Unit
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        content()
         if (loadingContent != null
-            && (pageData.isInitialized.not() || refreshLoading)
+            && (component.pageData.isInitialized.not() || refreshLoading)
         ) {
             loadingContent()
         }
@@ -746,6 +610,237 @@ fun <K, V> PagingHorizontalComponent(
                     pagingStateFooter.waitingRefresh
                 )
                 else -> Unit
+            }
+        }
+    }
+}
+
+private fun <K, V> handleCentralContent(
+    scope: Any,
+    component: PagingComponent<K, V>,
+    refreshLoading: Boolean,
+    refreshError: Boolean,
+    listHeightPixels: Int,
+    headerHeightPixels: Int,
+    footerHeightPixels: Int,
+    contentPadding: PaddingValues,
+    verticalArrangement: Arrangement.Vertical,
+    headerContent: (@Composable () -> Unit)?,
+    footerContent: (@Composable () -> Unit)?,
+    loadingContent: (@Composable () -> Unit)?,
+    emptyContent: (@Composable () -> Unit)?,
+    errorContent: (@Composable () -> Unit)?,
+    content: (PageData<K, V>) -> Unit,
+) {
+    val pageData = component.pageData
+    if (loadingContent != null
+        && pageData.isEmpty
+        && (pageData.isInitialized.not() || refreshLoading)
+    ) {
+        itemCentral(
+            scope = scope,
+            key = "${component}-Loading",
+            contentType = "Loading"
+        ) {
+            CentralContent(
+                contentPadding = contentPadding,
+                verticalArrangement = verticalArrangement,
+                existsHeader = headerContent != null,
+                existsFooter = footerContent != null,
+                listHeightPixels = listHeightPixels,
+                headerHeightPixels = headerHeightPixels,
+                footerHeightPixels = footerHeightPixels
+            ) {
+            }
+        }
+    } else if (errorContent != null && refreshError && pageData.isEmpty) {
+        itemCentral(
+            scope = scope,
+            key = "${component}-Error",
+            contentType = "Error"
+        ) {
+            CentralContent(
+                contentPadding = contentPadding,
+                verticalArrangement = verticalArrangement,
+                existsHeader = headerContent != null,
+                existsFooter = footerContent != null,
+                listHeightPixels = listHeightPixels,
+                headerHeightPixels = headerHeightPixels,
+                footerHeightPixels = footerHeightPixels
+            ) {
+                errorContent()
+            }
+        }
+    } else if (emptyContent != null && pageData.isEmpty) {
+        itemCentral(
+            scope = scope,
+            key = "${component}-Empty",
+            contentType = "Empty"
+        ) {
+            CentralContent(
+                contentPadding = contentPadding,
+                verticalArrangement = verticalArrangement,
+                existsHeader = headerContent != null,
+                existsFooter = footerContent != null,
+                listHeightPixels = listHeightPixels,
+                headerHeightPixels = headerHeightPixels,
+                footerHeightPixels = footerHeightPixels
+            ) {
+                emptyContent()
+            }
+        }
+    } else {
+        content(pageData)
+    }
+}
+
+private fun itemCentral(
+    scope: Any,
+    key: Any,
+    contentType: Any,
+    content: @Composable () -> Unit
+) {
+    if (scope is LazyListScope) {
+        with(scope) {
+            item(key = key, contentType = contentType) {
+                content()
+            }
+        }
+    } else if (scope is LazyGridScope) {
+        with(scope) {
+            item(
+                span = { GridItemSpan(maxLineSpan) },
+                key = key,
+                contentType = contentType
+            ) {
+                content()
+            }
+        }
+    }
+}
+
+private fun <K, V> trySetPagingStateFooter(
+    scope: Any,
+    component: PagingComponent<K, V>,
+    pagingFooterType: PagingFooterType,
+    pagingStateFooter: PagingStateFooter
+) {
+    fun trySetFooter(
+        scope: Any,
+        component: PagingComponent<*, *>,
+        content: (@Composable (PagingComponent<*, *>) -> Unit)?
+    ) {
+        if (content != null) {
+            if (scope is LazyListScope) {
+                with(scope) {
+                    item(
+                        key = "${component}-PagingStateFooter",
+                        contentType = "PagingStateFooter"
+                    ) {
+                        content(component)
+                    }
+                }
+            } else if (scope is LazyGridScope) {
+                with(scope) {
+                    item(
+                        span = { GridItemSpan(maxLineSpan) },
+                        key = "${component}-PagingStateFooter",
+                        contentType = "PagingStateFooter"
+                    ) {
+                        content(component)
+                    }
+                }
+            }
+        }
+    }
+    when (pagingFooterType) {
+        PagingFooterType.Loading -> trySetFooter(
+            scope,
+            component,
+            pagingStateFooter.loading
+        )
+        PagingFooterType.LoadMore -> trySetFooter(
+            scope,
+            component,
+            pagingStateFooter.loadMore
+        )
+        PagingFooterType.LoadError -> trySetFooter(
+            scope,
+            component,
+            pagingStateFooter.loadError
+        )
+        PagingFooterType.NoMoreData -> trySetFooter(
+            scope,
+            component,
+            pagingStateFooter.noMoreData
+        )
+        PagingFooterType.WaitingRefresh -> trySetFooter(
+            scope,
+            component,
+            pagingStateFooter.waitingRefresh
+        )
+        else -> Unit
+    }
+}
+
+private fun itemHeaderFooter(
+    scope: Any,
+    key: Any,
+    contentType: Any,
+    slotId: Any,
+    onHeightChange: (heightPixels: Int) -> Unit,
+    content: @Composable () -> Unit
+) {
+    if (scope is LazyListScope) {
+        with(scope) {
+            item(key = key, contentType = contentType) {
+                MeasureHeightContent(
+                    key = key,
+                    contentType = contentType,
+                    slotId = slotId,
+                    onHeightChange = onHeightChange,
+                    content = content
+                )
+            }
+        }
+    } else if (scope is LazyGridScope) {
+        with(scope) {
+            item(
+                span = { GridItemSpan(maxLineSpan) },
+                key = key,
+                contentType = contentType
+            ) {
+                MeasureHeightContent(
+                    key = key,
+                    contentType = contentType,
+                    slotId = slotId,
+                    onHeightChange = onHeightChange,
+                    content = content
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MeasureHeightContent(
+    key: Any,
+    contentType: Any,
+    slotId: Any,
+    onHeightChange: (heightPixels: Int) -> Unit,
+    content: @Composable () -> Unit
+) {
+    SubcomposeLayout { constraint ->
+        var heightPixels = 0
+        val placeables = subcompose(slotId, content).map {
+            it.measure(constraint).apply {
+                heightPixels = height.coerceAtLeast(0)
+            }
+        }
+        onHeightChange(heightPixels)
+        layout(constraint.maxWidth, heightPixels) {
+            placeables.forEach {
+                it.placeRelative(0, 0)
             }
         }
     }
