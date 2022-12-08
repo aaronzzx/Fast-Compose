@@ -59,12 +59,12 @@ class PagingVM : ViewModel(), LazyPagerPagingComponent<Int, Repo>, SafeStateScop
     private suspend fun request(page: Int, pageSize: Int): RepoEntity {
         delay(2000)
         return when (Random(System.currentTimeMillis()).nextInt(0, 5)) {
-            0 -> {
-                RepoEntity(404, "Not Found", emptyList())
-            }
-            1 -> {
-                throw IllegalStateException("Internal Error")
-            }
+//            0 -> {
+//                RepoEntity(404, "Not Found", emptyList())
+//            }
+//            1 -> {
+//                throw IllegalStateException("Internal Error")
+//            }
             else -> {
                 val list = gitHubService.searchRepos(page, pageSize).data
                 RepoEntity(200, "OK", list)

@@ -146,6 +146,7 @@ private fun LazyLoadPagingPage(lazyPagerPagingComponent: LazyPagerPagingComponen
                                     shape = RoundedCornerShape(8.dp)
                                 )
                                 .onClick {
+                                    lazyPagingComponent.pagingRefresh()
                                 }
                                 .fillMaxWidth()
                                 .aspectRatio(1f)

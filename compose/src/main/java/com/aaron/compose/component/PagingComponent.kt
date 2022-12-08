@@ -137,17 +137,22 @@ fun <K, V> PagingComponent(
             }
         }
 
+        var loading by remember {
+            mutableStateOf(false)
+        }
+        LaunchedEffect(loadState.refresh, state) {
+            loading = loadState.refresh is LoadState.Loading
+            snapshotFlow { loadState.refresh }
+                .filter {
+                    loading && it is LoadState.Idle && it.loadCompleted
+                }
+                .onEach {
+                    state.scrollToItem(0)
+                }
+                .launchIn(this)
+        }
+
         Box(modifier = Modifier.fillMaxSize()) {
-            LaunchedEffect(pageData, state) {
-                snapshotFlow { pageData.loadState.refresh }
-                    .filter {
-                        it is LoadState.Idle && it.loadCompleted
-                    }
-                    .onEach {
-                        state.scrollToItem(0)
-                    }
-                    .launchIn(this)
-            }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 state = state,
@@ -367,17 +372,22 @@ fun <K, V> PagingGridComponent(
             }
         }
 
+        var loading by remember {
+            mutableStateOf(false)
+        }
+        LaunchedEffect(loadState.refresh, state) {
+            loading = loadState.refresh is LoadState.Loading
+            snapshotFlow { loadState.refresh }
+                .filter {
+                    loading && it is LoadState.Idle && it.loadCompleted
+                }
+                .onEach {
+                    state.scrollToItem(0)
+                }
+                .launchIn(this)
+        }
+
         Box(modifier = Modifier.fillMaxSize()) {
-            LaunchedEffect(pageData, state) {
-                snapshotFlow { pageData.loadState.refresh }
-                    .filter {
-                        it is LoadState.Idle && it.loadCompleted
-                    }
-                    .onEach {
-                        state.scrollToItem(0)
-                    }
-                    .launchIn(this)
-            }
             LazyVerticalGrid(
                 modifier = Modifier.fillMaxSize(),
                 columns = columns,
@@ -602,18 +612,22 @@ fun <K, V> PagingStaggeredGridComponent(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        LaunchedEffect(pageData, state) {
-            snapshotFlow { pageData.loadState.refresh }
-                .filter {
-                    it is LoadState.Idle && it.loadCompleted
-                }
-                .onEach {
-                    state.scrollToItem(0)
-                }
-                .launchIn(this)
-        }
+    var loading by remember {
+        mutableStateOf(false)
+    }
+    LaunchedEffect(loadState.refresh, state) {
+        loading = loadState.refresh is LoadState.Loading
+        snapshotFlow { loadState.refresh }
+            .filter {
+                loading && it is LoadState.Idle && it.loadCompleted
+            }
+            .onEach {
+                state.scrollToItem(0)
+            }
+            .launchIn(this)
+    }
 
+    Box(modifier = Modifier.fillMaxSize()) {
         if (loadingContent != null
             && pageData.isEmpty
             && (pageData.isInitialized.not() || refreshLoading)
@@ -712,18 +726,24 @@ fun <K, V> PagingHorizontalComponent(
                     }
                 }
         }
-
-        launch {
-            snapshotFlow { component.pageData.loadState.refresh }
-                .filter {
-                    it is LoadState.Idle && it.loadCompleted
-                }
-                .onEach {
-                    state.scrollToItem(0)
-                }
-                .launchIn(this)
-        }
     }
+
+    var loading by remember {
+        mutableStateOf(false)
+    }
+    val loadState = component.pageData.loadState
+    LaunchedEffect(loadState.refresh, state) {
+        loading = loadState.refresh is LoadState.Loading
+        snapshotFlow { loadState.refresh }
+            .filter {
+                loading && it is LoadState.Idle && it.loadCompleted
+            }
+            .onEach {
+                state.scrollToItem(0)
+            }
+            .launchIn(this)
+    }
+
     LazyRow(
         modifier = modifier,
         state = state,
