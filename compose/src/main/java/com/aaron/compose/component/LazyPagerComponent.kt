@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +46,7 @@ fun LazyPagerComponent(
     userScrollEnabled: Boolean = true,
     content: @Composable PagerScope.(page: Int) -> Unit
 ) {
+    val saveableStateHolder = rememberSaveableStateHolder()
     HorizontalPager(
         count = components.size,
         modifier = modifier,
@@ -57,18 +59,20 @@ fun LazyPagerComponent(
         key = key,
         userScrollEnabled = userScrollEnabled
     ) { page ->
-        val curPage by state.currentPageDelayed()
-        val component = components[page]
-        val owner = LocalLifecycleOwner.current
-        LaunchedEffect(key1 = component) {
-            owner.withStateAtLeast(activeState) {}
-            snapshotFlow { curPage }
-                .filter { !component.initialized.value }
-                .filter { page == curPage }
-                .collect {
-                    component.initialize()
-                }
+        saveableStateHolder.SaveableStateProvider(key = page) {
+            val curPage by state.currentPageDelayed()
+            val component = components[page]
+            val owner = LocalLifecycleOwner.current
+            LaunchedEffect(key1 = component) {
+                owner.withStateAtLeast(activeState) {}
+                snapshotFlow { curPage }
+                    .filter { !component.initialized.value }
+                    .filter { page == curPage }
+                    .collect {
+                        component.initialize()
+                    }
+            }
+            content(page)
         }
-        content(page)
     }
 }

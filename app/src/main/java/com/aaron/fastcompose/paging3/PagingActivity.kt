@@ -52,7 +52,6 @@ import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.WithDivider
 import com.aaron.compose.ui.refresh.SmartRefreshIndicator
 import com.aaron.compose.utils.OverScrollHandler
-import com.aaron.compose.utils.rememberLazyListCachedValue
 import com.aaron.fastcompose.R
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
@@ -119,9 +118,7 @@ class PagingActivity : BaseComposeActivity() {
 
 @Composable
 private fun LazyLoadPagingPage(lazyPagerPagingComponent: LazyPagerPagingComponent<Int, Repo>) {
-    val lazyListCachedValue = rememberLazyListCachedValue()
     LazyPagerPagingComponent(component = lazyPagerPagingComponent) { page, lazyPagingComponent ->
-        val listState = lazyListCachedValue.rememberLazyGridState(page.toString())
         RefreshContent(
             refreshComponent = lazyPagingComponent,
             refreshEnabled = true
@@ -129,7 +126,6 @@ private fun LazyLoadPagingPage(lazyPagerPagingComponent: LazyPagerPagingComponen
             OverScrollHandler(enabled = false) {
                 PagingGridComponent(
                     component = lazyPagingComponent,
-                    state = listState,
                     columns = GridCells.Fixed(2),
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(8.dp),
