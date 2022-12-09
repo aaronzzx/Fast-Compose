@@ -35,7 +35,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aaron.compose.base.BaseComposeActivity
 import com.aaron.compose.component.LazyPagerPagingComponent
@@ -88,7 +87,7 @@ class PagingActivity : BaseComposeActivity() {
                         .background(
                             brush = Brush.verticalGradient(
                                 0f to Color(0xB32196F3),
-                                0.5f to Color(0xFFF0F0F0)
+                                0.5f to Color(0xFFF7F7F7)
                             )
                         )
                 ) {
@@ -295,50 +294,6 @@ private object MyFooter : VerticalPagingStateFooter() {
             contentAlignment = Alignment.Center
         ) {
             CircularProgressIndicator(modifier = Modifier.size(24.dp))
-        }
-    }
-
-    override val noMoreData: (@Composable (PagingComponent<*, *>) -> Unit) = {
-        ConstraintLayout(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            val (line1Id, line2Id, text) = createRefs()
-            Text(
-                modifier = Modifier
-                    .constrainAs(text) {
-                        top.linkTo(parent.top)
-                        bottom.linkTo(parent.bottom)
-                        start.linkTo(parent.start)
-                        end.linkTo(parent.end)
-                    },
-                text = "我是有底线的",
-                fontSize = 12.sp,
-                color = Color(0xFF999999)
-            )
-            Box(
-                modifier = Modifier
-                    .constrainAs(line1Id) {
-                        top.linkTo(text.top)
-                        bottom.linkTo(text.bottom)
-                        end.linkTo(text.start, 16.dp)
-                    }
-                    .height(1.dp)
-                    .aspectRatio(20f)
-                    .background(color = Color(0x4D999999))
-            )
-            Box(
-                modifier = Modifier
-                    .constrainAs(line2Id) {
-                        top.linkTo(text.top)
-                        bottom.linkTo(text.bottom)
-                        start.linkTo(text.end, 16.dp)
-                    }
-                    .height(1.dp)
-                    .aspectRatio(20f)
-                    .background(color = Color(0x4D999999))
-            )
         }
     }
 }

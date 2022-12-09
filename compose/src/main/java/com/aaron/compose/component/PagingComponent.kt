@@ -61,6 +61,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.constraintlayout.compose.Dimension
 import com.aaron.compose.R
 import com.aaron.compose.ktx.canScroll
 import com.aaron.compose.ktx.isEmpty
@@ -1124,11 +1126,47 @@ open class VerticalPagingStateFooter : PagingStateFooter() {
     }
 
     override val noMoreData: (@Composable (PagingComponent<*, *>) -> Unit)? = {
-        FooterText(
-            text = "已经到底了",
-            component = it,
-            footerType = PagingFooterType.NoMoreData
-        )
+        ConstraintLayout(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            val (line1Ref, line2Ref, textRef) = createRefs()
+            Text(
+                modifier = Modifier
+                    .constrainAs(textRef) {
+                        top.linkTo(parent.top)
+                        bottom.linkTo(parent.bottom)
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                    },
+                text = "已经到底了",
+                fontSize = 12.sp,
+                color = Color(0xFF999999)
+            )
+            Box(
+                modifier = Modifier
+                    .constrainAs(line1Ref) {
+                        width = Dimension.value(80.dp)
+                        height = Dimension.value(1.dp)
+                        top.linkTo(textRef.top)
+                        bottom.linkTo(textRef.bottom)
+                        end.linkTo(textRef.start, 16.dp)
+                    }
+                    .background(color = Color(0xFFF2F2F2))
+            )
+            Box(
+                modifier = Modifier
+                    .constrainAs(line2Ref) {
+                        width = Dimension.value(80.dp)
+                        height = Dimension.value(1.dp)
+                        top.linkTo(textRef.top)
+                        bottom.linkTo(textRef.bottom)
+                        start.linkTo(textRef.end, 16.dp)
+                    }
+                    .background(color = Color(0xFFF2F2F2))
+            )
+        }
     }
 
     override val waitingRefresh: (@Composable (PagingComponent<*, *>) -> Unit)? = {
