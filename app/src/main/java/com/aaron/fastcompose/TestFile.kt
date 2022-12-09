@@ -181,10 +181,6 @@ class TestVM : ViewModel(), RefreshComponent, StateComponent, SafeStateScope {
         data.edit().removeAt(index)
     }
 
-    private fun finishRefresh(success: Boolean) {
-        finishRefresh(success, 0)
-    }
-
     private fun initLoad(enableLoading: Boolean) {
         viewModelScope.launchWithViewState(enableLoading = enableLoading) {
             delay(2000)

@@ -30,6 +30,7 @@ fun RefreshComponent(
     swipeEnabled: Boolean = true,
     clipHeaderEnabled: Boolean = true,
     translateBodyEnabled: Boolean = false,
+    finishRefreshDelayMillis: Long = 0,
     triggerRatio: Float = 1f,
     maxDragRatio: Float = 2f,
     indicatorHeight: Dp = 80.dp,
@@ -101,15 +102,15 @@ interface RefreshComponent {
 
     fun refreshIgnoreAnimation()
 
-    fun finishRefresh(success: Boolean, delay: Long = 0) {
+    fun finishRefresh(success: Boolean) {
         if (smartRefreshType.value != SmartRefreshType.Refreshing) {
             return
         }
         smartRefreshType.setValueInternal(
             if (success) {
-                SmartRefreshType.Success(delay)
+                SmartRefreshType.Success
             } else {
-                SmartRefreshType.Failure(delay)
+                SmartRefreshType.Failure
             }
         )
     }

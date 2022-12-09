@@ -15,8 +15,6 @@ val PageData<*, *>.isEmpty: Boolean get() = itemCount == 0
 
 val PageData<*, *>.isNotEmpty: Boolean get() = !isEmpty
 
-fun <K, V> PageData<K, V>.toLazyPagingComponent(
-    finishRefreshDelayMillis: Long = 0L
-): LazyPagingComponent<K, V> {
-    return LazyPagingComponentHelper(this, finishRefreshDelayMillis)
+fun <K, V> PageData<K, V>.toLazyPagingComponent(): LazyPagingComponent<K, V> {
+    return LazyPagingComponentHelper(this)
 }

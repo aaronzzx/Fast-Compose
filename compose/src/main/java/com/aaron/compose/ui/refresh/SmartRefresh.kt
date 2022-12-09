@@ -75,8 +75,8 @@ sealed class SmartRefreshType {
             return when (type) {
                 TypeIdle -> Idle
                 TypeRefreshing -> Refreshing
-                TypeSuccess -> Success(0)
-                TypeFailure -> Failure(0)
+                TypeSuccess -> Success
+                TypeFailure -> Failure
                 else -> error("Unknown type: $type")
             }
         }
@@ -87,26 +87,17 @@ sealed class SmartRefreshType {
     object Idle : SmartRefreshType() {
         override val intType: Int = TypeIdle
     }
+
     object Refreshing : SmartRefreshType() {
         override val intType: Int = TypeRefreshing
     }
 
-    /**
-     * 结束刷新状态， [dismissDelayMillis] 表示要悬挂多久
-     */
-    sealed class FinishRefresh(val dismissDelayMillis: Long) : SmartRefreshType() {
-        companion object {
-            const val DismissDelayMillis = 300L
-        }
-    }
-    class Success(
-        dismissDelayMillis: Long = DismissDelayMillis
-    ) : FinishRefresh(dismissDelayMillis) {
+    sealed class FinishRefresh : SmartRefreshType()
+
+    object Success : FinishRefresh() {
         override val intType: Int = TypeSuccess
     }
-    class Failure(
-        dismissDelayMillis: Long = DismissDelayMillis
-    ) : FinishRefresh(dismissDelayMillis) {
+    object Failure : FinishRefresh() {
         override val intType: Int = TypeFailure
     }
 }
@@ -403,6 +394,7 @@ fun SmartRefresh(
     swipeEnabled: Boolean = true,
     clipHeaderEnabled: Boolean = true,
     translateBodyEnabled: Boolean = true,
+    finishRefreshDelayMillis: Long = 300,
     triggerRatio: Float = 1f,
     maxDragRatio: Float = 2f,
     indicatorHeight: Dp = 80.dp,
@@ -429,7 +421,7 @@ fun SmartRefresh(
 
     // Our LaunchedEffect, which animates the indicator to its resting position
     if (swipeEnabled) {
-        HandleSmartIndicatorOffset(state, refreshTriggerPx, onIdle)
+        HandleSmartIndicatorOffset(state, refreshTriggerPx, finishRefreshDelayMillis, onIdle)
     }
 
     // Our nested scroll connection, which updates our state.
@@ -494,6 +486,7 @@ private fun isHeaderNeedClip(state: SmartRefreshState, indicatorHeight: Float): 
 private fun HandleSmartIndicatorOffset(
     state: SmartRefreshState,
     refreshTriggerPx: Float,
+    finishRefreshDelayMillis: Long,
     onIdle: () -> Unit
 ) {
     val refreshType = state.type
@@ -518,7 +511,7 @@ private fun HandleSmartIndicatorOffset(
                 // 如果上一个状态也是 FinishRefresh ，就不要悬挂了
                 // 这种情况一般是刷新完成时用户进行交互
                 if (!_isPrevTypeFinishRefresh) {
-                    delay(refreshType.dismissDelayMillis.coerceAtLeast(0))
+                    delay(finishRefreshDelayMillis.coerceAtLeast(0))
                 }
                 // 回调 onIdle 之前先 snap 回去，不然会瞥到 Idle 状态的 UI
                 state.animateOffsetTo(0f)

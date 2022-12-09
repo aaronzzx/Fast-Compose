@@ -79,9 +79,8 @@ import com.aaron.compose.paging.PageData
 import com.aaron.compose.paging.PagingScope
 import com.aaron.compose.utils.DevicePreview
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 /**
@@ -849,20 +848,16 @@ private fun MeasureHeightContent(
 }
 
 @Composable
-private fun ScrollToTopWhenRefreshEffect(state: Any, loadState: CombinedLoadState) {
-    var loading by remember {
-        mutableStateOf(false)
-    }
-    LaunchedEffect(loadState.refresh, state) {
-        loading = loadState.refresh is LoadState.Loading
+private fun ScrollToTopWhenRefreshEffect(listState: Any, loadState: CombinedLoadState) {
+    LaunchedEffect(loadState.refresh, listState) {
         snapshotFlow { loadState.refresh }
+            .drop(1) // 因为是监听事件，因此不需要启动监听时第一个值
             .filter {
-                loading && it is LoadState.Idle && it.loadCompleted
+                it is LoadState.Idle && it.loadCompleted
             }
-            .onEach {
-                scrollToTop(state)
+            .collect {
+                scrollToTop(listState)
             }
-            .launchIn(this)
     }
 }
 

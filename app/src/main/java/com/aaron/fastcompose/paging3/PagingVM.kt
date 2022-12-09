@@ -10,7 +10,6 @@ import com.aaron.compose.paging.PageConfigDefaults
 import com.aaron.compose.safestate.SafeState
 import com.aaron.compose.safestate.SafeStateScope
 import com.aaron.compose.safestate.safeStateOf
-import com.aaron.compose.ui.refresh.SmartRefreshType.FinishRefresh.Companion.DismissDelayMillis
 import com.aaron.fastcompose.RepoEntity
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
@@ -50,7 +49,7 @@ class PagingVM : ViewModel(), LazyPagerPagingComponent<Int, Repo>, SafeStateScop
                     lazyLoad = true
                 ) { page, pageSize ->
                     request(page, pageSize)
-                }.toLazyPagingComponent(finishRefreshDelayMillis = DismissDelayMillis)
+                }.toLazyPagingComponent()
             }
             lazyPagingComponents.setValue(list.toPersistentList())
         }

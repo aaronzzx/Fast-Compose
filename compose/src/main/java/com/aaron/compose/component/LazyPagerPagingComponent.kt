@@ -71,8 +71,6 @@ fun <K, V> LazyPagerPagingComponent(
 interface LazyPagingComponent<K, V> : PagingComponent<K, V>,
     LazyComponent, RefreshComponent, SafeStateScope {
 
-    val finishRefreshDelayMillis: Long get() = 0
-
     override val isInitialized: Boolean
         get() = initialized.value
 
@@ -86,15 +84,14 @@ interface LazyPagingComponent<K, V> : PagingComponent<K, V>,
 
     override fun pagingRefresh() {
         val initialized = initialized
-        val finishRefreshDelayMillis = finishRefreshDelayMillis
         pageData.refresh(
             onSuccess = {
                 initialized.setValue(true)
-                finishRefresh(true, finishRefreshDelayMillis)
+                finishRefresh(true)
             },
             onFailure = {
                 initialized.setValue(true)
-                finishRefresh(false, finishRefreshDelayMillis)
+                finishRefresh(false)
             }
         )
     }
@@ -107,8 +104,7 @@ interface LazyPagerPagingComponent<K, V> : PagingScope, SafeStateScope {
 }
 
 open class LazyPagingComponentHelper<K, V>(
-    final override val pageData: PageData<K, V>,
-    override val finishRefreshDelayMillis: Long = 0L
+    final override val pageData: PageData<K, V>
 ) : LazyPagingComponent<K, V> {
 
     override val initialized: SafeState<Boolean> = safeStateOf(pageData.isInitialized)

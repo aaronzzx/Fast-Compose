@@ -139,7 +139,7 @@ private fun Collapsing() {
                 scope.launch {
                     refreshState.type = SmartRefreshType.Refreshing
                     delay(1000)
-                    refreshState.type = SmartRefreshType.Success()
+                    refreshState.type = SmartRefreshType.Success
                 }
             },
             onIdle = { refreshState.type = SmartRefreshType.Idle },
@@ -461,9 +461,9 @@ private fun SmartRefreshList(vm: MainVM = viewModel()) {
             LaunchedEffect(loadStateRefresh) {
                 listState.scrollToItem(0)
             }
-            vm.smartRefreshType = SmartRefreshType.Success()
+            vm.smartRefreshType = SmartRefreshType.Success
         } else if (loadStateRefresh is LoadState.Error) {
-            vm.smartRefreshType = SmartRefreshType.Failure()
+            vm.smartRefreshType = SmartRefreshType.Failure
         }
     } else if (loadStateRefresh is LoadState.Loading && !vm.init) {
         vm.smartRefreshType = SmartRefreshType.Refreshing

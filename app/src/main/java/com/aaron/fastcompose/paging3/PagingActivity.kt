@@ -30,7 +30,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,10 +45,8 @@ import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.lazylist.itemsIndexed
 import com.aaron.compose.ktx.lazylist.sections
 import com.aaron.compose.ktx.onClick
-import com.aaron.compose.ktx.toPx
 import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.WithDivider
-import com.aaron.compose.ui.refresh.SmartRefreshIndicator
 import com.aaron.compose.utils.OverScrollHandler
 import com.aaron.fastcompose.R
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
@@ -91,18 +88,18 @@ class PagingActivity : BaseComposeActivity() {
                             )
                         )
                 ) {
-                    TopBar(
-                        modifier = Modifier.zIndex(1f),
-                        title = "",
-                        startIcon = R.drawable.back,
-                        backgroundColor = Color.Transparent,
-                        elevation = 0.dp,
-                        contentPadding = WindowInsets.statusBars.asPaddingValues(),
-                        onStartIconClick = {
-                            finishAfterTransition()
-                        }
-                    )
                     Column(modifier = Modifier.fillMaxSize()) {
+                        TopBar(
+                            modifier = Modifier.zIndex(1f),
+                            title = "",
+                            startIcon = R.drawable.back,
+                            backgroundColor = Color.Transparent,
+                            elevation = 0.dp,
+                            contentPadding = WindowInsets.statusBars.asPaddingValues(),
+                            onStartIconClick = {
+                                finishAfterTransition()
+                            }
+                        )
 
 //                        LazySection()
 
@@ -170,24 +167,8 @@ private fun RefreshContent(
 ) {
     RefreshComponent(
         component = refreshComponent,
-        modifier = Modifier
-            .padding(top = 80.dp)
-            .fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         swipeEnabled = refreshEnabled,
-        clipHeaderEnabled = false,
-        translateBodyEnabled = true,
-        indicator = { smartRefreshState, triggerDistance, maxDragDistance, indicatorHeight ->
-            val indicatorHeightPx = indicatorHeight.toPx()
-            SmartRefreshIndicator(
-                modifier = Modifier.graphicsLayer {
-                    alpha = smartRefreshState.indicatorOffset / (indicatorHeightPx / 2f)
-                },
-                state = smartRefreshState,
-                triggerDistance = triggerDistance,
-                maxDragDistance = maxDragDistance,
-                height = indicatorHeight
-            )
-        },
         content = content
     )
 }
