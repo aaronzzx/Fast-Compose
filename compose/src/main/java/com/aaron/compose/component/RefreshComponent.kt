@@ -19,7 +19,7 @@ import com.aaron.compose.ui.refresh.rememberSmartRefreshState
 import com.aaron.compose.utils.DevicePreview
 
 /**
- * 对 [com.jialai.compose.ui.refresh.SmartRefresh] 进行封装
+ * 对 [com.aaron.compose.ui.refresh.SmartRefresh] 进行封装
  */
 @Composable
 fun RefreshComponent(
@@ -62,6 +62,7 @@ fun RefreshComponent(
         swipeEnabled = swipeEnabled,
         clipHeaderEnabled = clipHeaderEnabled,
         translateBodyEnabled = translateBodyEnabled,
+        finishRefreshDelayMillis = finishRefreshDelayMillis,
         triggerRatio = triggerRatio,
         maxDragRatio = maxDragRatio,
         indicatorHeight = indicatorHeight,

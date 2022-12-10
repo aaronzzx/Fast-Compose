@@ -5,13 +5,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
+import com.aaron.compose.ktx.rememberLazyPagingComponents
 import com.aaron.compose.paging.PageData
 import com.aaron.compose.paging.PagingScope
 import com.aaron.compose.safestate.SafeState
@@ -32,8 +32,8 @@ import kotlinx.collections.immutable.persistentListOf
  */
 
 @Composable
-fun <K, V> LazyPagerPagingComponent(
-    component: LazyPagerPagingComponent<K, V>,
+fun <T, K, V> LazyPagerPagingComponent(
+    component: LazyPagerPagingComponent<T, K, V>,
     modifier: Modifier = Modifier,
     activeState: Lifecycle.State = Lifecycle.State.RESUMED,
     state: PagerState = rememberPagerState(),
@@ -47,9 +47,9 @@ fun <K, V> LazyPagerPagingComponent(
     ),
     key: ((page: Int) -> Any)? = null,
     userScrollEnabled: Boolean = true,
-    content: @Composable PagerScope.(page: Int, lazyPagingComponent: LazyPagingComponent<K, V>) -> Unit
+    content: @Composable PagerScope.(lazyPagingComponent: LazyPagingComponent<K, V>) -> Unit
 ) {
-    val lazyPagingComponents by component.lazyPagingComponents
+    val lazyPagingComponents = component.rememberLazyPagingComponents()
     LazyPagerComponent(
         components = lazyPagingComponents,
         modifier = modifier,
@@ -63,7 +63,8 @@ fun <K, V> LazyPagerPagingComponent(
         key = key,
         userScrollEnabled = userScrollEnabled
     ) { page ->
-        content(page, lazyPagingComponents[page])
+        val lazyPagingComponent = lazyPagingComponents[page]
+        content(lazyPagingComponent)
     }
 }
 
@@ -97,10 +98,13 @@ interface LazyPagingComponent<K, V> : PagingComponent<K, V>,
     }
 }
 
+/**
+ * T 代表 Tab ，K 代表分页 key ，V 代表数据
+ */
 @Stable
-interface LazyPagerPagingComponent<K, V> : PagingScope, SafeStateScope {
+interface LazyPagerPagingComponent<T, K, V> : PagingScope, SafeStateScope {
 
-    val lazyPagingComponents: SafeState<LazyPagingComponents<K, V>>
+    val lazyPagingData: SafeState<LazyPagingData<T, K, V>>
 }
 
 open class LazyPagingComponentHelper<K, V>(
@@ -119,12 +123,12 @@ open class LazyPagingComponentHelper<K, V>(
 }
 
 @Composable
-fun <K, V> lazyPagerPagingComponent(
-    lazyPagingComponents: ImmutableList<LazyPagingComponent<K, V>> = persistentListOf()
-): LazyPagerPagingComponent<K, V> = object : LazyPagerPagingComponent<K, V> {
+fun <T, K, V> lazyPagerPagingComponent(
+    lazyPagingData: LazyPagingData<T, K, V> = persistentListOf()
+): LazyPagerPagingComponent<T, K, V> = object : LazyPagerPagingComponent<T, K, V> {
 
-    override val lazyPagingComponents: SafeState<LazyPagingComponents<K, V>> =
-        safeStateOf(lazyPagingComponents)
+    override val lazyPagingData: SafeState<LazyPagingData<T, K, V>> =
+        safeStateOf(lazyPagingData)
 }
 
-typealias LazyPagingComponents<K, V> = ImmutableList<LazyPagingComponent<K, V>>
+typealias LazyPagingData<T, K, V> = ImmutableList<Pair<T, LazyPagingComponent<K, V>>>

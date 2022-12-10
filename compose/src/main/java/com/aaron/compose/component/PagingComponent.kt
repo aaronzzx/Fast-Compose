@@ -302,71 +302,23 @@ fun <K, V> PagingGridComponent(
                     )
                 }
 
-                if (loadingContent != null
-                    && pageData.isEmpty
-                    && (pageData.isInitialized.not() || refreshLoading)
+                handleCentralContent(
+                    scope = this,
+                    component = component,
+                    refreshLoading = refreshLoading,
+                    refreshError = refreshError,
+                    listHeightPixels = listHeightPixels,
+                    headerHeightPixels = headerHeightPixels,
+                    footerHeightPixels = footerHeightPixels,
+                    contentPadding = contentPadding,
+                    verticalArrangement = verticalArrangement,
+                    headerContent = headerContent,
+                    footerContent = footerContent,
+                    loadingContent = loadingContent,
+                    emptyContent = emptyContent,
+                    errorContent = errorContent
                 ) {
-                    item(
-                        span = {
-                            GridItemSpan(maxLineSpan)
-                        },
-                        key = "${component}-Loading",
-                        contentType = "Loading"
-                    ) {
-                        CentralContent(
-                            contentPadding = contentPadding,
-                            verticalArrangement = verticalArrangement,
-                            existsHeader = headerContent != null,
-                            existsFooter = footerContent != null,
-                            listHeightPixels = listHeightPixels,
-                            headerHeightPixels = headerHeightPixels,
-                            footerHeightPixels = footerHeightPixels
-                        ) {
-//                            loadingContent()
-                        }
-                    }
-                } else if (errorContent != null && refreshError && pageData.isEmpty) {
-                    item(
-                        span = {
-                            GridItemSpan(maxLineSpan)
-                        },
-                        key = "${component}-Error",
-                        contentType = "Error"
-                    ) {
-                        CentralContent(
-                            contentPadding = contentPadding,
-                            verticalArrangement = verticalArrangement,
-                            existsHeader = headerContent != null,
-                            existsFooter = footerContent != null,
-                            listHeightPixels = listHeightPixels,
-                            headerHeightPixels = headerHeightPixels,
-                            footerHeightPixels = footerHeightPixels
-                        ) {
-                            errorContent()
-                        }
-                    }
-                } else if (emptyContent != null && pageData.isEmpty) {
-                    item(
-                        span = {
-                            GridItemSpan(maxLineSpan)
-                        },
-                        key = "${component}-Empty",
-                        contentType = "Empty"
-                    ) {
-                        CentralContent(
-                            contentPadding = contentPadding,
-                            verticalArrangement = verticalArrangement,
-                            existsHeader = headerContent != null,
-                            existsFooter = footerContent != null,
-                            listHeightPixels = listHeightPixels,
-                            headerHeightPixels = headerHeightPixels,
-                            footerHeightPixels = footerHeightPixels
-                        ) {
-                            emptyContent()
-                        }
-                    }
-                } else {
-                    content(pageData)
+                    content(it)
                 }
 
                 if (footerContent != null) {

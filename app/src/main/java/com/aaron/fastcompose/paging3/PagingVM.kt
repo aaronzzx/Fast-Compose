@@ -3,7 +3,7 @@ package com.aaron.fastcompose.paging3
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aaron.compose.component.LazyPagerPagingComponent
-import com.aaron.compose.component.LazyPagingComponents
+import com.aaron.compose.component.LazyPagingData
 import com.aaron.compose.defaults.Defaults
 import com.aaron.compose.ktx.toLazyPagingComponent
 import com.aaron.compose.paging.PageConfigDefaults
@@ -21,7 +21,7 @@ import kotlin.random.Random
  * @author aaronzzxup@gmail.com
  * @since 2022/10/24
  */
-class PagingVM : ViewModel(), LazyPagerPagingComponent<Int, Repo>, SafeStateScope {
+class PagingVM : ViewModel(), LazyPagerPagingComponent<String, Int, Repo>, SafeStateScope {
 
     companion object {
         init {
@@ -34,7 +34,7 @@ class PagingVM : ViewModel(), LazyPagerPagingComponent<Int, Repo>, SafeStateScop
         }
     }
 
-    override val lazyPagingComponents: SafeState<LazyPagingComponents<Int, Repo>> =
+    override val lazyPagingData: SafeState<LazyPagingData<String, Int, Repo>> =
         safeStateOf(persistentListOf())
 
     init {
@@ -44,14 +44,16 @@ class PagingVM : ViewModel(), LazyPagerPagingComponent<Int, Repo>, SafeStateScop
     private fun initialize() {
         viewModelScope.launch {
             val list = List(5) {
-                viewModelScope.buildPageData(
+                val lazyPagingComponent = viewModelScope.buildPageData(
                     initialPage = 1,
                     lazyLoad = true
                 ) { page, pageSize ->
                     request(page, pageSize)
                 }.toLazyPagingComponent()
+
+                "Tab$$it" to lazyPagingComponent
             }
-            lazyPagingComponents.setValue(list.toPersistentList())
+            lazyPagingData.setValue(list.toPersistentList())
         }
     }
 

@@ -113,8 +113,8 @@ class PagingActivity : BaseComposeActivity() {
 }
 
 @Composable
-private fun LazyLoadPagingPage(lazyPagerPagingComponent: LazyPagerPagingComponent<Int, Repo>) {
-    LazyPagerPagingComponent(component = lazyPagerPagingComponent) { page, lazyPagingComponent ->
+private fun LazyLoadPagingPage(lazyPagerPagingComponent: LazyPagerPagingComponent<String, Int, Repo>) {
+    LazyPagerPagingComponent(component = lazyPagerPagingComponent) { lazyPagingComponent ->
         RefreshContent(
             refreshComponent = lazyPagingComponent,
             refreshEnabled = true

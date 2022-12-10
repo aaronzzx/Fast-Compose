@@ -104,8 +104,6 @@ sealed class SmartRefreshType {
 
 /**
  * 维护刷新期间各种状态
- *
- * @param isRefreshing 初始刷新状态
  */
 @Stable
 class SmartRefreshState internal constructor(
