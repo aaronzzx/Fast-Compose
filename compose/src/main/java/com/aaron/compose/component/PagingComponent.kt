@@ -1195,7 +1195,7 @@ interface PagingComponent<K, V> : PagingScope {
     val pageData: PageData<K, V>
 
     /**
-     * PageData 是否已经初始化，即成功加载过数据
+     * PageData 是否已经初始化
      */
     val isInitialized: Boolean get() = pageData.isInitialized
 
