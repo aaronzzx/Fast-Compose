@@ -33,13 +33,13 @@ fun LazyPagerComponent(
     components: ImmutableList<LazyComponent>,
     modifier: Modifier = Modifier,
     activeState: Lifecycle.State = Lifecycle.State.RESUMED,
-    state: PagerState = rememberPagerState(),
+    pagerState: PagerState = rememberPagerState(),
     reverseLayout: Boolean = false,
     itemSpacing: Dp = 0.dp,
     contentPadding: PaddingValues = PaddingValues(0.dp),
     verticalAlignment: Alignment.Vertical = Alignment.CenterVertically,
     flingBehavior: FlingBehavior = PagerDefaults.flingBehavior(
-        state = state,
+        state = pagerState,
         endContentPadding = contentPadding.calculateEndPadding(LayoutDirection.Ltr),
     ),
     key: ((page: Int) -> Any)? = null,
@@ -50,7 +50,7 @@ fun LazyPagerComponent(
     HorizontalPager(
         count = components.size,
         modifier = modifier,
-        state = state,
+        state = pagerState,
         reverseLayout = reverseLayout,
         itemSpacing = itemSpacing,
         contentPadding = contentPadding,
@@ -60,7 +60,7 @@ fun LazyPagerComponent(
         userScrollEnabled = userScrollEnabled
     ) { page ->
         saveableStateHolder.SaveableStateProvider(key = page) {
-            val curPage by state.currentPageDelayed()
+            val curPage by pagerState.currentPageDelayed()
             val component = components[page]
             val owner = LocalLifecycleOwner.current
             LaunchedEffect(key1 = component) {

@@ -1073,11 +1073,24 @@ open class VerticalPagingStateFooter : PagingStateFooter() {
     }
 
     override val noMoreData: (@Composable (PagingComponent<*, *>) -> Unit)? = {
-        ConstraintLayout(
+        CommonNoMoreDataContent(
             modifier = Modifier
-                .fillMaxWidth()
                 .padding(16.dp)
-        ) {
+                .fillMaxWidth()
+        )
+    }
+
+    override val waitingRefresh: (@Composable (PagingComponent<*, *>) -> Unit)? = {
+        FooterText(
+            text = "等待刷新完成",
+            component = it,
+            footerType = PagingFooterType.WaitingRefresh
+        )
+    }
+
+    @Composable
+    fun CommonNoMoreDataContent(modifier: Modifier = Modifier) {
+        ConstraintLayout(modifier = modifier.fillMaxWidth()) {
             val (line1Ref, line2Ref, textRef) = createRefs()
             Text(
                 modifier = Modifier
@@ -1114,14 +1127,6 @@ open class VerticalPagingStateFooter : PagingStateFooter() {
                     .background(color = Color(0xFFF2F2F2))
             )
         }
-    }
-
-    override val waitingRefresh: (@Composable (PagingComponent<*, *>) -> Unit)? = {
-        FooterText(
-            text = "等待刷新完成",
-            component = it,
-            footerType = PagingFooterType.WaitingRefresh
-        )
     }
 }
 
