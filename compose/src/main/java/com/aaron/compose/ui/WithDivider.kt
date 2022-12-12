@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun WithDivider(
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     color: Color = MaterialTheme.colors.onSurface.copy(alpha = 0.12f),
     startIndent: Dp = 0.dp,
     endIndent: Dp = 0.dp,
@@ -28,12 +29,14 @@ fun WithDivider(
 ) {
     Column(modifier = modifier) {
         content()
-        Divider(
-            color = color,
-            startIndent = startIndent,
-            endIndent = endIndent,
-            thickness = thickness
-        )
+        if (enabled) {
+            Divider(
+                color = color,
+                startIndent = startIndent,
+                endIndent = endIndent,
+                thickness = thickness
+            )
+        }
     }
 }
 

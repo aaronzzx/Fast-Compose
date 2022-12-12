@@ -55,7 +55,7 @@ inline fun <K, V> LazyGridScope.items(
     component: PagingComponent<K, V>,
     crossinline key: (item: V) -> Any? = { null },
     crossinline contentType: (item: V) -> Any? = { null },
-    crossinline span: LazyGridItemSpanScope.(item: V) -> GridItemSpan = { DefaultGridItemSpan },
+    crossinline span: LazyGridItemSpanScope.(item: V) -> GridItemSpan = { GridItemSpan(1) },
     crossinline itemContent: @Composable LazyGridItemScope.(item: V) -> Unit
 ) {
     itemsIndexed(
@@ -72,7 +72,7 @@ inline fun <K, V> LazyGridScope.itemsIndexed(
     component: PagingComponent<K, V>,
     crossinline key: (index: Int, item: V) -> Any? = { _, _ -> null },
     crossinline contentType: (index: Int, item: V) -> Any? = { _, _ -> null },
-    crossinline span: LazyGridItemSpanScope.(index: Int, item: V) -> GridItemSpan = { _, _ -> DefaultGridItemSpan },
+    crossinline span: LazyGridItemSpanScope.(index: Int, item: V) -> GridItemSpan = { _, _ -> GridItemSpan(1) },
     crossinline itemContent: @Composable LazyGridItemScope.(index: Int, item: V) -> Unit
 ) {
     val pageData = component.pageData

@@ -16,16 +16,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -34,16 +31,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aaron.compose.base.BaseComposeActivity
 import com.aaron.compose.component.LazyPagerPagingComponent
-import com.aaron.compose.component.PagingComponent
 import com.aaron.compose.component.PagingGridComponent
 import com.aaron.compose.component.RefreshComponent
-import com.aaron.compose.component.VerticalPagingStateFooter
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.lazylist.itemsIndexed
-import com.aaron.compose.ktx.lazylist.sections
+import com.aaron.compose.ktx.lazylist.sectionsIndexed
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.WithDivider
@@ -51,6 +45,7 @@ import com.aaron.compose.utils.OverScrollHandler
 import com.aaron.fastcompose.R
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import kotlinx.collections.immutable.toPersistentList
 
 /**
  * @author aaronzzxup@gmail.com
@@ -101,10 +96,17 @@ class PagingActivity : BaseComposeActivity() {
                             }
                         )
 
-//                        LazySection()
+                        val list = ArrayList<Job>()
+                        repeat(5) { outer ->
+                            repeat(10) { inner ->
+                                list.add(Job("Job(outer-$outer, inner-$inner)", outer))
+                            }
+                        }
 
-                        val vm = viewModel<PagingVM>()
-                        LazyLoadPagingPage(lazyPagerPagingComponent = vm)
+                        LazySection(list)
+
+//                        val vm = viewModel<PagingVM>()
+//                        LazyLoadPagingPage(lazyPagerPagingComponent = vm)
                     }
                 }
             }
@@ -126,8 +128,7 @@ private fun LazyLoadPagingPage(lazyPagerPagingComponent: LazyPagerPagingComponen
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    pagingStateFooter = MyFooter
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     itemsIndexed(lazyPagingComponent, key = { _, item -> item.id }) { index, item ->
                         Box(
@@ -174,107 +175,82 @@ private fun RefreshContent(
 }
 
 @Composable
-private fun LazySection() {
-    val list = remember {
-        List(10) { a ->
-            List(10) { b ->
-                "${a + 1}-${b + 1}"
-            }
-        }
-    }
+private fun LazySection(data: List<Job>) {
+    val groups = data.groupBy { it.priority }
+    val keys = groups.keys.toPersistentList()
+    val sections = groups.values.toPersistentList()
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(8.dp)
+//        contentPadding = PaddingValues(8.dp),
+//        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        sections(
-            sections = list,
+        sectionsIndexed(
+            sections = sections,
             orientation = Orientation.Vertical,
-            sectionSpacing = 16.dp,
+            sectionBetweenPadding = 16.dp,
+            itemBesidePadding = 16.dp,
+            sectionShape = RoundedCornerShape(8.dp),
             sectionBackgroundColor = Color.White,
-            sectionShape = RoundedCornerShape(16.dp),
-            outerHeader = { sectionIndex ->
+            header = {
                 Box(
-                    modifier = Modifier.fillParentMaxWidth(),
+                    modifier = Modifier
+                        .fillParentMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        /*.padding(vertical = 8.dp)*/,
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Text(
-                        text = "Header-${sectionIndex + 1}",
+                        text = "Header-${keys[sectionIndex]}",
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
             },
-            outerFooter = { sectionIndex ->
+            footer = {
                 Box(
-                    modifier = Modifier.fillParentMaxWidth(),
+                    modifier = Modifier
+                        .fillParentMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        /*.padding(vertical = 8.dp)*/,
                     contentAlignment = Alignment.CenterEnd
                 ) {
                     Text(
-                        text = "Footer-${sectionIndex + 1}",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            },
-            innerHeader = { sectionIndex ->
-                Box(
-                    modifier = Modifier
-                        .fillParentMaxWidth()
-                        .height(60.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Title-${sectionIndex + 1}",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            },
-            innerFooter = { sectionIndex ->
-                Box(
-                    modifier = Modifier
-                        .fillParentMaxWidth()
-                        .height(60.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Ending-${sectionIndex + 1}",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        text = "Footer-${keys[sectionIndex]}",
+                        fontSize = 21.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF666666)
                     )
                 }
             }
-        ) { item ->
+        ) { index, item ->
             WithDivider(
-                color = Color(0xFFF0F0F0),
+                modifier = Modifier.fillMaxWidth(),
+                enabled = index != sections[sectionIndex].lastIndex,
+                thickness = 1.dp,
                 startIndent = 24.dp,
-                endIndent = 24.dp
+                color = Color(0xFFF2F2F2)
             ) {
                 Box(
                     modifier = Modifier
-                        .fillParentMaxWidth()
+                        .fillMaxWidth()
                         .height(60.dp)
+//                        .clipToBackground(
+//                            color = Color.White,
+//                            shape = RoundedCornerShape(8.dp)
+//                        )
                         .onClick {
-                        },
-                    contentAlignment = Alignment.Center
+                        }
+                        .padding(start = 24.dp),
+                    contentAlignment = Alignment.CenterStart
                 ) {
-                    Text(text = item)
+                    Text(text = item.title)
                 }
             }
         }
     }
 }
 
-private object MyFooter : VerticalPagingStateFooter() {
-
-    override val loading: (@Composable (PagingComponent<*, *>) -> Unit) = {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(modifier = Modifier.size(24.dp))
-        }
-    }
-}
+private data class Job(
+    val title: String,
+    val priority: Int
+)

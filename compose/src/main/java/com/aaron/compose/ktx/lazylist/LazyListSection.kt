@@ -1,5 +1,7 @@
 package com.aaron.compose.ktx.lazylist
 
+import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
@@ -7,12 +9,15 @@ import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CornerBasedShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.aaron.compose.ktx.clipToBackground
 
@@ -24,30 +29,28 @@ import com.aaron.compose.ktx.clipToBackground
 inline fun <T> LazyListScope.sections(
     sections: List<List<T>>,
     orientation: Orientation,
-    sectionSpacing: Dp = LazySectionDefaults.spacing,
-    sectionBackgroundColor: Color = LazySectionDefaults.backgroundColor,
-    sectionShape: CornerBasedShape = LazySectionDefaults.shape,
-    crossinline itemKey: (item: T) -> Any? = { null },
-    crossinline itemContentType: (item: T) -> Any? = { null },
-    noinline outerHeader: (@Composable LazyItemScope.(sectionIndex: Int) -> Unit)? = null,
-    noinline outerFooter: (@Composable LazyItemScope.(sectionIndex: Int) -> Unit)? = null,
-    noinline innerHeader: (@Composable LazyItemScope.(sectionIndex: Int) -> Unit)? = null,
-    noinline innerFooter: (@Composable LazyItemScope.(sectionIndex: Int) -> Unit)? = null,
-    crossinline itemContent: @Composable LazyItemScope.(item: T) -> Unit
+    sectionBetweenPadding: Dp = 0.dp,
+    itemBesidePadding: Dp = 0.dp,
+    sectionBackgroundColor: Color = Color.Transparent,
+    sectionShape: CornerBasedShape = RoundedCornerShape(0.dp),
+    crossinline key: LazySectionScope.(item: T) -> Any? = { null },
+    crossinline contentType: LazySectionScope.(item: T) -> Any? = { null },
+    noinline header: (@Composable LazySectionItemScope.() -> Unit)? = null,
+    noinline footer: (@Composable LazySectionItemScope.() -> Unit)? = null,
+    crossinline itemContent: @Composable LazySectionItemScope.(item: T) -> Unit
 ) {
     sectionsIndexed(
         sections = sections,
         orientation = orientation,
-        sectionSpacing = sectionSpacing,
+        sectionBetweenPadding = sectionBetweenPadding,
+        itemBesidePadding = itemBesidePadding,
         sectionBackgroundColor = sectionBackgroundColor,
         sectionShape = sectionShape,
-        itemKey = { _, item -> itemKey(item) },
-        itemContentType = { _, item -> itemContentType(item) },
-        outerHeader = outerHeader,
-        outerFooter = outerFooter,
-        innerHeader = innerHeader,
-        innerFooter = innerFooter
-    ) { _, _, item ->
+        key = { _, item -> key(item) },
+        contentType = { _, item -> contentType(item) },
+        header = header,
+        footer = footer,
+    ) { _, item ->
         itemContent(item)
     }
 }
@@ -55,195 +58,196 @@ inline fun <T> LazyListScope.sections(
 inline fun <T> LazyListScope.sectionsIndexed(
     sections: List<List<T>>,
     orientation: Orientation,
-    sectionSpacing: Dp = LazySectionDefaults.spacing,
-    sectionBackgroundColor: Color = LazySectionDefaults.backgroundColor,
-    sectionShape: CornerBasedShape = LazySectionDefaults.shape,
-    crossinline itemKey: (index: Int, item: T) -> Any? = { _, _ -> null },
-    crossinline itemContentType: (index: Int, item: T) -> Any? = { _, _ -> null },
-    noinline outerHeader: (@Composable LazyItemScope.(sectionIndex: Int) -> Unit)? = null,
-    noinline outerFooter: (@Composable LazyItemScope.(sectionIndex: Int) -> Unit)? = null,
-    noinline innerHeader: (@Composable LazyItemScope.(sectionIndex: Int) -> Unit)? = null,
-    noinline innerFooter: (@Composable LazyItemScope.(sectionIndex: Int) -> Unit)? = null,
-    crossinline itemContent: @Composable LazyItemScope.(sectionIndex: Int, itemIndex: Int, item: T) -> Unit
+    sectionBetweenPadding: Dp = 0.dp,
+    itemBesidePadding: Dp = 0.dp,
+    sectionBackgroundColor: Color = Color.Transparent,
+    sectionShape: CornerBasedShape = RoundedCornerShape(0.dp),
+    crossinline key: LazySectionScope.(index: Int, item: T) -> Any? = { _, _ -> null },
+    crossinline contentType: LazySectionScope.(index: Int, item: T) -> Any? = { _, _ -> null },
+    noinline header: (@Composable LazySectionItemScope.() -> Unit)? = null,
+    noinline footer: (@Composable LazySectionItemScope.() -> Unit)? = null,
+    crossinline itemContent: @Composable LazySectionItemScope.(index: Int, item: T) -> Unit
 ) {
     sections.forEachIndexed { sectionIndex, section ->
-        if (outerHeader != null) {
+        if (header != null) {
+            val sectionItemScope = LazySectionItemScopeImpl(sectionIndex)
             item(
-                key = "OuterHeader-$sectionIndex",
-                contentType = "OuterHeader"
+                key = "Header-$sectionIndex",
+                contentType = "Header"
             ) {
-                SectionHeader(
-                    lazyScopeModifier = when (orientation) {
-                        Orientation.Vertical -> Modifier.fillParentMaxWidth()
-                        Orientation.Horizontal -> Modifier.fillParentMaxHeight()
-                    },
-                    outer = true,
-                    sectionIndex = sectionIndex,
-                    sectionSpacing = sectionSpacing,
-                    sectionBackgroundColor = sectionBackgroundColor,
-                    sectionShape = sectionShape,
-                    orientation = orientation
-                ) {
-                    outerHeader(sectionIndex)
+                sectionItemScope.delegate = this
+                with(sectionItemScope) {
+                    SectionHeader(
+                        modifier = when (orientation) {
+                            Orientation.Vertical -> Modifier.fillParentMaxWidth()
+                            Orientation.Horizontal -> Modifier.fillParentMaxHeight()
+                        },
+                        sectionIndex = sectionIndex,
+                        sectionBetweenPadding = sectionBetweenPadding,
+                        orientation = orientation
+                    ) {
+                        header()
+                    }
                 }
             }
         }
-        if (innerHeader != null) {
-            item(
-                key = "InnerHeader-$sectionIndex",
-                contentType = "InnerHeader"
-            ) {
-                SectionHeader(
-                    lazyScopeModifier = when (orientation) {
-                        Orientation.Vertical -> Modifier.fillParentMaxWidth()
-                        Orientation.Horizontal -> Modifier.fillParentMaxHeight()
-                    },
-                    outer = false,
-                    sectionIndex = sectionIndex,
-                    sectionSpacing = sectionSpacing.takeIf { outerHeader == null } ?: 0.dp,
-                    sectionBackgroundColor = sectionBackgroundColor,
-                    sectionShape = sectionShape,
-                    orientation = orientation
-                ) {
-                    innerHeader(sectionIndex)
-                }
-            }
-        }
-        itemsIndexed(
-            items = section,
-            key = { index, item ->
-                itemKey(index, item) ?: getSectionParcelableKey(sectionIndex, index, section.size)
-            },
-            contentType = { index, item ->
-                itemContentType(index, item)
-            }
-        ) { index, item ->
-            SectionItem(
-                lazyScopeModifier = when (orientation) {
-                    Orientation.Vertical -> Modifier.fillParentMaxWidth()
-                    Orientation.Horizontal -> Modifier.fillParentMaxHeight()
+
+        run {
+            val sectionItemScope = LazySectionItemScopeImpl(sectionIndex)
+            itemsIndexed(
+                items = section,
+                key = { index, item ->
+                    with(sectionItemScope) {
+                        key(index, item) ?: getSectionParcelableKey(sections, sectionIndex, index)
+                    }
                 },
-                sectionIndex = sectionIndex,
-                itemIndex = index,
-                lastItemIndex = section.lastIndex,
-                sectionSpacing = sectionSpacing,
-                sectionBackgroundColor = sectionBackgroundColor,
-                sectionShape = sectionShape,
-                orientation = orientation,
-                existsOuterHeader = outerHeader != null,
-                existsOuterFooter = outerFooter != null,
-                existsInnerHeader = innerHeader != null,
-                existsInnerFooter = innerFooter != null
-            ) {
-                itemContent(sectionIndex, index, item)
-            }
-        }
-        if (innerFooter != null) {
-            item(
-                key = "InnerFooter-$sectionIndex",
-                contentType = "InnerFooter"
-            ) {
-                SectionFooter(
-                    lazyScopeModifier = when (orientation) {
-                        Orientation.Vertical -> Modifier.fillParentMaxWidth()
-                        Orientation.Horizontal -> Modifier.fillParentMaxHeight()
-                    },
-                    outer = false,
-                    sectionBackgroundColor = sectionBackgroundColor,
-                    sectionShape = sectionShape,
-                    orientation = orientation
-                ) {
-                    innerFooter(sectionIndex)
+                contentType = { index, item ->
+                    with(sectionItemScope) {
+                        contentType(index, item)
+                    }
+                }
+            ) { index, item ->
+                sectionItemScope.delegate = this
+                with(sectionItemScope) {
+                    SectionItem(
+                        modifier = when (orientation) {
+                            Orientation.Vertical -> Modifier.fillParentMaxWidth()
+                            Orientation.Horizontal -> Modifier.fillParentMaxHeight()
+                        },
+                        sectionIndex = sectionIndex,
+                        itemIndex = index,
+                        lastItemIndex = section.lastIndex,
+                        sectionBetweenPadding = sectionBetweenPadding,
+                        itemBesidePadding = itemBesidePadding,
+                        sectionBackgroundColor = sectionBackgroundColor,
+                        sectionShape = sectionShape,
+                        orientation = orientation,
+                        existsHeader = header != null
+                    ) {
+                        itemContent(index, item)
+                    }
                 }
             }
         }
-        if (outerFooter != null) {
+
+        if (footer != null) {
+            val sectionItemScope = LazySectionItemScopeImpl(sectionIndex)
             item(
-                key = "OuterFooter-$sectionIndex",
-                contentType = "OuterFooter"
+                key = "Footer-$sectionIndex",
+                contentType = "Footer"
             ) {
-                SectionFooter(
-                    lazyScopeModifier = when (orientation) {
-                        Orientation.Vertical -> Modifier.fillParentMaxWidth()
-                        Orientation.Horizontal -> Modifier.fillParentMaxHeight()
-                    },
-                    outer = true,
-                    sectionBackgroundColor = sectionBackgroundColor,
-                    sectionShape = sectionShape,
-                    orientation = orientation,
-                ) {
-                    outerFooter(sectionIndex)
+                sectionItemScope.delegate = this
+                with(sectionItemScope) {
+                    SectionFooter(
+                        modifier = when (orientation) {
+                            Orientation.Vertical -> Modifier.fillParentMaxWidth()
+                            Orientation.Horizontal -> Modifier.fillParentMaxHeight()
+                        },
+                        orientation = orientation
+                    ) {
+                        footer()
+                    }
                 }
             }
         }
     }
 }
 
+@Stable
+sealed interface LazySectionScope {
+
+    val sectionIndex: Int
+}
+
+@Stable
+sealed interface LazySectionItemScope : LazySectionScope, LazyItemScope {
+
+    override val sectionIndex: Int
+}
+
 @PublishedApi
-internal object LazySectionDivider
+internal class LazySectionItemScopeImpl(override val sectionIndex: Int) : LazySectionItemScope,
+    LazyItemScope {
+
+    @PublishedApi
+    internal lateinit var delegate: LazyItemScope
+
+    @ExperimentalFoundationApi
+    override fun Modifier.animateItemPlacement(animationSpec: FiniteAnimationSpec<IntOffset>): Modifier {
+        return with(delegate) { animateItemPlacement(animationSpec) }
+    }
+
+    override fun Modifier.fillParentMaxHeight(fraction: Float): Modifier {
+        return with(delegate) { fillParentMaxHeight(fraction) }
+    }
+
+    override fun Modifier.fillParentMaxSize(fraction: Float): Modifier {
+        return with(delegate) { fillParentMaxSize(fraction) }
+    }
+
+    override fun Modifier.fillParentMaxWidth(fraction: Float): Modifier {
+        return with(delegate) { fillParentMaxWidth(fraction) }
+    }
+}
 
 @PublishedApi
 internal fun getSectionParcelableKey(
+    sections: List<List<*>>,
     sectionIndex: Int,
-    itemIndex: Int,
-    itemCount: Int
+    itemIndex: Int
 ): ParcelableKey {
-    // 0 * 50 + 1 = 1
-    // 1 * 50 + 1 = 51
-    // 2 * 50 + 1 = 101
-    // 3 * 50 + 1 = 151
-    return ParcelableKey(sectionIndex * itemCount + itemIndex)
+    var itemCount = 0
+    repeat(sectionIndex) {
+        itemCount += sections[it].size
+    }
+    return ParcelableKey(itemCount + itemIndex)
 }
 
 @PublishedApi
 @Composable
-internal fun SectionItem(
+internal inline fun SectionItem(
     sectionIndex: Int,
     itemIndex: Int,
     lastItemIndex: Int,
-    sectionSpacing: Dp,
+    sectionBetweenPadding: Dp,
+    itemBesidePadding: Dp,
     sectionBackgroundColor: Color,
     sectionShape: CornerBasedShape,
     orientation: Orientation,
-    existsOuterHeader: Boolean,
-    existsOuterFooter: Boolean,
-    existsInnerHeader: Boolean,
-    existsInnerFooter: Boolean,
+    existsHeader: Boolean,
     modifier: Modifier = Modifier,
-    lazyScopeModifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .let {
-                if (sectionIndex == 0
-                    || itemIndex != 0
-                    || existsOuterHeader
-                    || existsInnerHeader
-                    || sectionSpacing <= Dp.Hairline
-                ) it else {
-                    it.padding(top = sectionSpacing)
+                if (sectionIndex == 0 || itemIndex != 0 || existsHeader) it else {
+                    when (orientation) {
+                        Orientation.Vertical -> it.padding(top = sectionBetweenPadding)
+                        Orientation.Horizontal -> it.padding(start = sectionBetweenPadding)
+                    }
                 }
             }
-            .then(lazyScopeModifier)
             .let {
-                if (sectionBackgroundColor.alpha == 0f) it else {
-                    it.clipToBackground(
-                        color = sectionBackgroundColor,
-                        shape = when {
-                            itemIndex == 0 && !existsInnerHeader -> sectionShape.copy(
-                                bottomStart = ZeroCornerSize,
-                                bottomEnd = ZeroCornerSize
-                            )
-                            itemIndex == lastItemIndex && !existsInnerFooter -> sectionShape.copy(
-                                topStart = ZeroCornerSize,
-                                topEnd = ZeroCornerSize
-                            )
-                            else -> RectangleShape
-                        }
+                when (orientation) {
+                    Orientation.Vertical -> it.padding(horizontal = itemBesidePadding)
+                    Orientation.Horizontal -> it.padding(vertical = itemBesidePadding)
+                }
+            }
+            .clipToBackground(
+                color = sectionBackgroundColor,
+                shape = when (itemIndex) {
+                    0 -> sectionShape.copy(
+                        bottomStart = ZeroCornerSize,
+                        bottomEnd = ZeroCornerSize
                     )
+                    lastItemIndex -> sectionShape.copy(
+                        topStart = ZeroCornerSize,
+                        topEnd = ZeroCornerSize
+                    )
+                    else -> RectangleShape
                 }
-            }
+            )
     ) {
         content()
     }
@@ -251,45 +255,20 @@ internal fun SectionItem(
 
 @PublishedApi
 @Composable
-internal fun SectionHeader(
-    outer: Boolean,
+internal inline fun SectionHeader(
     sectionIndex: Int,
-    sectionSpacing: Dp,
-    sectionBackgroundColor: Color,
-    sectionShape: CornerBasedShape,
+    sectionBetweenPadding: Dp,
     orientation: Orientation,
     modifier: Modifier = Modifier,
-    lazyScopeModifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
     Box(
         modifier = modifier
             .let {
-                if (sectionIndex == 0 || sectionSpacing <= Dp.Hairline) it else {
+                if (sectionIndex == 0) it else {
                     when (orientation) {
-                        Orientation.Vertical -> it.padding(top = sectionSpacing)
-                        Orientation.Horizontal -> it.padding(start = sectionSpacing)
-                    }
-                }
-            }
-            .then(lazyScopeModifier)
-            .let {
-                if (outer || sectionBackgroundColor.alpha == 0f) it else {
-                    when (orientation) {
-                        Orientation.Vertical -> it.clipToBackground(
-                            color = sectionBackgroundColor,
-                            shape = sectionShape.copy(
-                                bottomStart = ZeroCornerSize,
-                                bottomEnd = ZeroCornerSize
-                            )
-                        )
-                        Orientation.Horizontal -> it.clipToBackground(
-                            color = sectionBackgroundColor,
-                            shape = sectionShape.copy(
-                                topEnd = ZeroCornerSize,
-                                bottomEnd = ZeroCornerSize
-                            )
-                        )
+                        Orientation.Vertical -> it.padding(top = sectionBetweenPadding)
+                        Orientation.Horizontal -> it.padding(start = sectionBetweenPadding)
                     }
                 }
             }
@@ -300,39 +279,12 @@ internal fun SectionHeader(
 
 @PublishedApi
 @Composable
-internal fun SectionFooter(
-    outer: Boolean,
-    sectionBackgroundColor: Color,
-    sectionShape: CornerBasedShape,
+internal inline fun SectionFooter(
     orientation: Orientation,
     modifier: Modifier = Modifier,
-    lazyScopeModifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
-    Box(
-        modifier = modifier
-            .then(lazyScopeModifier)
-            .let {
-                if (outer || sectionBackgroundColor.alpha == 0f) it else {
-                    when (orientation) {
-                        Orientation.Vertical -> it.clipToBackground(
-                            color = sectionBackgroundColor,
-                            shape = sectionShape.copy(
-                                topStart = ZeroCornerSize,
-                                topEnd = ZeroCornerSize
-                            )
-                        )
-                        Orientation.Horizontal -> it.clipToBackground(
-                            color = sectionBackgroundColor,
-                            shape = sectionShape.copy(
-                                topStart = ZeroCornerSize,
-                                bottomStart = ZeroCornerSize
-                            )
-                        )
-                    }
-                }
-            }
-    ) {
+    Box(modifier = modifier) {
         content()
     }
 }
