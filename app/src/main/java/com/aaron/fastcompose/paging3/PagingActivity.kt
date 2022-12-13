@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aaron.compose.base.BaseComposeActivity
 import com.aaron.compose.component.LazyPagerPagingComponent
 import com.aaron.compose.component.PagingGridComponent
@@ -103,10 +104,10 @@ class PagingActivity : BaseComposeActivity() {
                             }
                         }
 
-                        LazySection(list)
+//                        LazySection(list)
 
-//                        val vm = viewModel<PagingVM>()
-//                        LazyLoadPagingPage(lazyPagerPagingComponent = vm)
+                        val vm = viewModel<PagingVM>()
+                        LazyLoadPagingPage(lazyPagerPagingComponent = vm)
                     }
                 }
             }

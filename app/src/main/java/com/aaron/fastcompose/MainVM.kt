@@ -14,6 +14,8 @@ import com.aaron.compose.ui.refresh.SmartRefreshType
 import com.aaron.fastcompose.paging3.Repo
 import com.aaron.fastcompose.paging3.gitHubService
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import javax.inject.Inject
 import kotlin.random.Random
 
@@ -46,7 +48,7 @@ class MainVM @Inject constructor() : ViewModel(), SafeStateScope, PagingScope {
     private suspend fun buildFakeData2(page: Int, pageSize: Int): RepoEntity {
         return when (Random(System.currentTimeMillis()).nextInt(0, 10)) {
             0 -> {
-                RepoEntity(404, "Not Found", emptyList())
+                RepoEntity(404, "Not Found", persistentListOf())
             }
             1 -> {
                 throw IllegalStateException("Internal Error")
@@ -78,5 +80,5 @@ class MainVM @Inject constructor() : ViewModel(), SafeStateScope, PagingScope {
 data class RepoEntity(
     override val code: Int,
     override val msg: String?,
-    override val data: List<Repo>
+    override val data: ImmutableList<Repo>
 ) : BasePagingResult<Repo>

@@ -1,6 +1,7 @@
 package com.aaron.compose.base
 
 import androidx.compose.runtime.Stable
+import kotlinx.collections.immutable.ImmutableList
 
 /**
  * @author aaronzzxup@gmail.com
@@ -17,5 +18,5 @@ interface BaseResult {
 @Stable
 interface BasePagingResult<E> : BaseResult {
 
-    val data: List<E>
+    val data: ImmutableList<E>
 }

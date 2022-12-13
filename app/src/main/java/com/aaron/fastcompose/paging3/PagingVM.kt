@@ -30,6 +30,7 @@ class PagingVM : ViewModel(), LazyPagerPagingComponent<String, Int, Repo>, SafeS
                 DefaultPrefetchDistance = 0
                 DefaultPageSize = 10
                 DefaultMaxPage = 3
+                DefaultPrintError = true
             }
         }
     }
