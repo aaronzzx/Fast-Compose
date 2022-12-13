@@ -219,6 +219,15 @@ interface StateComponent : LoadingComponent {
         }
     }
 
+    fun CoroutineScope.launchWithViewStateCancelable(
+        context: CoroutineContext = EmptyCoroutineContext,
+        start: CoroutineStart = CoroutineStart.DEFAULT,
+        block: suspend CoroutineScope.() -> ViewState
+    ): Job = launchWithLoadingCancelable(context = context, start = start) {
+        val result = block()
+        showState(result)
+    }
+
     fun showState(viewState: ViewState) {
         this.viewState.setValueInternal(viewState)
     }
