@@ -111,7 +111,7 @@ open class LazyPagingComponentHelper<K, V>(
     final override val pageData: PageData<K, V>
 ) : LazyPagingComponent<K, V> {
 
-    override val initialized: SafeState<Boolean> = safeStateOf(pageData.isInitialized)
+    override val initialized: SafeState<Boolean> = safeStateOf(false)
 
     override val smartRefreshType: SafeState<SmartRefreshType> = safeStateOf(Idle)
 

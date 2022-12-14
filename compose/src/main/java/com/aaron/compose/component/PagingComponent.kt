@@ -398,7 +398,7 @@ fun <K, V> PagingStaggeredGridComponent(
     ) {
         if (loadingContent != null
             && pageData.isEmpty
-            && (pageData.isInitialized.not() || refreshLoading)
+            && (component.isInitialized.not() || refreshLoading)
         ) {
             Spacer(modifier = Modifier.fillMaxSize())
         } else if (errorContent != null && refreshError && pageData.isEmpty) {
@@ -432,7 +432,7 @@ private fun <K, V> LoadingBox(
     Box(modifier = Modifier.fillMaxSize()) {
         content()
         if (loadingContent != null
-            && (component.pageData.isInitialized.not() || refreshLoading)
+            && (component.isInitialized.not() || refreshLoading)
         ) {
             loadingContent()
         }
@@ -588,7 +588,7 @@ private fun <K, V> handleCentralContent(
     val pageData = component.pageData
     if (loadingContent != null
         && pageData.isEmpty
-        && (pageData.isInitialized.not() || refreshLoading)
+        && (component.isInitialized.not() || refreshLoading)
     ) {
         itemCentral(
             scope = scope,
