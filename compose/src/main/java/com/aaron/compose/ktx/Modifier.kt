@@ -1,6 +1,8 @@
 package com.aaron.compose.ktx
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.ripple.rememberRipple
@@ -80,6 +82,30 @@ fun Modifier.clipToBackground(
     /*@FloatRange(from = 0.0, to = 1.0)*/
     alpha: Float = 1.0f
 ) = this.background(brush, shape, alpha).clip(shape)
+
+/**
+ * Modify element to add border with appearance specified with a [border] and a [shape] and clip it.
+ *
+ * @sample androidx.compose.foundation.samples.BorderSample()
+ *
+ * @param border [BorderStroke] class that specifies border appearance, such as size and color
+ * @param shape shape of the border
+ */
+fun Modifier.clipToBorder(border: BorderStroke, shape: Shape = RectangleShape) =
+    border(width = border.width, brush = border.brush, shape = shape).clip(shape)
+
+/**
+ * Modify element to add border with appearance specified with a [width], a [color] and a [shape]
+ * and clip it.
+ *
+ * @sample androidx.compose.foundation.samples.BorderSampleWithDataClass()
+ *
+ * @param width width of the border. Use [Dp.Hairline] for a hairline border.
+ * @param color color to paint the border with
+ * @param shape shape of the border
+ */
+fun Modifier.clipToBorder(width: Dp, color: Color, shape: Shape = RectangleShape) =
+    border(width, SolidColor(color), shape).clip(shape)
 
 /**
  * A [Modifier] that draws a border around elements that are recomposing. The border increases in
