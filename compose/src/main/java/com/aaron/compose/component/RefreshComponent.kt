@@ -121,7 +121,6 @@ interface RefreshComponent {
     }
 }
 
-@Composable
 fun refreshComponent(
     type: SmartRefreshType = SmartRefreshType.Idle
 ): RefreshComponent = object : RefreshComponent {

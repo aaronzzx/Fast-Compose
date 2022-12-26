@@ -49,7 +49,6 @@ interface LazyComponent {
     fun initialize()
 }
 
-@Composable
 fun lazyComponent() = object : LazyComponent {
     override val initialized: SafeState<Boolean> = safeStateOf(false)
 

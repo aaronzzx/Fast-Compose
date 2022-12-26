@@ -1212,7 +1212,6 @@ interface PagingComponent<K, V> : PagingScope {
     }
 }
 
-@Composable
 fun <K, V> pagingComponent(vararg item: V): PagingComponent<K, V> = object : PagingComponent<K, V> {
 
     override val pageData: PageData<K, V> = PageData(

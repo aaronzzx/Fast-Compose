@@ -122,7 +122,6 @@ open class LazyPagingComponentHelper<K, V>(
     }
 }
 
-@Composable
 fun <T, K, V> lazyPagerPagingComponent(
     lazyPagingData: LazyPagingData<T, K, V> = persistentListOf()
 ): LazyPagerPagingComponent<T, K, V> = object : LazyPagerPagingComponent<T, K, V> {

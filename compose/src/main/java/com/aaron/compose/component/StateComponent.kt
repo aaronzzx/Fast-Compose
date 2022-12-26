@@ -247,7 +247,6 @@ interface StateComponent : LoadingComponent {
     }
 }
 
-@Composable
 fun stateComponent(
     loading: Boolean = false,
     viewState: ViewState = Idle

@@ -166,7 +166,6 @@ interface LoadingComponent {
     }
 }
 
-@Composable
 fun loadingComponent(
     loading: Boolean = false
 ): LoadingComponent = object : LoadingComponent {
