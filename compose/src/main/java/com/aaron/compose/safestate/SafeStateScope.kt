@@ -13,9 +13,8 @@ interface SafeStateScope {
         setValueInternal(value)
     }
 
-    fun <T> SafeState<T>.postValue(block: (value: T) -> T) {
-        val pendingValue = block(value)
-        setValue(pendingValue)
+    fun <T> SafeState<T>.update(block: (T) -> T) {
+        setValue(block(value))
     }
     //endregion
 
@@ -24,7 +23,7 @@ interface SafeStateScope {
         return editInternal()
     }
 
-    fun <E> SafeStateList<E>.withEdit(block: MutableList<E>.() -> Unit) {
+    fun <E> SafeStateList<E>.update(block: MutableList<E>.() -> Unit) {
         edit().block()
     }
     //endregion
@@ -34,7 +33,7 @@ interface SafeStateScope {
         return editInternal()
     }
 
-    fun <K, V> SafeStateMap<K, V>.withEdit(block: MutableMap<K, V>.() -> Unit) {
+    fun <K, V> SafeStateMap<K, V>.update(block: MutableMap<K, V>.() -> Unit) {
         edit().block()
     }
     //endregion
@@ -46,6 +45,10 @@ interface SafeStateScope {
 
     fun <T> SafeStateFlow<T>.tryEmit(value: T) {
         tryEmitInternal(value)
+    }
+
+    fun <T> SafeStateFlow<T>.update(block: (T) -> T) {
+        updateInternal(block)
     }
     //endregion
 }

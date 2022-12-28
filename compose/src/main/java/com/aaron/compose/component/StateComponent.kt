@@ -1,8 +1,6 @@
 package com.aaron.compose.component
 
-import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
-import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -18,7 +16,6 @@ import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -82,11 +79,11 @@ fun StateComponent(
     },
     content: @Composable () -> Unit
 ) {
-    val showLoading by component.loading
-    BackHandler(enabled = showLoading) {
-        component.cancelLoading()
-    }
-    Box(modifier = modifier) {
+    LoadingComponent(
+        component = component,
+        modifier = modifier,
+        loading = loading
+    ) {
         val result = component.viewState.value
         when {
             result is Failure && failure != null -> {
@@ -99,11 +96,6 @@ fun StateComponent(
                 empty.invoke()
             }
             else -> content()
-        }
-        if (loading != null) {
-            Crossfade(targetState = showLoading) {
-                if (it) loading()
-            }
         }
     }
 }

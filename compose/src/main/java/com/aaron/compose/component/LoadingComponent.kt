@@ -1,7 +1,10 @@
 package com.aaron.compose.component
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.Crossfade
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -49,8 +52,13 @@ fun LoadingComponent(
             BackHandler(enabled = showLoading) {
                 component.cancelLoading()
             }
-            Crossfade(targetState = showLoading) {
-                if (it) loading()
+            AnimatedVisibility(
+                visible = showLoading,
+                enter = fadeIn(animationSpec = spring()),
+                exit = fadeOut(animationSpec = spring()),
+                label = "LoadingContentAnimation"
+            ) {
+                loading()
             }
         }
     }
