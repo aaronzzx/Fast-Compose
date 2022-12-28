@@ -1,4 +1,4 @@
-package com.aaron.fastcompose.paging3
+package com.aaron.fastcompose.paging
 
 import com.aaron.compose.base.BasePagingResult
 import com.google.gson.annotations.SerializedName

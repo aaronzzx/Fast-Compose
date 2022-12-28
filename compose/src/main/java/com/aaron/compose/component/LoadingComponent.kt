@@ -22,7 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.aaron.compose.ktx.interceptClick
+import com.aaron.compose.ktx.interceptPointerInput
 import com.aaron.compose.safestate.SafeState
 import com.aaron.compose.safestate.safeStateOf
 import com.aaron.compose.utils.DevicePreview
@@ -81,14 +81,14 @@ private fun LoadingComponent() {
 @Composable
 fun CircularLoadingLayout(
     modifier: Modifier = Modifier,
-    interceptClick: Boolean = true,
+    interceptPointerInput: Boolean = true,
     color: Color = MaterialTheme.colors.primary,
     strokeWidth: Dp = ProgressIndicatorDefaults.StrokeWidth
 ) {
     Box(
         modifier = modifier
             .fillMaxSize()
-            .let { if (interceptClick) it.interceptClick() else it },
+            .let { if (interceptPointerInput) it.interceptPointerInput() else it },
         contentAlignment = Alignment.Center
     ) {
         Surface(

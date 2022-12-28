@@ -19,6 +19,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -41,17 +42,18 @@ fun Modifier.onClick(
     rippleColor: Color = Color.Unspecified,
     rippleBounded: Boolean = true,
     rippleRadius: Dp = Dp.Unspecified,
+    interactionSource: MutableInteractionSource? = null,
     onClick: () -> Unit
 ) = composed {
     clickable(
         enabled = enabled,
-        interactionSource = remember { MutableInteractionSource() },
+        interactionSource = interactionSource ?: remember { MutableInteractionSource() },
         indication = if (enableRipple) rememberRipple(rippleBounded, rippleRadius, rippleColor) else null,
         onClick = onClick
     )
 }
 
-fun Modifier.interceptClick() = onClick(enableRipple = false) {}
+fun Modifier.interceptPointerInput() = pointerInput(Unit) {}
 
 /**
  * Draws [shape] with a solid [color] behind the content.

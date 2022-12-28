@@ -1,4 +1,4 @@
-package com.aaron.fastcompose.paging3
+package com.aaron.fastcompose.paging
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,7 +10,6 @@ import com.aaron.compose.paging.PageConfigDefaults
 import com.aaron.compose.safestate.SafeState
 import com.aaron.compose.safestate.SafeStateScope
 import com.aaron.compose.safestate.safeStateOf
-import com.aaron.fastcompose.RepoEntity
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.delay

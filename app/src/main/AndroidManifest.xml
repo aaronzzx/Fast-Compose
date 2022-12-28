@@ -17,14 +17,14 @@
         android:theme="@style/Theme.FastCompose"
         tools:targetApi="31">
         <activity
-            android:name=".SecondActivity"
-            android:exported="false"
-            android:label="@string/title_activity_second"
-            android:theme="@style/Theme.FastCompose" />
-        <activity
-            android:name=".paging3.PagingActivity"
+            android:name=".paging.PagingActivity"
             android:exported="false"
             android:label="PagingActivity"
+            android:theme="@style/Theme.FastCompose" />
+        <activity
+            android:name=".TextShaderActivity"
+            android:exported="false"
+            android:label="TextShaderActivity"
             android:theme="@style/Theme.FastCompose" />
         <activity
             android:name=".MainActivity"

@@ -1,4 +1,4 @@
-package com.aaron.fastcompose.paging3
+package com.aaron.fastcompose.paging
 
 import android.content.Context
 import android.content.Intent
@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,7 +73,6 @@ import com.aaron.compose.ui.VisibilityScrimContainer
 import com.aaron.compose.ui.rememberVisibilityContainerState
 import com.aaron.compose.utils.OverScrollHandler
 import com.aaron.fastcompose.R
-import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import com.blankj.utilcode.util.ToastUtils
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import kotlinx.coroutines.delay
@@ -105,61 +105,61 @@ private fun PagingScreen(
     lazyPagerPagingComponent: LazyPagerPagingComponent<String, Int, Repo>
 ) {
     val uiController = rememberSystemUiController()
-    uiController.setStatusBarColor(Color.Transparent)
-    uiController.systemBarsDarkContentEnabled = true
-    FastComposeTheme {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = Color(0xFFF0F0F0)
+    SideEffect {
+        uiController.systemBarsDarkContentEnabled = true
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = Color(0xFFF0F0F0)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        0f to Color(0xB32196F3),
+                        0.5f to Color(0xFFF7F7F7)
+                    )
+                )
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            0f to Color(0xB32196F3),
-                            0.5f to Color(0xFFF7F7F7)
-                        )
-                    )
-            ) {
-                val visibilityContainerState = rememberVisibilityContainerState()
-                Column(modifier = Modifier.fillMaxSize()) {
-                    val activity = LocalContext.current.requireActivity()
-                    TopBar(
-                        modifier = Modifier.zIndex(1f),
-                        title = "",
-                        startIcon = R.drawable.back,
-                        backgroundColor = Color.Transparent,
-                        elevation = 0.dp,
-                        contentPadding = WindowInsets.statusBars.asPaddingValues(),
-                        onStartIconClick = {
-                            activity.finish()
-                        },
-                        endLayout = {
-                            IconButton(
-                                onClick = {
-                                    visibilityContainerState.show()
-                                }
-                            ) {
-                                Icon(
-                                    modifier = Modifier.size(24.dp),
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = null,
-                                    tint = LocalContentColor.current
-                                )
+            val visibilityContainerState = rememberVisibilityContainerState()
+            Column(modifier = Modifier.fillMaxSize()) {
+                val activity = LocalContext.current.requireActivity()
+                TopBar(
+                    modifier = Modifier.zIndex(1f),
+                    title = "",
+                    startIcon = R.drawable.back,
+                    backgroundColor = Color.Transparent,
+                    elevation = 0.dp,
+                    contentPadding = WindowInsets.statusBars.asPaddingValues(),
+                    onStartIconClick = {
+                        activity.finish()
+                    },
+                    endLayout = {
+                        IconButton(
+                            onClick = {
+                                visibilityContainerState.show()
                             }
+                        ) {
+                            Icon(
+                                modifier = Modifier.size(24.dp),
+                                imageVector = Icons.Default.Add,
+                                contentDescription = null,
+                                tint = LocalContentColor.current
+                            )
                         }
-                    )
+                    }
+                )
 
-                    LazyPagingContent(
-                        lazyPagerPagingComponent = lazyPagerPagingComponent
-                    )
-                }
-
-                MyVisibilityContainer(
-                    visibilityContainerState = visibilityContainerState
+                LazyPagingContent(
+                    lazyPagerPagingComponent = lazyPagerPagingComponent
                 )
             }
+
+            MyVisibilityContainer(
+                visibilityContainerState = visibilityContainerState
+            )
         }
     }
 }

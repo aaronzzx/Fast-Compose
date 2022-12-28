@@ -1,4 +1,4 @@
-package com.aaron.fastcompose.paging3
+package com.aaron.fastcompose.paging
 
 import com.aaron.compose.utils.typeadapter.ImmutableListTypeAdapterFactory
 import com.google.gson.GsonBuilder
