@@ -1,7 +1,5 @@
 package com.aaron.fastcompose
 
-import android.content.Context
-import android.content.Intent
 import android.graphics.BitmapShader
 import android.graphics.Shader
 import androidx.compose.foundation.background
@@ -24,37 +22,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.aaron.compose.base.BaseComposeActivity
-import com.aaron.compose.ktx.requireActivity
 import com.aaron.compose.ui.TopBar
 
 /**
  * @author aaronzzxup@gmail.com
  * @since 2022/12/28
  */
-class TextShaderActivity : BaseComposeActivity() {
-
-    companion object {
-        fun start(context: Context) {
-            context.startActivity(Intent(context, TextShaderActivity::class.java))
-        }
-    }
-
-    @Composable
-    override fun Content() {
-        TextShaderScreen()
-    }
-}
 
 @OptIn(ExperimentalTextApi::class)
 @Composable
-private fun TextShaderScreen() {
+fun TextShaderScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -62,7 +44,7 @@ private fun TextShaderScreen() {
                 color = Color.Black
             )
     ) {
-        val activity = LocalContext.current.requireActivity()
+        val navController = LocalNavController.current
         TopBar(
             title = "Text Shader",
             startIcon = R.drawable.back,
@@ -72,7 +54,7 @@ private fun TextShaderScreen() {
             titleSize = 24.sp,
             contentColor = Color.White,
             onStartIconClick = {
-                activity.finish()
+                navController.popBackStack()
             },
         )
         Box(

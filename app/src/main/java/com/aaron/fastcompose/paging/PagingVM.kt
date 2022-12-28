@@ -10,17 +10,20 @@ import com.aaron.compose.paging.PageConfigDefaults
 import com.aaron.compose.safestate.SafeState
 import com.aaron.compose.safestate.SafeStateScope
 import com.aaron.compose.safestate.safeStateOf
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 import kotlin.random.Random
 
 /**
  * @author aaronzzxup@gmail.com
  * @since 2022/10/24
  */
-class PagingVM : ViewModel(), LazyPagerPagingComponent<String, Int, Repo>, SafeStateScope {
+@HiltViewModel
+class PagingVM @Inject constructor() : ViewModel(), LazyPagerPagingComponent<String, Int, Repo>, SafeStateScope {
 
     companion object {
         init {
@@ -39,6 +42,10 @@ class PagingVM : ViewModel(), LazyPagerPagingComponent<String, Int, Repo>, SafeS
 
     init {
         initialize()
+    }
+
+    fun getLazyPagerPagingComponent(): LazyPagerPagingComponent<String, Int, Repo> {
+        return this
     }
 
     private fun initialize() {

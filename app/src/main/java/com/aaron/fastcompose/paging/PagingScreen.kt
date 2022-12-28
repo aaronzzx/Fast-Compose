@@ -1,7 +1,5 @@
 package com.aaron.fastcompose.paging
 
-import android.content.Context
-import android.content.Intent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -44,7 +42,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -52,26 +49,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.aaron.compose.base.BaseComposeActivity
 import com.aaron.compose.component.LazyPagerPagingComponent
 import com.aaron.compose.component.PagingGridComponent
 import com.aaron.compose.component.RefreshComponent
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.lazylist.itemsIndexed
 import com.aaron.compose.ktx.onClick
-import com.aaron.compose.ktx.requireActivity
 import com.aaron.compose.ui.BottomSheet
 import com.aaron.compose.ui.Dialog
 import com.aaron.compose.ui.Notification
 import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.VisibilityContainer
-import com.aaron.compose.ui.VisibilityContainerDefaults.ScrimEnterTransition
-import com.aaron.compose.ui.VisibilityContainerDefaults.ScrimExitTransition
+import com.aaron.compose.ui.VisibilityContainerDefaults
 import com.aaron.compose.ui.VisibilityContainerProperties
 import com.aaron.compose.ui.VisibilityContainerState
 import com.aaron.compose.ui.VisibilityScrimContainer
 import com.aaron.compose.ui.rememberVisibilityContainerState
 import com.aaron.compose.utils.OverScrollHandler
+import com.aaron.fastcompose.LocalNavController
 import com.aaron.fastcompose.R
 import com.blankj.utilcode.util.ToastUtils
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
@@ -82,28 +77,11 @@ import kotlinx.coroutines.flow.onStart
 
 /**
  * @author aaronzzxup@gmail.com
- * @since 2022/10/24
+ * @since 2022/12/28
  */
-class PagingActivity : BaseComposeActivity() {
-
-    companion object {
-        fun start(context: Context) {
-            val intent = Intent(context, PagingActivity::class.java)
-            context.startActivity(intent)
-        }
-    }
-
-    @Composable
-    override fun Content() {
-        val vm = viewModel<PagingVM>()
-        PagingScreen(lazyPagerPagingComponent = vm)
-    }
-}
 
 @Composable
-private fun PagingScreen(
-    lazyPagerPagingComponent: LazyPagerPagingComponent<String, Int, Repo>
-) {
+fun PagingScreen(vm: PagingVM = viewModel()) {
     val uiController = rememberSystemUiController()
     SideEffect {
         uiController.systemBarsDarkContentEnabled = true
@@ -124,8 +102,8 @@ private fun PagingScreen(
                 )
         ) {
             val visibilityContainerState = rememberVisibilityContainerState()
+            val navController = LocalNavController.current
             Column(modifier = Modifier.fillMaxSize()) {
-                val activity = LocalContext.current.requireActivity()
                 TopBar(
                     modifier = Modifier.zIndex(1f),
                     title = "",
@@ -134,7 +112,7 @@ private fun PagingScreen(
                     elevation = 0.dp,
                     contentPadding = WindowInsets.statusBars.asPaddingValues(),
                     onStartIconClick = {
-                        activity.finish()
+                        navController.popBackStack()
                     },
                     endLayout = {
                         IconButton(
@@ -153,7 +131,7 @@ private fun PagingScreen(
                 )
 
                 LazyPagingContent(
-                    lazyPagerPagingComponent = lazyPagerPagingComponent
+                    lazyPagerPagingComponent = vm.getLazyPagerPagingComponent()
                 )
             }
 
@@ -252,8 +230,8 @@ private fun MyNotification(
             Box(
                 modifier = Modifier
                     .animateEnterExit(
-                        enter = ScrimEnterTransition,
-                        exit = ScrimExitTransition
+                        enter = VisibilityContainerDefaults.ScrimEnterTransition,
+                        exit = VisibilityContainerDefaults.ScrimExitTransition
                     )
                     .fillMaxSize()
                     .graphicsLayer {
