@@ -1,5 +1,6 @@
 package com.aaron.compose.ktx
 
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridItemInfo
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 
@@ -15,14 +16,13 @@ val LazyStaggeredGridState.lastIndex: Int
  * @param direction 小于 0 向上滚动(向左滚动(LTR))，大于 0 向下滚动(向右滚动(LTR))
  */
 fun LazyStaggeredGridState.canScroll(direction: Int): Boolean {
-//    if (layoutInfo.orientation == Orientation.Vertical) {
-//        return canScroll(
-//            direction = direction,
-//            onGetOffset = { it.offset.y },
-//            // 用 width 是因为 LazyVerticalStaggeredGrid 内部宽高弄反了，后续需要修正
-//            onGetSize = { it.size.width }
-//        )
-//    }
+    if (layoutInfo.orientation == Orientation.Vertical) {
+        return canScroll(
+            direction = direction,
+            onGetOffset = { it.offset.y },
+            onGetSize = { it.size.height }
+        )
+    }
     return canScroll(
         direction = direction,
         onGetOffset = { it.offset.x },
