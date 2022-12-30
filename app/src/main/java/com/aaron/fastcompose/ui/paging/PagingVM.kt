@@ -1,4 +1,4 @@
-package com.aaron.fastcompose.paging
+package com.aaron.fastcompose.ui.paging
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

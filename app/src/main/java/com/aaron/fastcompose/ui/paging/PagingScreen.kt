@@ -1,8 +1,9 @@
-package com.aaron.fastcompose.paging
+package com.aaron.fastcompose.ui.paging
 
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,24 +21,25 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Card
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
 import androidx.compose.material.Text
+import androidx.compose.material.contentColorFor
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -48,7 +50,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavOptions
+import com.aaron.compose.base.BaseRoute
+import com.aaron.compose.base.navTo
 import com.aaron.compose.component.LazyPagerPagingComponent
 import com.aaron.compose.component.PagingGridComponent
 import com.aaron.compose.component.RefreshComponent
@@ -66,10 +74,9 @@ import com.aaron.compose.ui.VisibilityContainerState
 import com.aaron.compose.ui.VisibilityScrimContainer
 import com.aaron.compose.ui.rememberVisibilityContainerState
 import com.aaron.compose.utils.OverScrollHandler
-import com.aaron.fastcompose.LocalNavController
 import com.aaron.fastcompose.R
 import com.blankj.utilcode.util.ToastUtils
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import com.google.accompanist.navigation.animation.composable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
@@ -80,65 +87,91 @@ import kotlinx.coroutines.flow.onStart
  * @since 2022/12/28
  */
 
-@Composable
-fun PagingScreen(vm: PagingVM = viewModel()) {
-    val uiController = rememberSystemUiController()
-    SideEffect {
-        uiController.systemBarsDarkContentEnabled = true
+object PagingScreen : BaseRoute {
+
+    override val route: String = "paging"
+
+    fun navigate(navController: NavController, navOptions: NavOptions? = null) {
+        navController.navTo(
+            route = PagingScreen,
+            navOptions = navOptions
+        )
     }
+}
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = Color(0xFFF0F0F0)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        0f to Color(0xB32196F3),
-                        0.5f to Color(0xFFF7F7F7)
+@OptIn(ExperimentalAnimationApi::class)
+fun NavGraphBuilder.pagingScreen(navController: NavController) {
+    composable(route = PagingScreen.route) {
+        PagingScreen(
+            onBack = {
+                navController.popBackStack()
+            },
+            vm = hiltViewModel()
+        )
+    }
+}
+
+@Composable
+private fun PagingScreen(
+    onBack: () -> Unit,
+    vm: PagingVM = viewModel()
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                color = MaterialTheme.colors.background
+            )
+            .background(
+                brush = when (isSystemInDarkTheme()) {
+                    true -> Brush.verticalGradient(
+                        0f to Color(0xB34684B4),
+                        0.5f to MaterialTheme.colors.background
                     )
-                )
-        ) {
-            val visibilityContainerState = rememberVisibilityContainerState()
-            val navController = LocalNavController.current
-            Column(modifier = Modifier.fillMaxSize()) {
-                TopBar(
-                    modifier = Modifier.zIndex(1f),
-                    title = "",
-                    startIcon = R.drawable.back,
-                    backgroundColor = Color.Transparent,
-                    elevation = 0.dp,
-                    contentPadding = WindowInsets.statusBars.asPaddingValues(),
-                    onStartIconClick = {
-                        navController.popBackStack()
-                    },
-                    endLayout = {
-                        IconButton(
-                            onClick = {
-                                visibilityContainerState.show()
-                            }
-                        ) {
-                            Icon(
-                                modifier = Modifier.size(24.dp),
-                                imageVector = Icons.Default.Add,
-                                contentDescription = null,
-                                tint = LocalContentColor.current
-                            )
+                    else -> Brush.verticalGradient(
+                        0f to Color(0xB338A6FD),
+                        0.5f to MaterialTheme.colors.background
+                    )
+                }
+            )
+    ) {
+        val visibilityContainerState = rememberVisibilityContainerState()
+        Column(modifier = Modifier.fillMaxSize()) {
+            TopBar(
+                modifier = Modifier.zIndex(1f),
+                title = "",
+                startIcon = R.drawable.back,
+                backgroundColor = Color.Transparent,
+                contentColor = contentColorFor(backgroundColor = MaterialTheme.colors.background),
+                elevation = 0.dp,
+                contentPadding = WindowInsets.statusBars.asPaddingValues(),
+                onStartIconClick = {
+                    onBack()
+                },
+                endLayout = {
+                    IconButton(
+                        onClick = {
+                            visibilityContainerState.show()
                         }
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(24.dp),
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            tint = LocalContentColor.current
+                        )
                     }
-                )
+                }
+            )
 
-                LazyPagingContent(
-                    lazyPagerPagingComponent = vm.getLazyPagerPagingComponent()
-                )
-            }
-
-            MyVisibilityContainer(
-                visibilityContainerState = visibilityContainerState
+            LazyPagingContent(
+                lazyPagerPagingComponent = vm.getLazyPagerPagingComponent()
             )
         }
+
+        MyVisibilityContainer(
+            visibilityContainerState = visibilityContainerState
+        )
     }
 }
 
@@ -372,27 +405,31 @@ private fun LazyPagingContent(lazyPagerPagingComponent: LazyPagerPagingComponent
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     itemsIndexed(lazyPagingComponent, key = { _, item -> item.id }) { index, item ->
-                        Box(
+                        Card(
                             modifier = Modifier
                                 .animateItemPlacement()
-                                .clipToBackground(
-                                    color = Color.White,
-                                    shape = RoundedCornerShape(8.dp)
-                                )
+                                .clip(RoundedCornerShape(8.dp))
                                 .onClick {
                                     lazyPagingComponent.pagingRefresh()
                                 }
                                 .fillMaxWidth()
-                                .aspectRatio(1f)
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
+                                .aspectRatio(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            backgroundColor = when (isSystemInDarkTheme()) {
+                                true -> MaterialTheme.colors.surface
+                                else -> Color.White
+                            }
                         ) {
-                            Text(
-                                text = item.name,
-                                color = Color(0xFF333333),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
+                            Box(
+                                modifier = Modifier.padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = item.name,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                            }
                         }
                     }
                 }

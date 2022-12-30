@@ -1,4 +1,4 @@
-package com.aaron.fastcompose
+package com.aaron.fastcompose.ui
 
 import androidx.compose.runtime.Composable
 import com.aaron.compose.base.BaseComposeActivity

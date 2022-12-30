@@ -60,6 +60,7 @@ fun TopBar(
 ) {
     BaseTopBar(
         modifier = modifier,
+        contentColor = contentColor,
         backgroundColor = backgroundColor,
         elevation = elevation,
         showBottomDivider = showBottomDivider,

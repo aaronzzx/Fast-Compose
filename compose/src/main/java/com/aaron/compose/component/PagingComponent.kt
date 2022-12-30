@@ -35,6 +35,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProgressIndicatorDefaults
 import androidx.compose.material.Text
@@ -1102,8 +1103,9 @@ open class VerticalPagingStateFooter : PagingStateFooter() {
                     },
                 text = "已经到底了",
                 fontSize = 12.sp,
-                color = Color(0xFF999999)
+                color = LocalContentColor.current.copy(alpha = 0.36f)
             )
+            val dividerColor = LocalContentColor.current.copy(alpha = 0.03f)
             Box(
                 modifier = Modifier
                     .constrainAs(line1Ref) {
@@ -1113,7 +1115,7 @@ open class VerticalPagingStateFooter : PagingStateFooter() {
                         bottom.linkTo(textRef.bottom)
                         end.linkTo(textRef.start, 16.dp)
                     }
-                    .background(color = Color(0xFFF2F2F2))
+                    .background(color = dividerColor)
             )
             Box(
                 modifier = Modifier
@@ -1124,7 +1126,7 @@ open class VerticalPagingStateFooter : PagingStateFooter() {
                         bottom.linkTo(textRef.bottom)
                         start.linkTo(textRef.end, 16.dp)
                     }
-                    .background(color = Color(0xFFF2F2F2))
+                    .background(color = dividerColor)
             )
         }
     }
@@ -1159,7 +1161,7 @@ private fun FooterText(
     footerType: PagingFooterType,
     modifier: Modifier = Modifier,
     fontSize: TextUnit = 12.sp,
-    textColor: Color = Color(0xFF666666)
+    textColor: Color = LocalContentColor.current.copy(alpha = 0.36f)
 ) {
     Box(
         modifier = modifier
