@@ -23,7 +23,7 @@ import kotlin.random.Random
  * @since 2022/10/24
  */
 @HiltViewModel
-class PagingVM @Inject constructor() : ViewModel(), LazyPagerPagingComponent<String, Int, Repo>, SafeStateScope {
+class PagingVM @Inject constructor() : ViewModel(), LazyPagerPagingComponent<String, Any?, Repo>, SafeStateScope {
 
     companion object {
         init {
@@ -37,14 +37,14 @@ class PagingVM @Inject constructor() : ViewModel(), LazyPagerPagingComponent<Str
         }
     }
 
-    override val lazyPagingData: SafeState<LazyPagingData<String, Int, Repo>> =
+    override val lazyPagingData: SafeState<LazyPagingData<String, Any?, Repo>> =
         safeStateOf(persistentListOf())
 
     init {
         initialize()
     }
 
-    fun getLazyPagerPagingComponent(): LazyPagerPagingComponent<String, Int, Repo> {
+    fun getLazyPagerPagingComponent(): LazyPagerPagingComponent<String, Any?, Repo> {
         return this
     }
 
@@ -52,10 +52,10 @@ class PagingVM @Inject constructor() : ViewModel(), LazyPagerPagingComponent<Str
         viewModelScope.launch {
             val list = List(5) {
                 val lazyPagingComponent = viewModelScope.buildPageData(
-                    initialPage = 1,
+                    initialKey = 1,
                     lazyLoad = true
                 ) { page, pageSize ->
-                    request(page, pageSize)
+                    request(page as Int, pageSize)
                 }.toLazyPagingComponent()
 
                 "Tab$$it" to lazyPagingComponent

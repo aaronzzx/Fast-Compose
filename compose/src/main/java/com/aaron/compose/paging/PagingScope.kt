@@ -11,37 +11,61 @@ import kotlinx.coroutines.CoroutineScope
 interface PagingScope {
 
     /**
-     * 分页
+     * 分页，loadKey 一般和 initialKey 相同类型，根据需要进行强转
+     *
+     * @param initialKey 初始值
+     * @param successCode 成功状态码
+     * @param pageConfig 分页详细配置
+     * @param lazyLoad 懒加载，需要自己调用刷新
+     * @param invokeCompletion 请求完成回调
+     * @param onNextKey 获取下一个 loadKey
+     * @param onRequest 请求块，loadKey 一般和 initialKey 相同类型，根据需要进行强转
      */
     fun <V> CoroutineScope.buildPageData(
-        initialPage: Int,
+        initialKey: Any?,
         successCode: Int = Defaults.SuccessCode,
         pageConfig: PageConfig = PageConfig(),
         lazyLoad: Boolean = false,
-        invokeCompletion: (suspend PageData<Int, V>.(LoadResult<Int, V>) -> Unit)? = null,
-        onRequest: suspend PageData<Int, V>.(page: Int, pageSize: Int) -> BasePagingResult<V>
-    ): PageData<Int, V> = buildMappingPageData(
-        initialPage = initialPage,
+        invokeCompletion: (suspend PageData<Any?, V>.(LoadResult<Any?, V>) -> Unit)? = null,
+        onNextKey: suspend (BasePagingResult<V>, LoadParams<Any?>) -> Any? = { resp, params ->
+            getNextLoadKey(initialKey, params)
+        },
+        onRequest: suspend PageData<Any?, V>.(loadKey: Any?, pageSize: Int) -> BasePagingResult<V>
+    ): PageData<Any?, V> = buildMappingPageData(
+        initialKey = initialKey,
         successCode = successCode,
         pageConfig = pageConfig,
         lazyLoad = lazyLoad,
         invokeCompletion = invokeCompletion,
+        onNextKey = onNextKey,
         onMapping = { it },
         onRequest = onRequest
     )
 
     /**
-     * 分页，可以转换数据
+     * 分页，可以转换数据，loadKey 一般和 initialKey 相同类型，根据需要进行强转
+     *
+     * @param initialKey 初始值
+     * @param successCode 成功状态码
+     * @param pageConfig 分页详细配置
+     * @param lazyLoad 懒加载，需要自己调用刷新
+     * @param invokeCompletion 请求完成回调
+     * @param onNextKey 获取下一个 loadKey
+     * @param onMapping 转换数据
+     * @param onRequest 请求块，loadKey 一般和 initialKey 相同类型，根据需要进行强转
      */
     fun <V, R> CoroutineScope.buildMappingPageData(
-        initialPage: Int,
+        initialKey: Any?,
         successCode: Int = Defaults.SuccessCode,
         pageConfig: PageConfig = PageConfig(),
         lazyLoad: Boolean = false,
-        invokeCompletion: (suspend PageData<Int, R>.(LoadResult<Int, R>) -> Unit)? = null,
+        invokeCompletion: (suspend PageData<Any?, R>.(LoadResult<Any?, R>) -> Unit)? = null,
+        onNextKey: suspend (BasePagingResult<V>, LoadParams<Any?>) -> Any? = { resp, params ->
+            getNextLoadKey(initialKey, params)
+        },
         onMapping: suspend (data: List<V>) -> List<R>,
-        onRequest: suspend PageData<Int, R>.(page: Int, pageSize: Int) -> BasePagingResult<V>
-    ): PageData<Int, R> = PageData(
+        onRequest: suspend PageData<Any?, R>.(loadKey: Any?, pageSize: Int) -> BasePagingResult<V>
+    ): PageData<Any?, R> = PageData(
         coroutineScope = this,
         config = pageConfig,
         lazyLoad = lazyLoad,
@@ -50,23 +74,37 @@ interface PagingScope {
         val pageSize = params.pageSize
         val initialSize = params.initialSize
 
-        val curPage = params.key ?: initialPage
-        val curPageSize = if (curPage == initialPage) initialSize else pageSize
+        val curLoadKey = params.key ?: initialKey
+        val curPageSize = if (curLoadKey == initialKey) initialSize else pageSize
 
-        val result = onRequest(curPage, curPageSize)
-        if (result.code == successCode) {
-            val dataList = result.data
-            var nextKey: Int? = when (curPage == initialPage) {
-                true -> (initialSize / pageSize).plus(1)
-                else -> curPage.plus(1)
-            }
+        val resp = onRequest(curLoadKey, curPageSize)
+        if (resp.code == successCode) {
+            val dataList = resp.data
+            var nextKey: Any? = onNextKey(resp, params)
             if (dataList.size < pageSize) {
                 nextKey = null
             }
             val mapped = onMapping(dataList)
             LoadResult.Page(mapped, nextKey)
         } else {
-            LoadResult.Error(PageException(result.code, result.msg))
+            LoadResult.Error(PageException(resp.code, resp.msg))
         }
+    }
+}
+
+private fun getNextLoadKey(
+    initialKey: Any?,
+    params: LoadParams<Any?>
+): Any? {
+    val curLoadKey = params.key
+    return if (curLoadKey is Int) {
+        val initialSize = params.initialSize
+        val pageSize = params.pageSize
+        when (curLoadKey == initialKey) {
+            true -> (initialSize / pageSize).plus(1)
+            else -> curLoadKey.plus(1)
+        }
+    } else {
+        null
     }
 }
