@@ -389,7 +389,7 @@ private fun NotificationContent(onClick: () -> Unit) {
 }
 
 @Composable
-private fun LazyPagingContent(lazyPagerPagingComponent: LazyPagerPagingComponent<String, Int, Repo>) {
+private fun LazyPagingContent(lazyPagerPagingComponent: LazyPagerPagingComponent<String, Any?, Repo>) {
     LazyPagerPagingComponent(component = lazyPagerPagingComponent) { lazyPagingComponent ->
         RefreshContent(
             refreshComponent = lazyPagingComponent,
