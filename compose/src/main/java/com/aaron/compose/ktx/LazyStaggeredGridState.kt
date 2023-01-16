@@ -11,7 +11,7 @@ val LazyStaggeredGridState.lastIndex: Int
     get() = layoutInfo.totalItemsCount - 1
 
 /**
- * 判断能否垂直、水平滚动（暂时不支持 LazyVerticalStaggeredGrid ，因为内部 item 宽高有问题）
+ * 判断能否垂直、水平滚动
  *
  * @param direction 小于 0 向上滚动(向左滚动(LTR))，大于 0 向下滚动(向右滚动(LTR))
  */
