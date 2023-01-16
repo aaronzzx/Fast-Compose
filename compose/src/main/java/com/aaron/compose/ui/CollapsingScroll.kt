@@ -4,6 +4,7 @@ import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.ScrollableDefaults
+import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -29,7 +30,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource.Companion.Fling
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
-import com.aaron.compose.ktx.canScroll
 import com.aaron.compose.ui.CollapsingScrollAnimationState.Collapsing
 import com.aaron.compose.ui.CollapsingScrollAnimationState.Expanding
 import com.aaron.compose.ui.CollapsingScrollAnimationState.Idle
@@ -164,6 +164,34 @@ class CollapsingScrollState(internal val scrollState: ScrollState) {
     val isScrollInProgress: Boolean get() = scrollState.isScrollInProgress
 
     /**
+     * Whether this [ScrollableState] can scroll forward (consume a positive delta). This is
+     * typically false if the scroll position is equal to its maximum value, and true otherwise.
+     *
+     * Note that `true` here does not imply that delta *will* be consumed - the ScrollableState may
+     * decide not to handle the incoming delta (such as if it is already being scrolled separately).
+     * Additionally, for backwards compatibility with previous versions of ScrollableState this
+     * value defaults to `true`.
+     *
+     * @sample androidx.compose.foundation.samples.CanScrollSample
+     */
+    val canScrollForward: Boolean
+        get() = scrollState.canScrollForward
+
+    /**
+     * Whether this [ScrollableState] can scroll backward (consume a negative delta). This is
+     * typically false if the scroll position is equal to its minimum value, and true otherwise.
+     *
+     * Note that `true` here does not imply that delta *will* be consumed - the ScrollableState may
+     * decide not to handle the incoming delta (such as if it is already being scrolled separately).
+     * Additionally, for backwards compatibility with previous versions of ScrollableState this
+     * value defaults to `true`.
+     *
+     * @sample androidx.compose.foundation.samples.CanScrollSample
+     */
+    val canScrollBackward: Boolean
+        get() = scrollState.canScrollBackward
+
+    /**
      * 折叠
      */
     suspend fun collapse(
@@ -224,13 +252,6 @@ class CollapsingScrollState(internal val scrollState: ScrollState) {
             expand(animate, animationSpec)
         }
     }
-
-    /**
-     * 判断能否滚动
-     *
-     * @param direction 小于 0 向上滚动，大于 0 向下滚动
-     */
-    fun canScroll(direction: Int): Boolean = scrollState.canScroll(direction)
 
     private inline fun runOnAnimationState(
         state: CollapsingScrollAnimationState,

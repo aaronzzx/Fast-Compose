@@ -65,7 +65,6 @@ import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import com.aaron.compose.R
-import com.aaron.compose.ktx.canScroll
 import com.aaron.compose.ktx.isEmpty
 import com.aaron.compose.ktx.isNotEmpty
 import com.aaron.compose.ktx.lastIndex
@@ -478,7 +477,7 @@ fun <K, V> PagingHorizontalComponent(
                             && curLastIndex != -1
                             && curLastIndex < pagingLastIndex
                 }
-                .filter { !state.isScrollInProgress && !state.canScroll(1) }
+                .filter { !state.isScrollInProgress && !state.canScrollForward }
                 .collect {
                     // 滑出 item 的一半
                     val lastHalfSize = state.layoutInfo.visibleItemsInfo.last().size / 2f
@@ -491,7 +490,7 @@ fun <K, V> PagingHorizontalComponent(
         launch {
             snapshotFlow { state.isScrollInProgress to state.firstVisibleItemScrollOffset }
                 .filter {
-                    isDragged && !state.canScroll(1)
+                    isDragged && !state.canScrollForward
                 }
                 .collect {
                     val pageConfig = component.pageData.config

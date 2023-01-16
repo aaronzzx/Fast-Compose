@@ -1,5 +1,6 @@
 package com.aaron.fastcompose.ui.paging
 
+import android.util.Log
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -37,6 +39,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -78,6 +81,7 @@ import com.aaron.fastcompose.R
 import com.blankj.utilcode.util.ToastUtils
 import com.google.accompanist.navigation.animation.composable
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
@@ -396,8 +400,17 @@ private fun LazyPagingContent(lazyPagerPagingComponent: LazyPagerPagingComponent
             refreshEnabled = true
         ) {
             OverScrollHandler(enabled = false) {
+                val listState = rememberLazyGridState()
+                LaunchedEffect(key1 = listState) {
+                    snapshotFlow { listState.isScrollInProgress }
+                        .filter { it }
+                        .collect {
+                            Log.d("zzx", "start: ${!listState.canScrollBackward}, end: ${!listState.canScrollForward}")
+                        }
+                }
                 PagingGridComponent(
                     component = lazyPagingComponent,
+                    state = listState,
                     columns = GridCells.Fixed(2),
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(8.dp),
