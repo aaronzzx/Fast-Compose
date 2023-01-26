@@ -9,7 +9,6 @@ import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,6 +31,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
@@ -375,40 +375,43 @@ fun <K, V> PagingStaggeredGridComponent(
     },
     content: LazyStaggeredGridScope.(PageData<K, V>) -> Unit
 ) {
-    val pageData = component.pageData
-    val loadState = pageData.loadState
-
-    val refreshLoading by remember(loadState) {
-        derivedStateOf {
-            loadState.refresh is LoadState.Loading
+    SubcomposeList(
+        slotId = "${component}-LazyVerticalStaggeredGrid",
+        modifier = modifier
+    ) { listHeightPixels ->
+        var headerHeightPixels by remember {
+            mutableStateOf(0)
         }
-    }
-    val refreshError by remember(loadState) {
-        derivedStateOf {
-            loadState.refresh is LoadState.Error
+        var footerHeightPixels by remember {
+            mutableStateOf(0)
         }
-    }
 
-    ScrollToTopWhenRefreshEffect(state, loadState)
+        val pagingFooterType by rememberPagingFooterType(component = component)
 
-    LoadingBox(
-        component = component,
-        refreshLoading = refreshLoading,
-        loadingContent = loadingContent
-    ) {
-        if (loadingContent != null
-            && pageData.isEmpty
-            && (component.isInitialized.not() || refreshLoading)
+        val pageData = component.pageData
+        val loadState = pageData.loadState
+
+        val refreshLoading by remember(loadState) {
+            derivedStateOf {
+                loadState.refresh is LoadState.Loading
+            }
+        }
+        val refreshError by remember(loadState) {
+            derivedStateOf {
+                loadState.refresh is LoadState.Error
+            }
+        }
+
+        ScrollToTopWhenRefreshEffect(state, loadState)
+
+        LoadingBox(
+            component = component,
+            refreshLoading = refreshLoading,
+            loadingContent = loadingContent
         ) {
-            Spacer(modifier = Modifier.fillMaxSize())
-        } else if (errorContent != null && refreshError && pageData.isEmpty) {
-            errorContent()
-        } else if (emptyContent != null && pageData.isEmpty) {
-            emptyContent()
-        } else {
             LazyVerticalStaggeredGrid(
+                modifier = Modifier.fillMaxSize(),
                 columns = columns,
-                modifier = modifier,
                 state = state,
                 contentPadding = contentPadding,
                 verticalArrangement = verticalArrangement,
@@ -416,7 +419,59 @@ fun <K, V> PagingStaggeredGridComponent(
                 flingBehavior = flingBehavior,
                 userScrollEnabled = userScrollEnabled
             ) {
-                content(pageData)
+                if (headerContent != null) {
+                    itemHeaderFooter(
+                        scope = this,
+                        key = "${component}-Header",
+                        contentType = "Header",
+                        slotId = "${component}-Header",
+                        onHeightChange = {
+                            headerHeightPixels = it
+                        },
+                        content = headerContent
+                    )
+                }
+
+                handleCentralContent(
+                    scope = this,
+                    component = component,
+                    refreshLoading = refreshLoading,
+                    refreshError = refreshError,
+                    listHeightPixels = listHeightPixels,
+                    headerHeightPixels = headerHeightPixels,
+                    footerHeightPixels = footerHeightPixels,
+                    contentPadding = contentPadding,
+                    verticalArrangement = verticalArrangement,
+                    headerContent = headerContent,
+                    footerContent = footerContent,
+                    loadingContent = loadingContent,
+                    emptyContent = emptyContent,
+                    errorContent = errorContent
+                ) {
+                    content(it)
+                }
+
+                if (footerContent != null) {
+                    itemHeaderFooter(
+                        scope = this,
+                        key = "${component}-Footer",
+                        contentType = "Footer",
+                        slotId = "${component}-Footer",
+                        onHeightChange = {
+                            footerHeightPixels = it
+                        },
+                        content = footerContent
+                    )
+                }
+
+                if (pagingStateFooter != null) {
+                    trySetPagingStateFooter(
+                        scope = this,
+                        component = component,
+                        pagingFooterType = pagingFooterType,
+                        pagingStateFooter = pagingStateFooter
+                    )
+                }
             }
         }
     }
@@ -703,6 +758,16 @@ private fun <K, V> trySetPagingStateFooter(
                         content(component)
                     }
                 }
+            } else if (scope is LazyStaggeredGridScope) {
+                with(scope) {
+                    item(
+                        span = StaggeredGridItemSpan.FullLine,
+                        key = "${component}-PagingStateFooter",
+                        contentType = "PagingStateFooter"
+                    ) {
+                        content(component)
+                    }
+                }
             }
         }
     }
@@ -760,6 +825,22 @@ private fun itemHeaderFooter(
         with(scope) {
             item(
                 span = { GridItemSpan(maxLineSpan) },
+                key = key,
+                contentType = contentType
+            ) {
+                MeasureHeightContent(
+                    key = key,
+                    contentType = contentType,
+                    slotId = slotId,
+                    onHeightChange = onHeightChange,
+                    content = content
+                )
+            }
+        }
+    } else if (scope is LazyStaggeredGridScope) {
+        with(scope) {
+            item(
+                span = StaggeredGridItemSpan.FullLine,
                 key = key,
                 contentType = contentType
             ) {

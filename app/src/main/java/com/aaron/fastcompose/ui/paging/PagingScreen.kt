@@ -18,8 +18,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -61,7 +61,7 @@ import androidx.navigation.NavOptions
 import com.aaron.compose.base.BaseRoute
 import com.aaron.compose.base.navTo
 import com.aaron.compose.component.LazyPagerPagingComponent
-import com.aaron.compose.component.PagingGridComponent
+import com.aaron.compose.component.PagingStaggeredGridComponent
 import com.aaron.compose.component.RefreshComponent
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.lazylist.itemsIndexed
@@ -400,7 +400,7 @@ private fun LazyPagingContent(lazyPagerPagingComponent: LazyPagerPagingComponent
             refreshEnabled = true
         ) {
             OverScrollHandler(enabled = false) {
-                val listState = rememberLazyGridState()
+                val listState = rememberLazyStaggeredGridState()
                 LaunchedEffect(key1 = listState) {
                     snapshotFlow { listState.isScrollInProgress }
                         .filter { it }
@@ -408,10 +408,10 @@ private fun LazyPagingContent(lazyPagerPagingComponent: LazyPagerPagingComponent
                             Log.d("zzx", "start: ${!listState.canScrollBackward}, end: ${!listState.canScrollForward}")
                         }
                 }
-                PagingGridComponent(
+                PagingStaggeredGridComponent(
                     component = lazyPagingComponent,
                     state = listState,
-                    columns = GridCells.Fixed(2),
+                    columns = StaggeredGridCells.Fixed(2),
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -420,13 +420,16 @@ private fun LazyPagingContent(lazyPagerPagingComponent: LazyPagerPagingComponent
                     itemsIndexed(lazyPagingComponent, key = { _, item -> item.id }) { index, item ->
                         Card(
                             modifier = Modifier
-                                .animateItemPlacement()
                                 .clip(RoundedCornerShape(8.dp))
                                 .onClick {
                                     lazyPagingComponent.pagingRefresh()
                                 }
                                 .fillMaxWidth()
-                                .aspectRatio(1f),
+                                .let {
+                                    if (index % 3 == 0) it.aspectRatio(1f) else {
+                                        it.aspectRatio(1.5f)
+                                    }
+                                },
                             shape = RoundedCornerShape(8.dp),
                             backgroundColor = when (isSystemInDarkTheme()) {
                                 true -> MaterialTheme.colors.surface

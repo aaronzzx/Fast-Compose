@@ -96,15 +96,16 @@ private fun getNextLoadKey(
     initialKey: Any?,
     params: LoadParams<Any?>
 ): Any? {
-    val curLoadKey = params.key
-    return if (curLoadKey is Int) {
+    val curLoadKey = when (params) {
+        is LoadParams.Refresh -> initialKey
+        else -> params.key
+    }
+    return if (curLoadKey !is Int) null else {
         val initialSize = params.initialSize
         val pageSize = params.pageSize
         when (curLoadKey == initialKey) {
             true -> (initialSize / pageSize).plus(1)
             else -> curLoadKey.plus(1)
         }
-    } else {
-        null
     }
 }
