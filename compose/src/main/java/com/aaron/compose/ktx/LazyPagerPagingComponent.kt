@@ -20,12 +20,12 @@ val LazyPagerPagingComponent<*, *, *>.isLazyPagingDataEmpty: Boolean
 val LazyPagerPagingComponent<*, *, *>.lazyPagingDataCount: Int
     get() = lazyPagingData.value.size
 
-fun <T, K, V> LazyPagerPagingComponent<T, K, V>.lazyPagingTabAt(page: Int): T {
-    return lazyPagingData.value[page].first
+fun <T, K, V> LazyPagerPagingComponent<T, K, V>.lazyPagingTabAt(page: Int): T? {
+    return lazyPagingData.value.getOrNull(page)?.first
 }
 
-fun <T, K, V> LazyPagerPagingComponent<T, K, V>.lazyPagingComponentAt(page: Int): LazyPagingComponent<K, V> {
-    return lazyPagingData.value[page].second
+fun <T, K, V> LazyPagerPagingComponent<T, K, V>.lazyPagingComponentAt(page: Int): LazyPagingComponent<K, V>? {
+    return lazyPagingData.value.getOrNull(page)?.second
 }
 
 fun <T, K, V> LazyPagerPagingComponent<T, K, V>.lazyPagingTabs(): List<T> {
