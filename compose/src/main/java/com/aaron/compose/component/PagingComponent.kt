@@ -724,6 +724,16 @@ private fun itemCentral(
                 content()
             }
         }
+    } else if (scope is LazyStaggeredGridScope) {
+        with(scope) {
+            item(
+                span = StaggeredGridItemSpan.FullLine,
+                key = key,
+                contentType = contentType
+            ) {
+                content()
+            }
+        }
     }
 }
 
