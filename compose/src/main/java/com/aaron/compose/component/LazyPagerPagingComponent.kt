@@ -1,14 +1,18 @@
 package com.aaron.compose.component
 
-import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.snapping.SnapFlingBehavior
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.pager.PageSize
+import androidx.compose.foundation.pager.PagerDefaults
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import com.aaron.compose.ktx.rememberLazyPagingComponents
@@ -19,10 +23,6 @@ import com.aaron.compose.safestate.SafeStateScope
 import com.aaron.compose.safestate.safeStateOf
 import com.aaron.compose.ui.refresh.SmartRefreshType
 import com.aaron.compose.ui.refresh.SmartRefreshType.Idle
-import com.google.accompanist.pager.PagerDefaults
-import com.google.accompanist.pager.PagerScope
-import com.google.accompanist.pager.PagerState
-import com.google.accompanist.pager.rememberPagerState
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
@@ -37,17 +37,19 @@ fun <T, K, V> LazyPagerPagingComponent(
     modifier: Modifier = Modifier,
     activeState: Lifecycle.State = Lifecycle.State.RESUMED,
     pagerState: PagerState = rememberPagerState(),
-    reverseLayout: Boolean = false,
-    itemSpacing: Dp = 0.dp,
     contentPadding: PaddingValues = PaddingValues(0.dp),
+    pageSize: PageSize = PageSize.Fill,
+    beyondBoundsPageCount: Int = 0,
+    pageSpacing: Dp = 0.dp,
     verticalAlignment: Alignment.Vertical = Alignment.CenterVertically,
-    flingBehavior: FlingBehavior = PagerDefaults.flingBehavior(
-        state = pagerState,
-        endContentPadding = contentPadding.calculateEndPadding(LayoutDirection.Ltr),
-    ),
-    key: ((page: Int) -> Any)? = null,
+    flingBehavior: SnapFlingBehavior = PagerDefaults.flingBehavior(state = pagerState),
     userScrollEnabled: Boolean = true,
-    content: @Composable PagerScope.(lazyPagingComponent: LazyPagingComponent<K, V>) -> Unit
+    reverseLayout: Boolean = false,
+    key: ((index: Int) -> Any)? = null,
+    pageNestedScrollConnection: NestedScrollConnection = PagerDefaults.pageNestedScrollConnection(
+        Orientation.Horizontal
+    ),
+    pageContent: @Composable (lazyPagingComponent: LazyPagingComponent<K, V>) -> Unit
 ) {
     val lazyPagingComponents = component.rememberLazyPagingComponents()
     LazyPagerComponent(
@@ -55,8 +57,11 @@ fun <T, K, V> LazyPagerPagingComponent(
         modifier = modifier,
         activeState = activeState,
         pagerState = pagerState,
+        pageSize = pageSize,
+        beyondBoundsPageCount = beyondBoundsPageCount,
+        pageNestedScrollConnection = pageNestedScrollConnection,
         reverseLayout = reverseLayout,
-        itemSpacing = itemSpacing,
+        pageSpacing = pageSpacing,
         contentPadding = contentPadding,
         verticalAlignment = verticalAlignment,
         flingBehavior = flingBehavior,
@@ -64,7 +69,7 @@ fun <T, K, V> LazyPagerPagingComponent(
         userScrollEnabled = userScrollEnabled
     ) { page ->
         val lazyPagingComponent = lazyPagingComponents[page]
-        content(lazyPagingComponent)
+        pageContent(lazyPagingComponent)
     }
 }
 

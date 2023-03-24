@@ -178,7 +178,7 @@ fun <K, V> PagingComponent(
                     headerHeightPixels = headerHeightPixels,
                     footerHeightPixels = footerHeightPixels,
                     contentPadding = contentPadding,
-                    verticalArrangement = verticalArrangement,
+                    verticalItemSpacing = verticalArrangement.spacing,
                     headerContent = headerContent,
                     footerContent = footerContent,
                     loadingContent = loadingContent,
@@ -311,7 +311,7 @@ fun <K, V> PagingGridComponent(
                     headerHeightPixels = headerHeightPixels,
                     footerHeightPixels = footerHeightPixels,
                     contentPadding = contentPadding,
-                    verticalArrangement = verticalArrangement,
+                    verticalItemSpacing = verticalArrangement.spacing,
                     headerContent = headerContent,
                     footerContent = footerContent,
                     loadingContent = loadingContent,
@@ -357,7 +357,7 @@ fun <K, V> PagingStaggeredGridComponent(
     modifier: Modifier = Modifier,
     state: LazyStaggeredGridState = rememberLazyStaggeredGridState(),
     contentPadding: PaddingValues = PaddingValues(0.dp),
-    verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(0.dp),
+    verticalItemSpacing: Dp = 0.dp,
     horizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(0.dp),
     flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
     userScrollEnabled: Boolean = true,
@@ -414,7 +414,7 @@ fun <K, V> PagingStaggeredGridComponent(
                 columns = columns,
                 state = state,
                 contentPadding = contentPadding,
-                verticalArrangement = verticalArrangement,
+                verticalItemSpacing = verticalItemSpacing,
                 horizontalArrangement = horizontalArrangement,
                 flingBehavior = flingBehavior,
                 userScrollEnabled = userScrollEnabled
@@ -441,7 +441,7 @@ fun <K, V> PagingStaggeredGridComponent(
                     headerHeightPixels = headerHeightPixels,
                     footerHeightPixels = footerHeightPixels,
                     contentPadding = contentPadding,
-                    verticalArrangement = verticalArrangement,
+                    verticalItemSpacing = verticalItemSpacing,
                     headerContent = headerContent,
                     footerContent = footerContent,
                     loadingContent = loadingContent,
@@ -632,7 +632,7 @@ private fun <K, V> handleCentralContent(
     headerHeightPixels: Int,
     footerHeightPixels: Int,
     contentPadding: PaddingValues,
-    verticalArrangement: Arrangement.Vertical,
+    verticalItemSpacing: Dp,
     headerContent: (@Composable () -> Unit)?,
     footerContent: (@Composable () -> Unit)?,
     loadingContent: (@Composable () -> Unit)?,
@@ -652,7 +652,7 @@ private fun <K, V> handleCentralContent(
         ) {
             CentralContent(
                 contentPadding = contentPadding,
-                verticalArrangement = verticalArrangement,
+                verticalItemSpacing = verticalItemSpacing,
                 existsHeader = headerContent != null,
                 existsFooter = footerContent != null,
                 listHeightPixels = listHeightPixels,
@@ -669,7 +669,7 @@ private fun <K, V> handleCentralContent(
         ) {
             CentralContent(
                 contentPadding = contentPadding,
-                verticalArrangement = verticalArrangement,
+                verticalItemSpacing = verticalItemSpacing,
                 existsHeader = headerContent != null,
                 existsFooter = footerContent != null,
                 listHeightPixels = listHeightPixels,
@@ -687,7 +687,7 @@ private fun <K, V> handleCentralContent(
         ) {
             CentralContent(
                 contentPadding = contentPadding,
-                verticalArrangement = verticalArrangement,
+                verticalItemSpacing = verticalItemSpacing,
                 existsHeader = headerContent != null,
                 existsFooter = footerContent != null,
                 listHeightPixels = listHeightPixels,
@@ -1024,7 +1024,7 @@ fun PagingError(
 @Composable
 private fun CentralContent(
     contentPadding: PaddingValues,
-    verticalArrangement: Arrangement.Vertical,
+    verticalItemSpacing: Dp,
     existsHeader: Boolean,
     existsFooter: Boolean,
     listHeightPixels: Int,
@@ -1035,7 +1035,7 @@ private fun CentralContent(
     val verticalPaddingPx = with(contentPadding) {
         calculateTopPadding() + calculateBottomPadding()
     }.toPx()
-    val spacingPx = verticalArrangement.spacing.toPx()
+    val spacingPx = verticalItemSpacing.toPx()
     val totalSpacingPx = run {
         if (existsHeader && existsFooter) {
             spacingPx * 2

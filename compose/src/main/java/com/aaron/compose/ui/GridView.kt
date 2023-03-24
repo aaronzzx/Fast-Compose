@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -26,10 +29,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import com.aaron.compose.ktx.toDp
-import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
-import com.google.accompanist.pager.PagerState
-import com.google.accompanist.pager.rememberPagerState
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toPersistentList
 import kotlin.math.ceil
@@ -49,8 +49,11 @@ fun <T> GridPage(
     contentPadding: PaddingValues = PaddingValues(),
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
     horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
-    indicator: (@Composable ColumnScope.(PagerState) -> Unit)? = { pagerState ->
-        GridPageIndicator(pagerState = pagerState)
+    indicator: (@Composable ColumnScope.(PagerState, pageCount: Int) -> Unit)? = { pagerState, pageCount ->
+        GridPageIndicator(
+            pagerState = pagerState,
+            pageCount = pageCount
+        )
         Spacer(modifier = Modifier.height(12.dp))
     },
     items: @Composable (T) -> Unit
@@ -76,7 +79,7 @@ fun <T> GridPage(
         }
         HorizontalPager(
             state = pagerState,
-            count = pageCount,
+            pageCount = pageCount,
             modifier = Modifier.fillMaxWidth()
         ) { page ->
             val fromIndex = page * pageSize
@@ -106,7 +109,7 @@ fun <T> GridPage(
             }
         }
         if (indicator != null && pageCount > 1) {
-            indicator(pagerState)
+            indicator(pagerState, pageCount)
         }
     }
 }
@@ -115,9 +118,10 @@ fun <T> GridPage(
  * 通用的 GridPage 指示器
  */
 @Composable
-fun GridPageIndicator(pagerState: PagerState) {
+fun GridPageIndicator(pagerState: PagerState, pageCount: Int) {
     HorizontalPagerIndicator(
         pagerState = pagerState,
+        pageCount = pageCount,
         activeColor = MaterialTheme.colors.primary,
         inactiveColor = Color.LightGray,
         indicatorWidth = 8.dp,

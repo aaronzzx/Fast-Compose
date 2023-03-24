@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,10 +35,7 @@ import coil.compose.AsyncImage
 import com.aaron.compose.ktx.LaunchedLifecycleEffect
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.onClick
-import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
-import com.google.accompanist.pager.PagerState
-import com.google.accompanist.pager.rememberPagerState
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -106,7 +106,7 @@ fun Banner(
         }
         HorizontalPager(
             state = pagerState,
-            count = virtualPageCount,
+            pageCount = virtualPageCount,
             modifier = Modifier
                 .fillMaxSize()
                 .onGloballyPositioned {
@@ -138,7 +138,7 @@ fun Banner(
                 // 由于 animateScroll* 是挂起函数，有可能滚动到一半就被取消了
                 // 这时候就会悬在滚动中间，因此重新启动副作用时需要让他归位
                 pagerState.animateScrollToPage(pagerState.currentPage)
-                snapshotFlow { pagerState.currentPageOffset }
+                snapshotFlow { pagerState.currentPageOffsetFraction }
                     .filter { !dragged }
                     .debounce(curCarouselTime)
                     .collectLatest {
