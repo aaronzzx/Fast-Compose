@@ -414,7 +414,7 @@ private fun LazyPagingContent(lazyPagerPagingComponent: LazyPagerPagingComponent
                     columns = StaggeredGridCells.Fixed(2),
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalItemSpacing = 8.dp,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     itemsIndexed(lazyPagingComponent, key = { _, item -> item.id }) { index, item ->
