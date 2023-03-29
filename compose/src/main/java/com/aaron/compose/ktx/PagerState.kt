@@ -2,15 +2,20 @@ package com.aaron.compose.ktx
 
 import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 /**
@@ -42,5 +47,59 @@ suspend fun PagerState.smartScrollToPage(
         scrollToPage(page, pageOffset)
     } else {
         animateScrollToPage(page, pageOffset)
+    }
+}
+
+/**
+ * 滑动到上一页，已处理异常
+ */
+fun PagerState.scrollToPrev(coroutineScope: CoroutineScope) {
+    coroutineScope.launch {
+        try {
+            scrollToPage(currentPage - 1)
+        } catch (ignored: Exception) {
+        }
+    }
+}
+
+/**
+ * 滑动到下一页，已处理异常
+ */
+fun PagerState.scrollToNext(coroutineScope: CoroutineScope) {
+    coroutineScope.launch {
+        try {
+            scrollToPage(currentPage + 1)
+        } catch (ignored: Exception) {
+        }
+    }
+}
+
+/**
+ * 动画滑动到上一页，已处理异常
+ */
+fun PagerState.animateScrollToPrev(
+    coroutineScope: CoroutineScope,
+    animationSpec: AnimationSpec<Float> = spring(stiffness = Spring.StiffnessMediumLow)
+) {
+    coroutineScope.launch {
+        try {
+            animateScrollToPage(currentPage - 1, animationSpec = animationSpec)
+        } catch (ignored: Exception) {
+        }
+    }
+}
+
+/**
+ * 动画滑动到下一页，已处理异常
+ */
+fun PagerState.animateScrollToNext(
+    coroutineScope: CoroutineScope,
+    animationSpec: AnimationSpec<Float> = spring(stiffness = Spring.StiffnessMediumLow)
+) {
+    coroutineScope.launch {
+        try {
+            animateScrollToPage(currentPage + 1, animationSpec = animationSpec)
+        } catch (ignored: Exception) {
+        }
     }
 }
