@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.aaron.compose.safestate.SafeStateList
 import com.aaron.compose.safestate.safeStateListOf
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -129,7 +130,12 @@ class PageData<K, V>(
             is LoadResult.Error -> {
                 pageList = emptyList()
                 val throwable = result.throwable
-                loadState.refresh = LoadState.Error(throwable)
+                loadState.refresh = when {
+                    throwable is CancellationException
+                            && loadType == LoadType.Refresh
+                            && curLoadJob?.isActive == true -> LoadState.Loading
+                    else -> LoadState.Error(throwable)
+                }
                 if (loadState.loadMore is LoadState.Waiting) {
                     loadState.loadMore = LoadState.Idle(isLoadEnd(), false)
                 }
@@ -258,29 +264,25 @@ class PageData<K, V>(
     }
 
     private fun tryLaunch(loadType: LoadType, block: suspend () -> Unit) {
-        // 刷新操作必须覆盖加载更多，因为这时候加载更多没意义
         if (loadType == LoadType.Refresh) {
-            // 正在刷新，直接返回
-            if (this.loadType == LoadType.Refresh) {
-                return
+            // 刷新操作必须覆盖加载更多，因为这时候加载更多没意义
+            if (curLoadJob?.isActive == true) {
+                curLoadJob?.cancel()
             }
-            curLoadJob?.cancel()
-            curLoadJob = null
-        }
-        if (this.loadType != LoadType.Idle) {
+        } else if (loadType == LoadType.LoadMore && this.loadType == LoadType.Refresh) {
             // 加载更多必须等待刷新完成
-            if (loadType == LoadType.LoadMore && this.loadType == LoadType.Refresh) {
-                loadState.loadMore = LoadState.Waiting
-            }
+            loadState.loadMore = LoadState.Waiting
             return
         }
         this.loadType = loadType
-        curLoadJob = coroutineScope.launch {
+        coroutineScope.launch {
             block()
         }.also {
+            curLoadJob = it
             it.invokeOnCompletion {
-                this.loadType = LoadType.Idle
-                curLoadJob = null
+                if (curLoadJob?.isCompleted == true) {
+                    this.loadType = LoadType.Idle
+                }
             }
         }
     }
