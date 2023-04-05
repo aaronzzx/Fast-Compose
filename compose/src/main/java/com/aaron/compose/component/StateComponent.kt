@@ -211,11 +211,11 @@ interface StateComponent : LoadingComponent {
         }
     }
 
-    fun CoroutineScope.launchWithViewStateCancelable(
+    fun CoroutineScope.launchWithViewStateNonCancelable(
         context: CoroutineContext = EmptyCoroutineContext,
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend CoroutineScope.() -> ViewState
-    ): Job = launchWithLoadingCancelable(context = context, start = start) {
+    ): Job = launchWithLoadingNonCancelable(context = context, start = start) {
         val result = block()
         showState(result)
     }
