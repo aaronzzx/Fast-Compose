@@ -42,7 +42,6 @@ import com.aaron.compose.utils.DevicePreview
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -193,29 +192,15 @@ interface StateComponent : LoadingComponent {
     val viewState: SafeState<ViewState>
 
     fun CoroutineScope.launchWithViewState(
-        enableLoading: Boolean = true,
         context: CoroutineContext = EmptyCoroutineContext,
         start: CoroutineStart = CoroutineStart.DEFAULT,
+        cancelable: Boolean = true,
         block: suspend CoroutineScope.() -> ViewState
-    ): Job = run {
-        if (enableLoading) {
-            launchWithLoading(context = context, start = start) {
-                val result = block()
-                showState(result)
-            }
-        } else {
-            launch(context = context, start = start) {
-                val result = block()
-                showState(result)
-            }
-        }
-    }
-
-    fun CoroutineScope.launchWithViewStateNonCancelable(
-        context: CoroutineContext = EmptyCoroutineContext,
-        start: CoroutineStart = CoroutineStart.DEFAULT,
-        block: suspend CoroutineScope.() -> ViewState
-    ): Job = launchWithLoadingNonCancelable(context = context, start = start) {
+    ): Job = launchWithLoading(
+        context = context,
+        start = start,
+        cancelable = cancelable
+    ) {
         val result = block()
         showState(result)
     }

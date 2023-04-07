@@ -120,40 +120,31 @@ interface LoadingComponent {
 
     val loading: SafeState<Boolean>
 
+    /**
+     * 启动协程，重复调用会取消上一个未完成协程的执行
+     *
+     * @param cancelable 是否可被 [cancelLoading] 取消
+     */
     fun CoroutineScope.launchWithLoading(
         context: CoroutineContext = EmptyCoroutineContext,
         start: CoroutineStart = CoroutineStart.DEFAULT,
+        cancelable: Boolean = true,
         block: suspend CoroutineScope.() -> Unit
     ): Job {
         val loading = loading
         loading.get<Job>(JOB_KEY)?.cancel()
-        showLoading(true)
-        val job = launch(
-            context = context,
-            start = start,
-            block = block
-        )
-        loading[JOB_KEY] = job
-        job.invokeOnCompletion {
-            showLoading(false)
-            loading.fastRemove(JOB_KEY)
-        }
-        return job
-    }
-
-    fun CoroutineScope.launchWithLoadingNonCancelable(
-        context: CoroutineContext = EmptyCoroutineContext,
-        start: CoroutineStart = CoroutineStart.DEFAULT,
-        block: suspend CoroutineScope.() -> Unit
-    ): Job {
         showLoading(true)
         return launch(
             context = context,
             start = start,
             block = block
         ).apply {
+            if (cancelable) {
+                loading[JOB_KEY] = this
+            }
             invokeOnCompletion {
                 showLoading(false)
+                loading.fastRemove(JOB_KEY)
             }
         }
     }
