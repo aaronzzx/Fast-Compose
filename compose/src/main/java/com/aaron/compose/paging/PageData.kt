@@ -265,14 +265,16 @@ class PageData<K, V>(
 
     private fun tryLaunch(loadType: LoadType, block: suspend () -> Unit) {
         if (loadType == LoadType.Refresh) {
-            // 刷新操作必须覆盖加载更多，因为这时候加载更多没意义
             if (curLoadJob?.isActive == true) {
                 curLoadJob?.cancel()
             }
-        } else if (loadType == LoadType.LoadMore && this.loadType == LoadType.Refresh) {
-            // 加载更多必须等待刷新完成
-            loadState.loadMore = LoadState.Waiting
-            return
+        } else if (loadType == LoadType.LoadMore) {
+            if (this.loadType == LoadType.Refresh) {
+                loadState.loadMore = LoadState.Waiting
+                return
+            } else if (this.loadType == LoadType.LoadMore) {
+                return
+            }
         }
         this.loadType = loadType
         coroutineScope.launch {
