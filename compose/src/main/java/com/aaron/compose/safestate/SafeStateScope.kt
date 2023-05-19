@@ -1,7 +1,8 @@
 package com.aaron.compose.safestate
 
 /**
- * 提供 SafeState 系列扩展
+ * 限制 [SafeState] 、[SafeStateFlow] 、[SafeStateList] 、[SafeStateMap] 等类的值修改权限，
+ * 仅在实现了此接口的作用域内才能修改值。
  *
  * @author aaronzzxup@gmail.com
  * @since 2022/11/8
@@ -12,29 +13,17 @@ interface SafeStateScope {
     fun <T> SafeState<T>.setValue(value: T) {
         setValueInternal(value)
     }
-
-    fun <T> SafeState<T>.update(block: (T) -> T) {
-        setValue(block(value))
-    }
     //endregion
 
     //region SnapshotStateList
     fun <E> SafeStateList<E>.edit(): MutableList<E> {
         return editInternal()
     }
-
-    fun <E> SafeStateList<E>.update(block: MutableList<E>.() -> Unit) {
-        edit().block()
-    }
     //endregion
 
     //region SnapshotStateMap
     fun <K, V> SafeStateMap<K, V>.edit(): MutableMap<K, V> {
         return editInternal()
-    }
-
-    fun <K, V> SafeStateMap<K, V>.update(block: MutableMap<K, V>.() -> Unit) {
-        edit().block()
     }
     //endregion
 
@@ -43,12 +32,8 @@ interface SafeStateScope {
         emitInternal(value)
     }
 
-    fun <T> SafeStateFlow<T>.tryEmit(value: T) {
-        tryEmitInternal(value)
-    }
-
-    fun <T> SafeStateFlow<T>.update(block: (T) -> T) {
-        updateInternal(block)
+    fun <T> SafeStateFlow<T>.tryEmit(value: T): Boolean {
+        return tryEmitInternal(value)
     }
     //endregion
 }

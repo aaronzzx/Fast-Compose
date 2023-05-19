@@ -12,6 +12,13 @@ import androidx.compose.runtime.Composable
 import com.aaron.compose.paging.PageData
 
 /**
+ * 基于 [PageData] 扩展，用于
+ * [androidx.compose.foundation.lazy.LazyColumn] 、
+ *
+ * [androidx.compose.foundation.lazy.grid.LazyGrid] 、
+ *
+ * [androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGrid]
+ *
  * @author aaronzzxup@gmail.com
  * @since 2022/9/21
  */
@@ -71,7 +78,11 @@ inline fun <K, V> LazyGridScope.itemsIndexed(
     pageData: PageData<K, V>,
     crossinline key: (index: Int, item: V) -> Any? = { _, _ -> null },
     crossinline contentType: (index: Int, item: V) -> Any? = { _, _ -> null },
-    crossinline span: LazyGridItemSpanScope.(index: Int, item: V) -> GridItemSpan = { _, _ -> GridItemSpan(1) },
+    crossinline span: LazyGridItemSpanScope.(index: Int, item: V) -> GridItemSpan = { _, _ ->
+        GridItemSpan(
+            1
+        )
+    },
     crossinline itemContent: @Composable LazyGridItemScope.(index: Int, item: V) -> Unit
 ) {
     items(

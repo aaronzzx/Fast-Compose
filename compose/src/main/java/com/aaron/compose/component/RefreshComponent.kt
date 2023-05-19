@@ -1,12 +1,9 @@
 package com.aaron.compose.component
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.aaron.compose.safestate.SafeState
@@ -16,17 +13,28 @@ import com.aaron.compose.ui.refresh.SmartRefreshState
 import com.aaron.compose.ui.refresh.SmartRefreshType
 import com.aaron.compose.ui.refresh.materialheader.MaterialRefreshIndicator
 import com.aaron.compose.ui.refresh.rememberSmartRefreshState
-import com.aaron.compose.utils.DevicePreview
 
 /**
- * 对 [com.aaron.compose.ui.refresh.SmartRefresh] 进行封装
+ * 刷新组件。
+ *
+ * @param state 刷新状态容器
+ * @param onRefresh 触发刷新时的回调
+ * @param modifier 修饰符
+ * @param swipeEnabled 是否启用刷新
+ * @param clipHeaderEnabled 是否启用裁剪头部
+ * @param translateBodyEnabled [SmartRefreshState.indicatorOffset] 偏移时，主体部分是否也跟着偏移
+ * @param triggerRatio 触发刷新的占比，基于 [indicatorHeight]
+ * @param maxDragRatio 最大拖拽占比，基于 [indicatorHeight]
+ * @param indicatorHeight 刷新头的高度
+ * @param indicator 刷新头
+ * @param content 需要使用刷新的布局
  */
 @Composable
 fun RefreshComponent(
     component: RefreshComponent,
     modifier: Modifier = Modifier,
     state: SmartRefreshState = rememberSmartRefreshState(type = component.smartRefreshType.value),
-    onRefresh: (() -> Boolean)? = null,
+    onRefresh: (() -> Unit)? = null,
     swipeEnabled: Boolean = true,
     clipHeaderEnabled: Boolean = true,
     translateBodyEnabled: Boolean = false,
@@ -45,13 +53,14 @@ fun RefreshComponent(
             refreshTriggerDistance = triggerDistance
         )
     },
-    content: @Composable () -> Unit
+    content: @Composable BoxScope.() -> Unit
 ) {
     SmartRefresh(
         state = state,
         onRefresh = {
-            if (onRefresh?.invoke() != true) {
-                // 外部不处理
+            if (onRefresh != null) {
+                onRefresh()
+            } else {
                 component.refresh()
             }
         },
@@ -71,28 +80,18 @@ fun RefreshComponent(
     )
 }
 
-@DevicePreview
-@Composable
-private fun RefreshComponent() {
-    RefreshComponent(component = refreshComponent(SmartRefreshType.Refreshing)) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    color = Color(0xFFF0F0F0)
-                )
-        )
-    }
-}
-
 /**
- * ViewModel 可以实现此接口接管刷新
+ * ViewModel 可以实现此接口接管刷新，默认情况下仅实现 [refreshIgnoreAnimation] 即可，
+ * 其他函数用于触发 UI 变化。
  */
 @Stable
 interface RefreshComponent {
 
     val smartRefreshType: SafeState<SmartRefreshType>
 
+    /**
+     * 自己调用刷新
+     */
     fun refresh() {
         if (smartRefreshType.value == SmartRefreshType.Refreshing) {
             return
@@ -101,8 +100,14 @@ interface RefreshComponent {
         refreshIgnoreAnimation()
     }
 
+    /**
+     * 处理刷新逻辑
+     */
     fun refreshIgnoreAnimation()
 
+    /**
+     * 自己决定什么时候应该结束刷新
+     */
     fun finishRefresh(success: Boolean) {
         if (smartRefreshType.value != SmartRefreshType.Refreshing) {
             return
@@ -116,11 +121,17 @@ interface RefreshComponent {
         )
     }
 
+    /**
+     * 当结束刷新时应该回到 Idle 静止状态。
+     */
     fun idle() {
         smartRefreshType.setValueInternal(SmartRefreshType.Idle)
     }
 }
 
+/**
+ * 用于 Compose 预览的参数占位。
+ */
 fun refreshComponent(
     type: SmartRefreshType = SmartRefreshType.Idle
 ): RefreshComponent = object : RefreshComponent {

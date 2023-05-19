@@ -19,13 +19,13 @@ object PageConfigDefaults {
     var DefaultMaxPage = Int.MAX_VALUE
 
     /** 默认预取距离，在倒数第几个时进行加载操作 */
-    var DefaultPrefetchDistance = DefaultPageSize
+    var DefaultPrefetchDistance = 1
 
     /** 默认是否开启加载更多 */
     var DefaultEnableLoadMore = true
 
     /** 默认是否打印异常 */
-    var DefaultPrintError = false
+    var DefaultPrintError = true
 }
 
 /**
@@ -43,7 +43,7 @@ data class PageConfig(
     val initialSize: Int = pageSize,
 
     /** 预取距离，在倒数第几个时进行加载操作 */
-    val prefetchDistance:Int = DefaultPrefetchDistance,
+    val prefetchDistance: Int = DefaultPrefetchDistance,
 
     /** 是否开启加载更多 */
     val enableLoadMore: Boolean = DefaultEnableLoadMore,

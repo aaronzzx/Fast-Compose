@@ -15,22 +15,21 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
+import com.aaron.compose.ktx.lazyPagingComponentAt
 import com.aaron.compose.ktx.rememberLazyPagingComponents
-import com.aaron.compose.paging.PageData
 import com.aaron.compose.paging.PagingScope
 import com.aaron.compose.safestate.SafeState
 import com.aaron.compose.safestate.SafeStateScope
 import com.aaron.compose.safestate.safeStateOf
-import com.aaron.compose.ui.refresh.SmartRefreshType
-import com.aaron.compose.ui.refresh.SmartRefreshType.Idle
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
 /**
- * @author aaronzzxup@gmail.com
- * @since 2022/12/8
+ * 多个页面的分页懒加载组件。
+ *
+ * @param component 分页逻辑处理主体。
+ * @param activeState 开始初始化的声明周期状态。
  */
-
 @Composable
 fun <T, K, V> LazyPagerPagingComponent(
     component: LazyPagerPagingComponent<T, K, V>,
@@ -51,15 +50,14 @@ fun <T, K, V> LazyPagerPagingComponent(
     ),
     pageContent: @Composable (lazyPagingComponent: LazyPagingComponent<K, V>) -> Unit
 ) {
-    val lazyPagingComponents = component.rememberLazyPagingComponents()
     LazyPagerComponent(
-        components = lazyPagingComponents,
+        components = component.rememberLazyPagingComponents(),
         modifier = modifier,
-        activeState = activeState,
-        pagerState = pagerState,
         pageSize = pageSize,
         beyondBoundsPageCount = beyondBoundsPageCount,
         pageNestedScrollConnection = pageNestedScrollConnection,
+        activeState = activeState,
+        pagerState = pagerState,
         reverseLayout = reverseLayout,
         pageSpacing = pageSpacing,
         contentPadding = contentPadding,
@@ -68,38 +66,8 @@ fun <T, K, V> LazyPagerPagingComponent(
         key = key,
         userScrollEnabled = userScrollEnabled
     ) { page ->
-        val lazyPagingComponent = lazyPagingComponents[page]
+        val lazyPagingComponent = component.lazyPagingComponentAt(page) ?: return@LazyPagerComponent
         pageContent(lazyPagingComponent)
-    }
-}
-
-@Stable
-interface LazyPagingComponent<K, V> : PagingComponent<K, V>,
-    LazyComponent, RefreshComponent, SafeStateScope {
-
-    override val isInitialized: Boolean
-        get() = initialized.value
-
-    override fun initialize() {
-        pagingRefresh()
-    }
-
-    override fun refreshIgnoreAnimation() {
-        pagingRefresh()
-    }
-
-    override fun pagingRefresh() {
-        val initialized = initialized
-        pageData.refresh(
-            onSuccess = {
-                initialized.setValue(true)
-                finishRefresh(true)
-            },
-            onFailure = {
-                initialized.setValue(true)
-                finishRefresh(false)
-            }
-        )
     }
 }
 
@@ -112,21 +80,9 @@ interface LazyPagerPagingComponent<T, K, V> : PagingScope, SafeStateScope {
     val lazyPagingData: SafeState<LazyPagingData<T, K, V>>
 }
 
-open class LazyPagingComponentHelper<K, V>(
-    final override val pageData: PageData<K, V>
-) : LazyPagingComponent<K, V> {
-
-    override val initialized: SafeState<Boolean> = safeStateOf(false)
-
-    override val smartRefreshType: SafeState<SmartRefreshType> = safeStateOf(Idle)
-
-    init {
-        if (!pageData.lazyLoad) {
-            error("PageData must be lazy loading.")
-        }
-    }
-}
-
+/**
+ * 用于 Compose 预览的参数占位。
+ */
 fun <T, K, V> lazyPagerPagingComponent(
     lazyPagingData: LazyPagingData<T, K, V> = persistentListOf()
 ): LazyPagerPagingComponent<T, K, V> = object : LazyPagerPagingComponent<T, K, V> {

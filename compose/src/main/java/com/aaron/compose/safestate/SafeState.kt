@@ -1,6 +1,5 @@
 package com.aaron.compose.safestate
 
-import android.util.ArrayMap
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SnapshotMutationPolicy
 import androidx.compose.runtime.Stable
@@ -9,6 +8,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.structuralEqualityPolicy
 
 /**
+ * 简单地封装 [MutableState] ，目的是控制值的修改权限，仅在实现了 [SafeStateScope] 的范围下才能修改值。
+ *
  * @author aaronzzxup@gmail.com
  * @since 2022/10/25
  */
@@ -16,24 +17,6 @@ import androidx.compose.runtime.structuralEqualityPolicy
 abstract class SafeState<T>(
     private val delegate: MutableState<T>
 ) : State<T> by delegate {
-
-    private val map: MutableMap<Any, Any?> by lazy { ArrayMap() }
-
-    internal operator fun set(key: Any, value: Any?) {
-        map[key] = value
-    }
-
-    internal fun <T> get(key: Any): T? {
-        return map[key] as? T
-    }
-
-    internal fun <T> remove(key: Any): T? {
-        return map.remove(key) as? T
-    }
-
-    internal fun fastRemove(key: Any): Any? {
-        return remove(key)
-    }
 
     internal fun setValueInternal(value: T) {
         delegate.value = value

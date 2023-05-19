@@ -43,6 +43,7 @@ suspend fun PagerState.smartScrollToPage(
     // pre-jump to nearby item for long jumps as an optimization
     // the same trick is done in ViewPager2
     val oldPage = currentPage
+    scrollToPage(oldPage) // reset
     if (abs(page - oldPage) > 3) {
         scrollToPage(page, pageOffset)
     } else {

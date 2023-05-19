@@ -13,6 +13,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.MutatorMutex
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -97,6 +98,7 @@ sealed class SmartRefreshType {
     object Success : FinishRefresh() {
         override val intType: Int = TypeSuccess
     }
+
     object Failure : FinishRefresh() {
         override val intType: Int = TypeFailure
     }
@@ -409,7 +411,7 @@ fun SmartRefresh(
             height = height
         )
     },
-    content: @Composable () -> Unit
+    content: @Composable BoxScope.() -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
     val updatedOnRefresh = rememberUpdatedState(onRefresh)
@@ -423,22 +425,28 @@ fun SmartRefresh(
     }
 
     // Our nested scroll connection, which updates our state.
-    val nestedScrollConnection = remember(state, swipeEnabled, translateBodyEnabled, coroutineScope) {
-        SmartRefreshNestedScrollConnection(state, swipeEnabled && translateBodyEnabled, coroutineScope) {
-            // On refresh, re-dispatch to the update onRefresh block
-            updatedOnRefresh.value.invoke()
+    val nestedScrollConnection =
+        remember(state, swipeEnabled, translateBodyEnabled, coroutineScope) {
+            SmartRefreshNestedScrollConnection(
+                state,
+                swipeEnabled && translateBodyEnabled,
+                coroutineScope
+            ) {
+                // On refresh, re-dispatch to the update onRefresh block
+                updatedOnRefresh.value.invoke()
+            }
+        }.apply {
+            this.enabled = swipeEnabled
+            this.refreshTriggerOffset = refreshTriggerPx
+            this.maxIndicatorOffset = maxDragPx
         }
-    }.apply {
-        this.enabled = swipeEnabled
-        this.refreshTriggerOffset = refreshTriggerPx
-        this.maxIndicatorOffset = maxDragPx
-    }
 
     Box(
         modifier = modifier.nestedScroll(connection = nestedScrollConnection)
     ) {
         Box(
             modifier = Modifier
+                .matchParentSize()
                 .graphicsLayer {
                     if (translateBodyEnabled) {
                         translationY = state.indicatorOffset.coerceAtMost(maxDragPx)

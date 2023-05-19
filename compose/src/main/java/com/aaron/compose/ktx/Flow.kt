@@ -3,6 +3,7 @@ package com.aaron.compose.ktx
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -43,7 +44,7 @@ fun <T> StateFlow<T>.collectAsStateWithLifecycle(
     minActiveState: Lifecycle.State = Lifecycle.State.STARTED,
     context: CoroutineContext = EmptyCoroutineContext
 ): State<T> = collectAsStateWithLifecycle(
-    initialValue = this.value,
+    initialValue = remember { this.value },
     lifecycle = lifecycleOwner.lifecycle,
     minActiveState = minActiveState,
     context = context
@@ -77,7 +78,7 @@ fun <T> StateFlow<T>.collectAsStateWithLifecycle(
     minActiveState: Lifecycle.State = Lifecycle.State.STARTED,
     context: CoroutineContext = EmptyCoroutineContext
 ): State<T> = collectAsStateWithLifecycle(
-    initialValue = this.value,
+    initialValue = remember { this.value },
     lifecycle = lifecycle,
     minActiveState = minActiveState,
     context = context

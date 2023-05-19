@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -458,7 +459,7 @@ private fun LazyPagingContent(lazyPagerPagingComponent: LazyPagerPagingComponent
 private fun RefreshContent(
     refreshEnabled: Boolean,
     refreshComponent: RefreshComponent,
-    content: @Composable () -> Unit
+    content: @Composable BoxScope.() -> Unit
 ) {
     RefreshComponent(
         component = refreshComponent,

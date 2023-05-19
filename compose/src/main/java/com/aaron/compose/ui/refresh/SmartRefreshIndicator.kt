@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.core.content.edit
+import com.aaron.compose.R
 import com.aaron.compose.drawable.ArrowDrawable
 import com.aaron.compose.drawable.ProgressDrawable
 import com.aaron.compose.ktx.toPx
@@ -43,7 +45,8 @@ import com.aaron.compose.ui.refresh.SmartRefreshType.Refreshing
 import com.aaron.compose.ui.refresh.SmartRefreshType.Success
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 /**
  * 刷新文案
@@ -84,17 +87,18 @@ fun SmartRefreshIndicator(
         }
     },
     text: SmartRefreshIndicatorText = SmartRefreshIndicatorText(
-        pullToRefreshText = "下拉可以刷新",
-        releaseToRefreshText = "释放立即刷新",
-        refreshingText = "正在刷新...",
-        refreshSucceedText = "刷新成功",
-        refreshFailedText = "刷新失败"
+        pullToRefreshText = stringResource(R.string.compose_component_pull_to_refresh),
+        releaseToRefreshText = stringResource(R.string.compose_component_release_to_refresh),
+        refreshingText = stringResource(R.string.compose_component_refreshing),
+        refreshSucceedText = stringResource(R.string.compose_component_refresh_success),
+        refreshFailedText = stringResource(R.string.compose_component_refresh_failed)
     )
 ) {
     val triggerDistancePx = triggerDistance.toPx()
     val maxDragDistancePx = maxDragDistance.toPx()
     val indicatorHeightPx = height.toPx()
-    val offset = (maxDragDistancePx - indicatorHeightPx).coerceAtMost(state.indicatorOffset - indicatorHeightPx)
+    val offset =
+        (maxDragDistancePx - indicatorHeightPx).coerceAtMost(state.indicatorOffset - indicatorHeightPx)
 
     val releaseToRefresh = offset > triggerDistancePx - indicatorHeightPx
 
@@ -209,8 +213,12 @@ private fun SaveLastRefreshTime(time: Long) {
 @Composable
 private fun getLastRefreshTime(state: SmartRefreshState): String {
     val sp = getDefaultSp()
-    val sdf = remember {
-        SimpleDateFormat(TimeFormat, Locale.getDefault())
+    val res = LocalContext.current.resources
+    val sdf = remember(res) {
+        SimpleDateFormat(
+            res.getString(R.string.compose_component_last_update_time),
+            Locale.getDefault()
+        )
     }
     var lastRefreshTime = when (state.type) {
         is Success -> {
@@ -224,9 +232,8 @@ private fun getLastRefreshTime(state: SmartRefreshState): String {
         lastRefreshTime = System.currentTimeMillis()
         SaveLastRefreshTime(lastRefreshTime)
     }
-    return "上次更新 ${sdf.format(Date(lastRefreshTime))}"
+    return sdf.format(Date(lastRefreshTime))
 }
 
-private const val TimeFormat = "MM-dd HH:mm"
 private const val SpName = "ComposeClassicRefreshHeader"
 private const val LastRefreshTimeKey = "lastRefreshTime"

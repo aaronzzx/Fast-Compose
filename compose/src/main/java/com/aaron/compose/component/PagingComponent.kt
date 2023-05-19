@@ -8,14 +8,14 @@ import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
@@ -35,7 +35,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProgressIndicatorDefaults
 import androidx.compose.material.Text
@@ -56,9 +55,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -68,8 +69,8 @@ import com.aaron.compose.R
 import com.aaron.compose.ktx.isEmpty
 import com.aaron.compose.ktx.isNotEmpty
 import com.aaron.compose.ktx.lastIndex
-import com.aaron.compose.ktx.lazylist.items
-import com.aaron.compose.ktx.onClick
+import com.aaron.compose.ktx.onSingleClick
+import com.aaron.compose.ktx.roundToPx
 import com.aaron.compose.ktx.toDp
 import com.aaron.compose.ktx.toPx
 import com.aaron.compose.paging.CombinedLoadState
@@ -77,14 +78,21 @@ import com.aaron.compose.paging.LoadResult
 import com.aaron.compose.paging.LoadState
 import com.aaron.compose.paging.PageData
 import com.aaron.compose.paging.PagingScope
-import com.aaron.compose.utils.DevicePreview
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 
 /**
- * 分页
+ * 默认的竖向分页列表组件，效果如 [androidx.recyclerview.widget.LinearLayoutManager] 。
+ *
+ * @param component 实现的分页组件，一般由 [androidx.lifecycle.ViewModel] 进行实现。
+ * @param pagingStateFooter 实现分页加载状态的 UI 。
+ * @param headerContent 列表的头部，跟随列表滑动。
+ * @param footerContent 列表的尾部，跟随列表滑动。
+ * @param loadingContent 视图加载。
+ * @param emptyContent 空数据视图。
+ * @param errorContent 请求错误视图。
  */
 @Composable
 fun <K, V> PagingComponent(
@@ -101,21 +109,22 @@ fun <K, V> PagingComponent(
     pagingStateFooter: PagingStateFooter? = PagingComponentDefaults.verticalPagingStateFooter,
     headerContent: (@Composable () -> Unit)? = null,
     footerContent: (@Composable () -> Unit)? = null,
-    loadingContent: (@Composable () -> Unit)? = {
-        PagingLoading()
+    loadingContent: (@Composable BoxScope.() -> Unit)? = {
+        PagingLoading(modifier = Modifier.matchParentSize())
     },
-    emptyContent: (@Composable () -> Unit)? = {
-        PagingEmpty()
+    emptyContent: (@Composable BoxScope.() -> Unit)? = {
+        PagingEmpty(modifier = Modifier.matchParentSize())
     },
-    errorContent: (@Composable () -> Unit)? = {
-        PagingError(onClick = { component.pagingRefresh() })
+    errorContent: (@Composable BoxScope.() -> Unit)? = {
+        PagingError(
+            modifier = Modifier.matchParentSize(),
+            onClick = { component.pagingRefresh() }
+        )
     },
     content: LazyListScope.(PageData<K, V>) -> Unit
 ) {
-    SubcomposeList(
-        slotId = "${component}-LazyColumn",
-        modifier = modifier
-    ) { listHeightPixels ->
+    BoxWithConstraints(modifier = modifier) {
+        val listHeightPixels = maxHeight.roundToPx()
         var headerHeightPixels by remember {
             mutableStateOf(0)
         }
@@ -147,7 +156,7 @@ fun <K, V> PagingComponent(
             loadingContent = loadingContent
         ) {
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.matchParentSize(),
                 state = state,
                 contentPadding = contentPadding,
                 reverseLayout = reverseLayout,
@@ -215,7 +224,15 @@ fun <K, V> PagingComponent(
 }
 
 /**
- * 网格分页
+ * 竖向网格分页列表组件，效果如 [androidx.recyclerview.widget.GridLayoutManager] 。
+ *
+ * @param component 实现的分页组件，一般由 [androidx.lifecycle.ViewModel] 进行实现。
+ * @param pagingStateFooter 实现分页加载状态的 UI 。
+ * @param headerContent 列表的头部，跟随列表滑动。
+ * @param footerContent 列表的尾部，跟随列表滑动。
+ * @param loadingContent 视图加载。
+ * @param emptyContent 空数据视图。
+ * @param errorContent 请求错误视图。
  */
 @Composable
 fun <K, V> PagingGridComponent(
@@ -233,21 +250,22 @@ fun <K, V> PagingGridComponent(
     pagingStateFooter: PagingStateFooter? = PagingComponentDefaults.verticalPagingStateFooter,
     headerContent: (@Composable () -> Unit)? = null,
     footerContent: (@Composable () -> Unit)? = null,
-    loadingContent: (@Composable () -> Unit)? = {
-        PagingLoading()
+    loadingContent: (@Composable BoxScope.() -> Unit)? = {
+        PagingLoading(modifier = Modifier.matchParentSize())
     },
-    emptyContent: (@Composable () -> Unit)? = {
-        PagingEmpty()
+    emptyContent: (@Composable BoxScope.() -> Unit)? = {
+        PagingEmpty(modifier = Modifier.matchParentSize())
     },
-    errorContent: (@Composable () -> Unit)? = {
-        PagingError(onClick = { component.pagingRefresh() })
+    errorContent: (@Composable BoxScope.() -> Unit)? = {
+        PagingError(
+            modifier = Modifier.matchParentSize(),
+            onClick = { component.pagingRefresh() }
+        )
     },
     content: LazyGridScope.(PageData<K, V>) -> Unit
 ) {
-    SubcomposeList(
-        slotId = "${component}-LazyVerticalGrid",
-        modifier = modifier
-    ) { listHeightPixels ->
+    BoxWithConstraints(modifier = modifier) {
+        val listHeightPixels = maxHeight.roundToPx()
         var headerHeightPixels by remember {
             mutableStateOf(0)
         }
@@ -279,7 +297,7 @@ fun <K, V> PagingGridComponent(
             loadingContent = loadingContent
         ) {
             LazyVerticalGrid(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.matchParentSize(),
                 columns = columns,
                 state = state,
                 contentPadding = contentPadding,
@@ -348,7 +366,16 @@ fun <K, V> PagingGridComponent(
 }
 
 /**
- * 瀑布流分页
+ * 竖向瀑布流分页列表组件，效果如 [androidx.recyclerview.widget.StaggeredGridLayoutManager] 。
+ *
+ * @param component 实现的分页组件，一般由 [androidx.lifecycle.ViewModel] 进行实现。
+ * @param verticalItemSpacing 子项之间的垂直间距。
+ * @param pagingStateFooter 实现分页加载状态的 UI 。
+ * @param headerContent 列表的头部，跟随列表滑动。
+ * @param footerContent 列表的尾部，跟随列表滑动。
+ * @param loadingContent 视图加载。
+ * @param emptyContent 空数据视图。
+ * @param errorContent 请求错误视图。
  */
 @Composable
 fun <K, V> PagingStaggeredGridComponent(
@@ -364,21 +391,22 @@ fun <K, V> PagingStaggeredGridComponent(
     pagingStateFooter: PagingStateFooter? = PagingComponentDefaults.verticalPagingStateFooter,
     headerContent: (@Composable () -> Unit)? = null,
     footerContent: (@Composable () -> Unit)? = null,
-    loadingContent: (@Composable () -> Unit)? = {
-        PagingLoading()
+    loadingContent: (@Composable BoxScope.() -> Unit)? = {
+        PagingLoading(modifier = Modifier.matchParentSize())
     },
-    emptyContent: (@Composable () -> Unit)? = {
-        PagingEmpty()
+    emptyContent: (@Composable BoxScope.() -> Unit)? = {
+        PagingEmpty(modifier = Modifier.matchParentSize())
     },
-    errorContent: (@Composable () -> Unit)? = {
-        PagingError(onClick = { component.pagingRefresh() })
+    errorContent: (@Composable BoxScope.() -> Unit)? = {
+        PagingError(
+            modifier = Modifier.matchParentSize(),
+            onClick = { component.pagingRefresh() }
+        )
     },
     content: LazyStaggeredGridScope.(PageData<K, V>) -> Unit
 ) {
-    SubcomposeList(
-        slotId = "${component}-LazyVerticalStaggeredGrid",
-        modifier = modifier
-    ) { listHeightPixels ->
+    BoxWithConstraints(modifier = modifier) {
+        val listHeightPixels = maxHeight.roundToPx()
         var headerHeightPixels by remember {
             mutableStateOf(0)
         }
@@ -410,7 +438,7 @@ fun <K, V> PagingStaggeredGridComponent(
             loadingContent = loadingContent
         ) {
             LazyVerticalStaggeredGrid(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.matchParentSize(),
                 columns = columns,
                 state = state,
                 contentPadding = contentPadding,
@@ -478,13 +506,13 @@ fun <K, V> PagingStaggeredGridComponent(
 }
 
 @Composable
-private fun <K, V> LoadingBox(
+private fun <K, V> BoxScope.LoadingBox(
     component: PagingComponent<K, V>,
     refreshLoading: Boolean,
-    loadingContent: (@Composable () -> Unit)?,
-    content: @Composable () -> Unit
+    loadingContent: (@Composable BoxScope.() -> Unit)?,
+    content: @Composable BoxScope.() -> Unit
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.matchParentSize()) {
         content()
         if (loadingContent != null
             && (component.isInitialized.not() || refreshLoading)
@@ -495,7 +523,9 @@ private fun <K, V> LoadingBox(
 }
 
 /**
- * 水平分页
+ * 横向分页。
+ *
+ * @param component 实现的分页组件，一般由 [androidx.lifecycle.ViewModel] 进行实现。
  */
 @Composable
 fun <K, V> PagingHorizontalComponent(
@@ -635,11 +665,24 @@ private fun <K, V> handleCentralContent(
     verticalItemSpacing: Dp,
     headerContent: (@Composable () -> Unit)?,
     footerContent: (@Composable () -> Unit)?,
-    loadingContent: (@Composable () -> Unit)?,
-    emptyContent: (@Composable () -> Unit)?,
-    errorContent: (@Composable () -> Unit)?,
+    loadingContent: (@Composable BoxScope.() -> Unit)?,
+    emptyContent: (@Composable BoxScope.() -> Unit)?,
+    errorContent: (@Composable BoxScope.() -> Unit)?,
     content: (PageData<K, V>) -> Unit,
 ) {
+    val centralContent: @Composable (content: @Composable BoxScope.() -> Unit) -> Unit = {
+        CentralContent(
+            contentPadding = contentPadding,
+            verticalItemSpacing = verticalItemSpacing,
+            existsHeader = headerContent != null,
+            existsFooter = footerContent != null,
+            listHeightPixels = listHeightPixels,
+            headerHeightPixels = headerHeightPixels,
+            footerHeightPixels = footerHeightPixels
+        ) {
+            it()
+        }
+    }
     val pageData = component.pageData
     if (loadingContent != null
         && pageData.isEmpty
@@ -650,16 +693,7 @@ private fun <K, V> handleCentralContent(
             key = "${component}-Loading",
             contentType = "Loading"
         ) {
-            CentralContent(
-                contentPadding = contentPadding,
-                verticalItemSpacing = verticalItemSpacing,
-                existsHeader = headerContent != null,
-                existsFooter = footerContent != null,
-                listHeightPixels = listHeightPixels,
-                headerHeightPixels = headerHeightPixels,
-                footerHeightPixels = footerHeightPixels
-            ) {
-            }
+            centralContent {}
         }
     } else if (errorContent != null && refreshError && pageData.isEmpty) {
         itemCentral(
@@ -667,15 +701,7 @@ private fun <K, V> handleCentralContent(
             key = "${component}-Error",
             contentType = "Error"
         ) {
-            CentralContent(
-                contentPadding = contentPadding,
-                verticalItemSpacing = verticalItemSpacing,
-                existsHeader = headerContent != null,
-                existsFooter = footerContent != null,
-                listHeightPixels = listHeightPixels,
-                headerHeightPixels = headerHeightPixels,
-                footerHeightPixels = footerHeightPixels
-            ) {
+            centralContent {
                 errorContent()
             }
         }
@@ -685,15 +711,7 @@ private fun <K, V> handleCentralContent(
             key = "${component}-Empty",
             contentType = "Empty"
         ) {
-            CentralContent(
-                contentPadding = contentPadding,
-                verticalItemSpacing = verticalItemSpacing,
-                existsHeader = headerContent != null,
-                existsFooter = footerContent != null,
-                listHeightPixels = listHeightPixels,
-                headerHeightPixels = headerHeightPixels,
-                footerHeightPixels = footerHeightPixels
-            ) {
+            centralContent {
                 emptyContent()
             }
         }
@@ -823,8 +841,6 @@ private fun itemHeaderFooter(
         with(scope) {
             item(key = key, contentType = contentType) {
                 MeasureHeightContent(
-                    key = key,
-                    contentType = contentType,
                     slotId = slotId,
                     onHeightChange = onHeightChange,
                     content = content
@@ -839,8 +855,6 @@ private fun itemHeaderFooter(
                 contentType = contentType
             ) {
                 MeasureHeightContent(
-                    key = key,
-                    contentType = contentType,
                     slotId = slotId,
                     onHeightChange = onHeightChange,
                     content = content
@@ -855,8 +869,6 @@ private fun itemHeaderFooter(
                 contentType = contentType
             ) {
                 MeasureHeightContent(
-                    key = key,
-                    contentType = contentType,
                     slotId = slotId,
                     onHeightChange = onHeightChange,
                     content = content
@@ -868,8 +880,6 @@ private fun itemHeaderFooter(
 
 @Composable
 private fun MeasureHeightContent(
-    key: Any,
-    contentType: Any,
     slotId: Any,
     onHeightChange: (heightPixels: Int) -> Unit,
     content: @Composable () -> Unit
@@ -890,6 +900,9 @@ private fun MeasureHeightContent(
     }
 }
 
+/**
+ * 处理当数据刷新时，自动返回列表顶部。
+ */
 @Composable
 private fun ScrollToTopWhenRefreshEffect(listState: Any, loadState: CombinedLoadState) {
     LaunchedEffect(loadState.refresh, listState) {
@@ -913,39 +926,18 @@ private suspend fun scrollToTop(listState: Any) {
     }
 }
 
-@Composable
-private fun SubcomposeList(
-    slotId: Any?,
-    modifier: Modifier = Modifier,
-    content: @Composable (listHeightPixels: Int) -> Unit
-) {
-    var listHeightPixels by remember {
-        mutableStateOf(0)
-    }
-    SubcomposeLayout(modifier = modifier) { constraint ->
-        val placeables = subcompose(slotId) {
-            content(listHeightPixels)
-        }.map {
-            it.measure(constraint).apply {
-                listHeightPixels = height.coerceAtLeast(listHeightPixels)
-            }
-        }
-        layout(constraint.maxWidth, constraint.maxHeight) {
-            placeables.forEach {
-                it.placeRelative(0, 0)
-            }
-        }
-    }
-}
-
+/**
+ * 页面正在加载的视图实现。
+ */
 @Composable
 fun PagingLoading(
     modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(),
     color: Color = MaterialTheme.colors.primary,
     strokeWidth: Dp = ProgressIndicatorDefaults.StrokeWidth
 ) {
     Box(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.padding(contentPadding),
         contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator(
@@ -955,15 +947,20 @@ fun PagingLoading(
     }
 }
 
+/**
+ * 无数据的视图实现。
+ */
 @Composable
 fun PagingEmpty(
     modifier: Modifier = Modifier,
-    text: String = "暂无数据",
+    contentPadding: PaddingValues = PaddingValues(),
+    contentOffset: DpOffset = DpOffset.Zero,
+    text: String = stringResource(id = R.string.compose_component_empty_data),
     onClick: (() -> Unit)? = null,
     enableClickRipple: Boolean = true,
     backgroundColor: Color = Color.White,
     shape: Shape = RoundedCornerShape(8.dp),
-    @DrawableRes iconRes: Int = R.drawable.details_image_wholea_normal,
+    @DrawableRes iconRes: Int? = null,
     iconSize: Dp = 160.dp,
     betweenPadding: Dp = 24.dp,
     textColor: Color = Color(0xFF999999),
@@ -974,6 +971,8 @@ fun PagingEmpty(
     StateView(
         text = text,
         modifier = modifier,
+        contentPadding = contentPadding,
+        contentOffset = contentOffset,
         onClick = onClick,
         enableClickRipple = enableClickRipple,
         backgroundColor = backgroundColor,
@@ -988,15 +987,20 @@ fun PagingEmpty(
     )
 }
 
+/**
+ * 请求错误的视图实现。
+ */
 @Composable
 fun PagingError(
     modifier: Modifier = Modifier,
-    text: String = "加载失败",
+    contentPadding: PaddingValues = PaddingValues(),
+    contentOffset: DpOffset = DpOffset.Zero,
+    text: String = stringResource(R.string.compose_component_load_failed),
     onClick: (() -> Unit)? = null,
     enableClickRipple: Boolean = true,
     backgroundColor: Color = Color.White,
     shape: Shape = RoundedCornerShape(8.dp),
-    @DrawableRes iconRes: Int = R.drawable.details_image_wholea_normal,
+    @DrawableRes iconRes: Int? = null,
     iconSize: Dp = 160.dp,
     betweenPadding: Dp = 24.dp,
     textColor: Color = Color(0xFF999999),
@@ -1007,6 +1011,8 @@ fun PagingError(
     StateView(
         text = text,
         modifier = modifier,
+        contentPadding = contentPadding,
+        contentOffset = contentOffset,
         onClick = onClick,
         enableClickRipple = enableClickRipple,
         backgroundColor = backgroundColor,
@@ -1030,7 +1036,7 @@ private fun CentralContent(
     listHeightPixels: Int,
     headerHeightPixels: Int,
     footerHeightPixels: Int,
-    content: @Composable () -> Unit
+    content: @Composable BoxScope.() -> Unit
 ) {
     val verticalPaddingPx = with(contentPadding) {
         calculateTopPadding() + calculateBottomPadding()
@@ -1057,32 +1063,9 @@ private fun CentralContent(
     }
 }
 
-@DevicePreview
-@Composable
-private fun PagingComponent() {
-    PagingComponent<Int, String>(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(color = Color(0xFFF0F0F0)),
-        component = pagingComponent("1", "2", "3", "4", "5"),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) { pageData ->
-        items(pageData) { item ->
-            Text(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .background(
-                        color = Color.White,
-                    )
-                    .padding(16.dp)
-                    .wrapContentSize(),
-                text = item
-            )
-        }
-    }
-}
-
+/**
+ * 获取当前分页加载状态
+ */
 @Composable
 fun <K, V> rememberPagingFooterType(component: PagingComponent<K, V>): State<PagingFooterType> {
     val pageData = component.pageData
@@ -1110,11 +1093,17 @@ fun <K, V> rememberPagingFooterType(component: PagingComponent<K, V>): State<Pag
     return state
 }
 
+/**
+ * 各种分页加载状态
+ */
 enum class PagingFooterType {
 
     None, Loading, LoadMore, LoadError, NoMoreData, WaitingRefresh
 }
 
+/**
+ * 全局共用的分页加载状态页脚
+ */
 object PagingComponentDefaults {
 
     var verticalPagingStateFooter: PagingStateFooter? = VerticalPagingStateFooter()
@@ -1122,6 +1111,19 @@ object PagingComponentDefaults {
     var horizontalPagingStateFooter: PagingStateFooter? = HorizontalPagingStateFooter()
 }
 
+/**
+ * 分页状态页脚，显示各种加载状态。
+ *
+ * [loading] 实现正在加载的 UI ；
+ *
+ * [loadMore] 实现需要点击加载的 UI ；
+ *
+ * [loadError] 实现加载错误的 UI ；
+ *
+ * [noMoreData] 实现暂无更多数据的 UI ；
+ *
+ * [waitingRefresh] 实现当准备进行加载时但此时正在刷新的 UI ，需要等待刷新结束。
+ */
 @Stable
 abstract class PagingStateFooter {
 
@@ -1136,12 +1138,15 @@ abstract class PagingStateFooter {
     abstract val waitingRefresh: (@Composable (PagingComponent<*, *>) -> Unit)?
 }
 
+/**
+ * 用于竖向列表的分页加载状态页脚。
+ */
 @Stable
 open class VerticalPagingStateFooter : PagingStateFooter() {
 
     override val loading: (@Composable (PagingComponent<*, *>) -> Unit)? = {
         FooterText(
-            text = "加载中...",
+            text = stringResource(id = R.string.compose_component_loading),
             component = it,
             footerType = PagingFooterType.Loading
         )
@@ -1149,7 +1154,7 @@ open class VerticalPagingStateFooter : PagingStateFooter() {
 
     override val loadMore: (@Composable (PagingComponent<*, *>) -> Unit)? = {
         FooterText(
-            text = "点击加载更多",
+            text = stringResource(id = R.string.compose_component_load_more),
             component = it,
             footerType = PagingFooterType.LoadMore
         )
@@ -1157,7 +1162,7 @@ open class VerticalPagingStateFooter : PagingStateFooter() {
 
     override val loadError: (@Composable (PagingComponent<*, *>) -> Unit)? = {
         FooterText(
-            text = "加载失败，点击重试",
+            stringResource(id = R.string.compose_component_load_failed),
             component = it,
             footerType = PagingFooterType.LoadError
         )
@@ -1173,14 +1178,20 @@ open class VerticalPagingStateFooter : PagingStateFooter() {
 
     override val waitingRefresh: (@Composable (PagingComponent<*, *>) -> Unit)? = {
         FooterText(
-            text = "等待刷新完成",
+            stringResource(id = R.string.compose_component_load_wait),
             component = it,
             footerType = PagingFooterType.WaitingRefresh
         )
     }
 
     @Composable
-    fun CommonNoMoreDataContent(modifier: Modifier = Modifier) {
+    fun CommonNoMoreDataContent(
+        modifier: Modifier = Modifier,
+        text: String = stringResource(id = R.string.compose_component_load_end),
+        fontSize: TextUnit = 12.sp,
+        fontColor: Color = Color(0xFF999999),
+        fontWeight: FontWeight? = null
+    ) {
         ConstraintLayout(modifier = modifier.fillMaxWidth()) {
             val (line1Ref, line2Ref, textRef) = createRefs()
             Text(
@@ -1191,11 +1202,11 @@ open class VerticalPagingStateFooter : PagingStateFooter() {
                         start.linkTo(parent.start)
                         end.linkTo(parent.end)
                     },
-                text = "已经到底了",
-                fontSize = 12.sp,
-                color = LocalContentColor.current.copy(alpha = 0.36f)
+                text = text,
+                fontSize = fontSize,
+                color = fontColor,
+                fontWeight = fontWeight
             )
-            val dividerColor = LocalContentColor.current.copy(alpha = 0.03f)
             Box(
                 modifier = Modifier
                     .constrainAs(line1Ref) {
@@ -1205,7 +1216,7 @@ open class VerticalPagingStateFooter : PagingStateFooter() {
                         bottom.linkTo(textRef.bottom)
                         end.linkTo(textRef.start, 16.dp)
                     }
-                    .background(color = dividerColor)
+                    .background(color = Color(0xFFF2F2F2))
             )
             Box(
                 modifier = Modifier
@@ -1216,12 +1227,15 @@ open class VerticalPagingStateFooter : PagingStateFooter() {
                         bottom.linkTo(textRef.bottom)
                         start.linkTo(textRef.end, 16.dp)
                     }
-                    .background(color = dividerColor)
+                    .background(color = Color(0xFFF2F2F2))
             )
         }
     }
 }
 
+/**
+ * 用于横向列表的分页加载状态页脚。
+ */
 @Stable
 open class HorizontalPagingStateFooter : PagingStateFooter() {
 
@@ -1251,17 +1265,17 @@ private fun FooterText(
     footerType: PagingFooterType,
     modifier: Modifier = Modifier,
     fontSize: TextUnit = 12.sp,
-    textColor: Color = LocalContentColor.current.copy(alpha = 0.36f)
+    textColor: Color = Color(0xFF666666)
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
             .let {
                 when (footerType) {
-                    PagingFooterType.LoadMore -> it.onClick(enableRipple = false) {
+                    PagingFooterType.LoadMore -> it.onSingleClick(enableRipple = false) {
                         component.pagingLoadMore()
                     }
-                    PagingFooterType.LoadError -> it.onClick(enableRipple = false) {
+                    PagingFooterType.LoadError -> it.onSingleClick(enableRipple = false) {
                         component.pagingRetry()
                     }
                     else -> it
@@ -1279,7 +1293,8 @@ private fun FooterText(
 }
 
 /**
- * 分页状态组件
+ * 分页状态组件，默认情况下只需实现 [PageData] ，通过 [PagingScope] 内的已实现函数来
+ * 构建 [PageData] ，如 [buildPageData] 、[buildMappingPageData] 。
  */
 @Stable
 interface PagingComponent<K, V> : PagingScope {
@@ -1287,7 +1302,7 @@ interface PagingComponent<K, V> : PagingScope {
     val pageData: PageData<K, V>
 
     /**
-     * PageData 是否已经初始化
+     * PageData 是否已经初始化，即成功加载过数据
      */
     val isInitialized: Boolean get() = pageData.isInitialized
 
@@ -1304,6 +1319,9 @@ interface PagingComponent<K, V> : PagingScope {
     }
 }
 
+/**
+ * 用于 Compose 预览的参数占位。
+ */
 fun <K, V> pagingComponent(vararg item: V): PagingComponent<K, V> = object : PagingComponent<K, V> {
 
     override val pageData: PageData<K, V> = PageData(

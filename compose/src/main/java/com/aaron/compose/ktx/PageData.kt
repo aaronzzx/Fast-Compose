@@ -15,6 +15,9 @@ val PageData<*, *>.isEmpty: Boolean get() = itemCount == 0
 
 val PageData<*, *>.isNotEmpty: Boolean get() = !isEmpty
 
+/**
+ * 转换为 [LazyPagingComponent]
+ */
 fun <K, V> PageData<K, V>.toLazyPagingComponent(): LazyPagingComponent<K, V> {
     return LazyPagingComponentHelper(this)
 }

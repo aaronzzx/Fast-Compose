@@ -144,7 +144,7 @@ private fun TextShaderScreen(
             contentPadding = WindowInsets.statusBars.asPaddingValues(),
             backgroundColor = Color.Transparent,
             elevation = 0.dp,
-            titleSize = 24.sp,
+            titleStyle = TextStyle(fontSize = 24.sp),
             contentColor = contentColorFor(backgroundColor = MaterialTheme.colors.background),
             onStartIconClick = {
                 onBack()

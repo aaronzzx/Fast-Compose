@@ -14,6 +14,8 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 /**
+ * 用于 Compose 的分页逻辑处理容器。
+ *
  * @author aaronzzxup@gmail.com
  * @since 2022/9/20
  */

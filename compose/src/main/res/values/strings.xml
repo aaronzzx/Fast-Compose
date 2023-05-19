@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="compose_component_empty_data">No Data</string>
+    <string name="compose_component_load_failed">Load Failed</string>
+    <string name="compose_component_loading">Loading…</string>
+    <string name="compose_component_load_more">Load More</string>
+    <string name="compose_component_load_wait">Waiting For Refresh</string>
+    <string name="compose_component_load_end">No More Data</string>
+    <string name="compose_component_request_failure">Request Failed</string>
+    <string name="compose_component_request_error">Request Error</string>
+    <string name="compose_component_pull_to_refresh">Pull To Refresh</string>
+    <string name="compose_component_refresh_failed">Refresh Failed</string>
+    <string name="compose_component_release_to_refresh">Release To Refresh</string>
+    <string name="compose_component_refreshing">Refreshing…</string>
+    <string name="compose_component_refresh_success">Refresh Success</string>
+    <string name="compose_component_last_update_time">\\\'Last Update\\\' M-d HH:mm</string>
+</resources>

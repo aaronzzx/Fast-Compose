@@ -15,8 +15,11 @@ import com.aaron.compose.utils.ComposeLifecycleEvent.OnResume
 import com.aaron.compose.utils.ComposeLifecycleEvent.OnStart
 import com.aaron.compose.utils.ComposeLifecycleEvent.OnStop
 
+/**
+ * 监听 Compose 生命周期。
+ */
 @Composable
-fun ComposeLifecycleObserver(listener: ComposeLifecycleListener) {
+fun ComposeLifecycleObserver(listener: LifecycleOwner.(event: ComposeLifecycleEvent) -> Unit) {
     val owner = LocalLifecycleOwner.current
     DisposableEffect(owner) {
         owner.listener(OnEnter)
@@ -38,8 +41,6 @@ fun ComposeLifecycleObserver(listener: ComposeLifecycleListener) {
         }
     }
 }
-
-private typealias ComposeLifecycleListener = LifecycleOwner.(event: ComposeLifecycleEvent) -> Unit
 
 enum class ComposeLifecycleEvent {
 

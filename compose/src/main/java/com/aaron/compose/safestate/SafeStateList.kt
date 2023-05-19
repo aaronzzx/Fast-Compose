@@ -5,6 +5,8 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 
 /**
+ * 简单地封装 [SnapshotStateList] ，目的是控制值的修改权限，仅在实现了 [SafeStateScope] 的范围下才能修改值。
+ *
  * @author aaronzzxup@gmail.com
  * @since 2022/11/8
  */
@@ -12,6 +14,11 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 abstract class SafeStateList<E>(
     private val delegate: SnapshotStateList<E>
 ) : List<E> by delegate {
+
+    /**
+     * 用于 [androidx.compose.runtime.snapshotFlow] 观察时使用，不执行额外操作
+     */
+    fun toList(): List<E> = delegate.toList()
 
     internal fun editInternal(): MutableList<E> {
         return delegate

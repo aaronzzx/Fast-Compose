@@ -26,7 +26,10 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.filter
 
 /**
- * 懒加载 HorizontalPager Component
+ * 懒加载 HorizontalPager Component ，仅在当前页时才会通知处理初始化。
+ *
+ * @param components 懒加载集合，每个 [LazyComponent] 自己处理初始化逻辑。
+ * @param activeState 可以进行初始化的生命周期状态。
  */
 @Composable
 fun LazyPagerComponent(
@@ -74,6 +77,7 @@ fun LazyPagerComponent(
                     .filter { !component.initialized.value }
                     .filter { page == curPage }
                     .collect {
+                        component.initialized.setValueInternal(true)
                         component.initialize()
                     }
             }

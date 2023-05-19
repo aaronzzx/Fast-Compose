@@ -4,9 +4,9 @@ import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.ScrollableDefaults
-import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -20,24 +20,21 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource.Companion.Drag
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource.Companion.Fling
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import com.aaron.compose.ui.CollapsingScrollAnimationState.Collapsing
 import com.aaron.compose.ui.CollapsingScrollAnimationState.Expanding
 import com.aaron.compose.ui.CollapsingScrollAnimationState.Idle
 
 /**
- * 折叠布局
- *
- * @param allowScrollToExpandedWhenCollapsed 是否允许折叠状态下滑动展开
+ * 折叠布局，类似 [com.google.android.material.appbar.AppBarLayout] ，可通过 [CollapsingScrollState]
+ * 进行折叠、展开。
  */
 @Composable
 fun CollapsingScroll(
@@ -46,14 +43,13 @@ fun CollapsingScroll(
     contentPadding: PaddingValues = PaddingValues(0.dp),
     flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
     userScrollEnabled: Boolean = true,
-    allowScrollToExpandedWhenCollapsed: () -> Boolean = { true },
-    header: @Composable () -> Unit,
-    content: @Composable () -> Unit
+    headerEnterAlways: Boolean = false,
+    header: @Composable BoxScope.() -> Unit,
+    content: @Composable BoxScope.() -> Unit
 ) {
-    BoxWithConstraints {
-        var scrollableForExpanded by remember {
-            mutableStateOf(true)
-        }
+    BoxWithConstraints(modifier = modifier) {
+        val curUserScrollEnabled by rememberUpdatedState(newValue = userScrollEnabled)
+        val curHeaderEnterAlways by rememberUpdatedState(newValue = headerEnterAlways)
         Column(
             modifier = modifier
                 .nestedScroll(remember(state) {
@@ -62,30 +58,21 @@ fun CollapsingScroll(
                             available: Offset,
                             source: NestedScrollSource
                         ): Offset {
-                            if (state.isCollapsed
+                            if (curUserScrollEnabled
+                                && curHeaderEnterAlways
+                                && state.offset != 0
                                 && available.y > 0
-                                && !allowScrollToExpandedWhenCollapsed()
-                                && state.isScrollInProgress
-                                && (source == Drag || source == Fling)
                             ) {
-                                scrollableForExpanded = false
-                                return available
+                                val consumed = state.scrollState.dispatchRawDelta(-available.y)
+                                return Offset(x = 0f, y = -consumed)
                             }
                             return super.onPreScroll(available, source)
-                        }
-
-                        override suspend fun onPostFling(
-                            consumed: Velocity,
-                            available: Velocity
-                        ): Velocity {
-                            scrollableForExpanded = true
-                            return super.onPostFling(consumed, available)
                         }
                     }
                 })
                 .verticalScroll(
                     state = state.scrollState,
-                    enabled = userScrollEnabled && scrollableForExpanded,
+                    enabled = userScrollEnabled,
                     flingBehavior = flingBehavior
                 )
                 .padding(contentPadding)
@@ -101,12 +88,12 @@ fun CollapsingScroll(
                                 available: Offset,
                                 source: NestedScrollSource
                             ): Offset {
-                                if (userScrollEnabled
+                                if (curUserScrollEnabled
                                     && available.y < 0f
                                     && !state.isCollapsed
                                 ) {
-                                    state.scrollState.dispatchRawDelta(-available.y)
-                                    return available
+                                    val consumed = state.scrollState.dispatchRawDelta(-available.y)
+                                    return Offset(x = 0f, y = -consumed)
                                 }
                                 return super.onPreScroll(available, source)
                             }
@@ -131,6 +118,10 @@ fun rememberCollapsingScrollState(collapsed: Boolean = false): CollapsingScrollS
 
 @Stable
 class CollapsingScrollState(internal val scrollState: ScrollState) {
+
+    val canScrollForward: Boolean get() = scrollState.canScrollForward
+
+    val canScrollBackward: Boolean get() = scrollState.canScrollBackward
 
     /**
      * 是否折叠
@@ -162,34 +153,6 @@ class CollapsingScrollState(internal val scrollState: ScrollState) {
      * 当前是否在滚动
      */
     val isScrollInProgress: Boolean get() = scrollState.isScrollInProgress
-
-    /**
-     * Whether this [ScrollableState] can scroll forward (consume a positive delta). This is
-     * typically false if the scroll position is equal to its maximum value, and true otherwise.
-     *
-     * Note that `true` here does not imply that delta *will* be consumed - the ScrollableState may
-     * decide not to handle the incoming delta (such as if it is already being scrolled separately).
-     * Additionally, for backwards compatibility with previous versions of ScrollableState this
-     * value defaults to `true`.
-     *
-     * @sample androidx.compose.foundation.samples.CanScrollSample
-     */
-    val canScrollForward: Boolean
-        get() = scrollState.canScrollForward
-
-    /**
-     * Whether this [ScrollableState] can scroll backward (consume a negative delta). This is
-     * typically false if the scroll position is equal to its minimum value, and true otherwise.
-     *
-     * Note that `true` here does not imply that delta *will* be consumed - the ScrollableState may
-     * decide not to handle the incoming delta (such as if it is already being scrolled separately).
-     * Additionally, for backwards compatibility with previous versions of ScrollableState this
-     * value defaults to `true`.
-     *
-     * @sample androidx.compose.foundation.samples.CanScrollSample
-     */
-    val canScrollBackward: Boolean
-        get() = scrollState.canScrollBackward
 
     /**
      * 折叠

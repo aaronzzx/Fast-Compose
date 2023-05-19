@@ -5,6 +5,8 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 
 /**
+ * 简单地封装 [SnapshotStateMap] ，目的是控制值的修改权限，仅在实现了 [SafeStateScope] 的范围下才能修改值。
+ *
  * @author aaronzzxup@gmail.com
  * @since 2022/11/8
  */
@@ -12,6 +14,11 @@ import androidx.compose.runtime.snapshots.SnapshotStateMap
 abstract class SafeStateMap<K, V>(
     private val delegate: SnapshotStateMap<K, V>
 ) : Map<K, V> by delegate {
+
+    /**
+     * 用于 [androidx.compose.runtime.snapshotFlow] 观察时使用，不执行额外操作
+     */
+    fun toMap(): Map<K, V> = delegate.toMap()
 
     internal fun editInternal(): MutableMap<K, V> {
         return delegate

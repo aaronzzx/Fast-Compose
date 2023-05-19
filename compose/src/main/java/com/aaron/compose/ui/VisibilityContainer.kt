@@ -1,47 +1,20 @@
 package com.aaron.compose.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.*
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.BoxWithConstraintsScope
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -71,21 +44,72 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
-@OptIn(ExperimentalAnimationApi::class)
+/**
+ * 模拟 Dialog
+ *
+ * @param show 是否显示
+ * @param scrimColor 遮罩颜色。
+ * @param scrimEnter 遮罩进入动画。
+ * @param scrimExit 遮罩退出动画。
+ * @param properties 处理返回键等行为。
+ */
+@Deprecated("改用 FloatingScaffold")
 @Composable
 fun VisibilityScrimContainer(
+    show: Boolean,
+    onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
-    state: VisibilityContainerState = rememberVisibilityContainerState(),
     scrimColor: Color = VisibilityContainerDefaults.scrimColor,
     scrimEnter: EnterTransition = ScrimEnterTransition,
     scrimExit: ExitTransition = ScrimExitTransition,
     properties: VisibilityContainerProperties = VisibilityContainerProperties,
     content: @Composable VisibilityContainerScope.() -> Unit
 ) {
-    BackHandler(enabled = state.visible) {
-        if (properties.dismissOnBackPress) {
+    val state = rememberVisibilityContainerState()
+    SideEffect {
+        if (show) {
+            state.show()
+        } else {
             state.hide()
         }
+    }
+    VisibilityScrimContainer(
+        state = state,
+        modifier = modifier,
+        scrimColor = scrimColor,
+        scrimEnter = scrimEnter,
+        scrimExit = scrimExit,
+        properties = properties,
+        onDismiss = onDismiss,
+        content = content
+    )
+}
+
+/**
+ * 模拟 Dialog
+ *
+ * @param state 控制 [VisibilityScrimContainer] 的显示隐藏。
+ * @param scrimColor 遮罩颜色。
+ * @param scrimEnter 遮罩进入动画。
+ * @param scrimExit 遮罩退出动画。
+ * @param properties 处理返回键等行为。
+ */
+@Deprecated("改用 FloatingScaffold")
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+fun VisibilityScrimContainer(
+    state: VisibilityContainerState,
+    modifier: Modifier = Modifier,
+    scrimColor: Color = VisibilityContainerDefaults.scrimColor,
+    scrimEnter: EnterTransition = ScrimEnterTransition,
+    scrimExit: ExitTransition = ScrimExitTransition,
+    properties: VisibilityContainerProperties = VisibilityContainerProperties,
+    onDismiss: () -> Unit = { state.hide() },
+    content: @Composable VisibilityContainerScope.() -> Unit
+) {
+    val curOnDismiss by rememberUpdatedState(newValue = onDismiss)
+    BackHandler(enabled = state.visible && properties.dismissOnBackPress) {
+        curOnDismiss()
     }
     VisibilityContainer(
         modifier = modifier,
@@ -101,11 +125,9 @@ fun VisibilityScrimContainer(
                     ),
                 color = scrimColor,
                 onDismiss = {
-                    if (properties.dismissOnClickOutside) {
-                        state.hide()
-                    }
+                    curOnDismiss()
                 },
-                visible = state.visible
+                enabled = state.visible && properties.dismissOnClickOutside
             )
         }
     ) {
@@ -113,10 +135,46 @@ fun VisibilityScrimContainer(
     }
 }
 
+/**
+ * 模拟 Popup
+ *
+ * @param scrim 遮罩视图。
+ */
+@Deprecated("改用 FloatingScaffold")
 @Composable
 fun VisibilityContainer(
+    show: Boolean,
     modifier: Modifier = Modifier,
-    state: VisibilityContainerState = rememberVisibilityContainerState(),
+    scrim: (@Composable VisibilityContainerScope.() -> Unit)? = null,
+    content: @Composable VisibilityContainerScope.() -> Unit
+) {
+    val state = rememberVisibilityContainerState()
+    SideEffect {
+        if (show) {
+            state.show()
+        } else {
+            state.hide()
+        }
+    }
+    VisibilityContainer(
+        modifier = modifier,
+        state = state,
+        scrim = scrim,
+        content = content
+    )
+}
+
+/**
+ * 模拟 Popup
+ *
+ * @param state 控制 [VisibilityContainer] 的显示隐藏。
+ * @param scrim 遮罩视图。
+ */
+@Deprecated("改用 FloatingScaffold")
+@Composable
+fun VisibilityContainer(
+    state: VisibilityContainerState,
+    modifier: Modifier = Modifier,
     scrim: (@Composable VisibilityContainerScope.() -> Unit)? = null,
     content: @Composable VisibilityContainerScope.() -> Unit
 ) {
@@ -140,6 +198,9 @@ fun VisibilityContainer(
     }
 }
 
+/**
+ * 获取 [VisibilityContainerState]
+ */
 @Composable
 fun rememberVisibilityContainerState(
     initialVisible: Boolean = false
@@ -149,6 +210,9 @@ fun rememberVisibilityContainerState(
     }
 }
 
+/**
+ * 控制显示隐藏等状态。
+ */
 @Stable
 class VisibilityContainerState(initialVisible: Boolean) {
 
@@ -164,30 +228,36 @@ class VisibilityContainerState(initialVisible: Boolean) {
     }
 }
 
+/**
+ * 遮罩
+ */
 @Composable
 private fun Scrim(
     color: Color,
     onDismiss: () -> Unit,
-    visible: Boolean,
+    enabled: Boolean,
     modifier: Modifier = Modifier
 ) {
-    if (color.isSpecified) {
-        val dismissModifier = if (visible) {
-            Modifier.pointerInput(onDismiss) { detectTapGestures { onDismiss() } }
-        } else {
-            Modifier
-        }
+    val dismissModifier = if (enabled) {
+        Modifier.pointerInput(onDismiss) { detectTapGestures { onDismiss() } }
+    } else {
+        Modifier
+    }
 
-        Canvas(
-            modifier
-                .fillMaxSize()
-                .then(dismissModifier)
-        ) {
+    Canvas(
+        modifier
+            .fillMaxSize()
+            .then(dismissModifier)
+    ) {
+        if (color.isSpecified) {
             drawRect(color = color)
         }
     }
 }
 
+/**
+ * 处理返回键、点击空白处后的行为
+ */
 @Stable
 class VisibilityContainerProperties(
     val dismissOnBackPress: Boolean = true,
@@ -223,6 +293,16 @@ private class RealVisibilityContainerScope(
     BoxWithConstraintsScope by boxWithConstraintsScope,
     AnimatedVisibilityScope by animatedVisibilityScope
 
+/**
+ * 弹出 Dialog
+ *
+ * @param enter Dialog 进入动画。
+ * @param exit Dialog 退出动画。
+ * @param backgroundColor Dialog 背景色。
+ * @param shape Dialog 形状。
+ * @param elevation Dialog 阴影高度。
+ */
+@Deprecated("改用 FloatingScaffold")
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun VisibilityContainerScope.Dialog(
@@ -232,10 +312,11 @@ fun VisibilityContainerScope.Dialog(
     backgroundColor: Color = MaterialTheme.colors.surface,
     shape: Shape = RoundedCornerShape(4.dp),
     elevation: Dp = Elevation,
-    content: @Composable () -> Unit
+    content: @Composable BoxScope.() -> Unit
 ) {
     Box(
         modifier = modifier
+            .systemBarsPadding()
             .align(Alignment.Center)
             .animateEnterExit(
                 enter = enter,
@@ -258,6 +339,16 @@ fun VisibilityContainerScope.Dialog(
     }
 }
 
+/**
+ * 弹出 BottomDialog
+ *
+ * @param enter Dialog 进入动画。
+ * @param exit Dialog 退出动画。
+ * @param backgroundColor Dialog 背景色。
+ * @param shape Dialog 形状。
+ * @param elevation Dialog 阴影高度。
+ */
+@Deprecated("改用 FloatingScaffold")
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun VisibilityContainerScope.BottomSheet(
@@ -267,10 +358,11 @@ fun VisibilityContainerScope.BottomSheet(
     backgroundColor: Color = MaterialTheme.colors.surface,
     shape: Shape = RectangleShape,
     elevation: Dp = Elevation,
-    content: @Composable () -> Unit
+    content: @Composable BoxScope.() -> Unit
 ) {
     Box(
         modifier = modifier
+            .statusBarsPadding()
             .align(Alignment.BottomCenter)
             .animateEnterExit(
                 enter = enter,
@@ -293,6 +385,21 @@ fun VisibilityContainerScope.BottomSheet(
     }
 }
 
+/**
+ * 弹出顶部通知
+ *
+ * @param onSwipeToDismiss 滑动隐藏的回调
+ * @param enter 进入动画
+ * @param exit 退出动画
+ * @param swipeToDismissEnabled 是否启用滑动隐藏
+ * @param swipeToDismissTriggerDistance 滑动隐藏所需的滑动距离
+ * @param onOffsetChange 滑动通知时的回调
+ * @param contentPadding 通知内部间距
+ * @param backgroundColor 背景色
+ * @param shape 形状
+ * @param elevation 阴影高度
+ */
+@Deprecated("改用 FloatingScaffold")
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun VisibilityContainerScope.Notification(
@@ -303,15 +410,15 @@ fun VisibilityContainerScope.Notification(
     swipeToDismissEnabled: Boolean = true,
     swipeToDismissTriggerDistance: Dp = 40.dp,
     onOffsetChange: ((Int) -> Unit)? = null,
-    statusPaddingEnabled: Boolean = true,
     contentPadding: PaddingValues = PaddingValues(16.dp),
     backgroundColor: Color = MaterialTheme.colors.surface,
     shape: Shape = RoundedCornerShape(4.dp),
     elevation: Dp = Elevation,
-    content: @Composable () -> Unit
+    content: @Composable() (BoxScope.() -> Unit)
 ) {
     Box(
         modifier = modifier
+            .navigationBarsPadding()
             .swipeNotificationToDismiss(
                 gestureEnabled = swipeToDismissEnabled,
                 onDismiss = onSwipeToDismiss,
@@ -324,11 +431,6 @@ fun VisibilityContainerScope.Notification(
                 exit = exit,
                 label = "NotificationAnimation"
             )
-            .let {
-                if (!statusPaddingEnabled) it else {
-                    it.statusBarsPadding()
-                }
-            }
             .padding(contentPadding)
             .shadow(
                 elevation = elevation,

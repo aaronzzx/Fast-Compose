@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -123,7 +124,7 @@ private fun TestScreen(
                 contentPadding = WindowInsets.statusBars.asPaddingValues(),
                 backgroundColor = Color.Transparent,
                 elevation = 0.dp,
-                titleSize = 24.sp,
+                titleStyle = TextStyle(fontSize = 24.sp),
                 contentColor = contentColorFor(backgroundColor = MaterialTheme.colors.surface),
                 onStartIconClick = {
                     onBack()

@@ -16,6 +16,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberUpdatedState
@@ -29,10 +30,11 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import coil.compose.AsyncImage
-import com.aaron.compose.ktx.LaunchedLifecycleEffect
 import com.aaron.compose.ktx.clipToBackground
 import com.aaron.compose.ktx.onClick
 import com.google.accompanist.pager.HorizontalPagerIndicator
@@ -134,23 +136,26 @@ fun Banner(
             // 轮播
             val dragged by pagerState.interactionSource.collectIsDraggedAsState()
             val curCarouselTime by rememberUpdatedState(newValue = carouselTime)
-            LaunchedLifecycleEffect(Lifecycle.State.RESUMED, pagerState) {
-                // 由于 animateScroll* 是挂起函数，有可能滚动到一半就被取消了
-                // 这时候就会悬在滚动中间，因此重新启动副作用时需要让他归位
-                pagerState.animateScrollToPage(pagerState.currentPage)
-                snapshotFlow { pagerState.currentPageOffsetFraction }
-                    .filter { !dragged }
-                    .debounce(curCarouselTime)
-                    .collectLatest {
-                        if (pagerState.currentPage == maxPage) {
-                            pagerState.animateScrollToPage(startIndex)
-                        } else {
-                            // 1. 这种无法更改滚动速度
-                            //pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                            // 2. 这种需要自己传滚动距离，但可以指定动画规格
-                            pagerState.animateScrollBy(bannerWidth.toFloat(), animationSpec)
+            val lifecycleOwner = LocalLifecycleOwner.current
+            LaunchedEffect(key1 = pagerState) {
+                lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    // 由于 animateScroll* 是挂起函数，有可能滚动到一半就被取消了
+                    // 这时候就会悬在滚动中间，因此重新启动副作用时需要让他归位
+                    pagerState.animateScrollToPage(pagerState.currentPage)
+                    snapshotFlow { pagerState.currentPageOffsetFraction }
+                        .filter { !dragged }
+                        .debounce(curCarouselTime)
+                        .collectLatest {
+                            if (pagerState.currentPage == maxPage) {
+                                pagerState.animateScrollToPage(startIndex)
+                            } else {
+                                // 1. 这种无法更改滚动速度
+                                //pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                // 2. 这种需要自己传滚动距离，但可以指定动画规格
+                                pagerState.animateScrollBy(bannerWidth.toFloat(), animationSpec)
+                            }
                         }
-                    }
+                }
             }
         }
     }

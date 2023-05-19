@@ -3,9 +3,10 @@ package com.aaron.compose.safestate
 import androidx.compose.runtime.Stable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.update
 
 /**
+ * 简单地封装 [MutableStateFlow] ，目的是控制值的修改权限，仅在实现了 [SafeStateScope] 的范围下才能修改值。
+ *
  * @author aaronzzxup@gmail.com
  * @since 2022/10/26
  */
@@ -14,19 +15,12 @@ abstract class SafeStateFlow<T>(
     private val delegate: MutableStateFlow<T>
 ) : StateFlow<T> by delegate {
 
-    @PublishedApi
     internal suspend fun emitInternal(value: T) {
         delegate.emit(value)
     }
 
-    @PublishedApi
-    internal fun tryEmitInternal(value: T) {
-        delegate.tryEmit(value)
-    }
-
-    @PublishedApi
-    internal fun updateInternal(block: (T) -> T) {
-        delegate.update(block)
+    internal fun tryEmitInternal(value: T): Boolean {
+        return delegate.tryEmit(value)
     }
 }
 

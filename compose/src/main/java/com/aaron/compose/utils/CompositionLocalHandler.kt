@@ -10,6 +10,9 @@ import androidx.compose.ui.unit.Density
 
 /**
  * 控制 OverScroll 是否显示
+ *
+ * @param enabled false 为不显示 OverScroll 。
+ * @param defaultFactory 当 [enabled] 为 true 时调用。
  */
 @Composable
 fun OverScrollHandler(
@@ -28,7 +31,10 @@ fun OverScrollHandler(
 }
 
 /**
- * 控制系统级字体缩放
+ * 处理系统级字体缩放
+ *
+ * @param enabled false 为禁用缩放。
+ * @param defaultFactory 当 [enabled] 为 true 时调用。
  */
 @Composable
 fun SystemFontScaleHandler(
@@ -47,9 +53,10 @@ fun SystemFontScaleHandler(
 }
 
 /**
- * 控制屏幕适配
+ * 处理屏幕适配。
  *
  * @param adaptWidth 需要适配的屏幕宽度，一般拿设计稿上的屏幕宽度，传小于等于 0 的值为取消适配
+ * @param defaultFactory 当 [adaptWidth] 小于等于 0 时调用。
  */
 @Composable
 fun FitScreenHandler(

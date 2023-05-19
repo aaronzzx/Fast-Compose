@@ -13,4 +13,4 @@ object BaseComposeDefaults {
     }
 }
 
-typealias ComposableFun = @Composable () -> Unit
+private typealias ComposableFun = @Composable () -> Unit
