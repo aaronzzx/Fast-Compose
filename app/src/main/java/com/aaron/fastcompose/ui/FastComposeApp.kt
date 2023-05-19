@@ -3,18 +3,19 @@ package com.aaron.fastcompose.ui
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.aaron.fastcompose.ui.helloworld.helloWorldScreen
 import com.aaron.fastcompose.ui.home.HomeScreen
 import com.aaron.fastcompose.ui.home.homeScreen
 import com.aaron.fastcompose.ui.paging.pagingScreen
+import com.aaron.fastcompose.ui.test.testScreen
 import com.aaron.fastcompose.ui.textshader.textShaderScreen
 import com.aaron.fastcompose.ui.theme.FastComposeTheme
 import com.google.accompanist.navigation.animation.AnimatedNavHost
@@ -84,15 +85,23 @@ private fun FastComposeNavHost(navController: NavHostController) {
         pagingScreen(navController = navController)
         textShaderScreen(navController = navController)
         helloWorldScreen(navController = navController)
+        testScreen(navController = navController)
     }
 }
 
 @Composable
 private fun HandleSystemUi(navController: NavController) {
     val systemUiController = rememberSystemUiController()
-    val systemInDarkTheme = isSystemInDarkTheme()
     SideEffect {
-        systemUiController.statusBarDarkContentEnabled = !systemInDarkTheme
+        systemUiController.setStatusBarColor(
+            color = Color.Transparent,
+            darkIcons = true
+        )
+        systemUiController.setNavigationBarColor(
+            color = Color.Transparent,
+            darkIcons = true,
+            navigationBarContrastEnforced = false
+        )
     }
 }
 

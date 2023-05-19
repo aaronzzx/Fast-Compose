@@ -31,6 +31,7 @@ import com.aaron.compose.ui.TopBar
 import com.aaron.compose.utils.OverScrollHandler
 import com.aaron.fastcompose.ui.helloworld.HelloWorldScreen
 import com.aaron.fastcompose.ui.paging.PagingScreen
+import com.aaron.fastcompose.ui.test.TestScreen
 import com.aaron.fastcompose.ui.textshader.TextShaderScreen
 import com.google.accompanist.navigation.animation.composable
 
@@ -60,6 +61,9 @@ fun NavGraphBuilder.homeScreen(navController: NavController) {
             },
             onNavToHelloWorld = {
                 HelloWorldScreen.navigate(navController)
+            },
+            onNavToTest = {
+                TestScreen.navigate(navController)
             }
         )
     }
@@ -69,7 +73,8 @@ fun NavGraphBuilder.homeScreen(navController: NavController) {
 private fun HomeScreen(
     onNavToPaging: () -> Unit,
     onNavToTextShader: () -> Unit,
-    onNavToHelloWorld: () -> Unit
+    onNavToHelloWorld: () -> Unit,
+    onNavToTest: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         TopBar(
@@ -99,6 +104,7 @@ private fun HomeScreen(
                                 "Pagination" -> onNavToPaging()
                                 "TextShader" -> onNavToTextShader()
                                 "HelloWorld" -> onNavToHelloWorld()
+                                "Test" -> onNavToTest()
                                 else -> Unit
                             }
                         },
@@ -157,6 +163,11 @@ private val routeItems = listOf(
         id = "HelloWorld",
         text = "Hello World",
         color = Color(0xFF81C784)
+    ),
+    RouteItem(
+        id = "Test",
+        text = "Test",
+        color = Color(0xFFFF9800)
     )
 )
 
