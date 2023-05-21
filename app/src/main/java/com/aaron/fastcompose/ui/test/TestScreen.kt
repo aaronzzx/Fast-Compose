@@ -34,7 +34,9 @@ import com.aaron.compose.base.navTo
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ui.BottomSheet
 import com.aaron.compose.ui.Dialog
+import com.aaron.compose.ui.FloatingElementProperties
 import com.aaron.compose.ui.FloatingScaffold
+import com.aaron.compose.ui.Notification
 import com.aaron.compose.ui.TopBar
 import com.aaron.fastcompose.R
 import com.google.accompanist.navigation.animation.composable
@@ -77,9 +79,30 @@ private fun TestScreen(
     var showBottomSheet by remember {
         mutableStateOf(false)
     }
+    var showNotification by remember {
+        mutableStateOf(false)
+    }
     FloatingScaffold(
         modifier = Modifier.fillMaxSize(),
         floating = {
+            Notification(
+                visible = showNotification,
+                onDismiss = { showNotification = false },
+                backgroundColor = Color(0xFF64B5F6),
+                properties = FloatingElementProperties(
+                    focusedAlways = true
+                )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .onClick(enableRipple = false) {
+                            showBottomSheet = true
+                        }
+                )
+            }
+
             Dialog(
                 visible = showDialog,
                 onDismiss = { showDialog = false },
@@ -105,8 +128,7 @@ private fun TestScreen(
                         .fillMaxWidth()
                         .height(200.dp)
                         .onClick(enableRipple = false) {
-                            showDialog = false
-                            showBottomSheet = false
+                            showNotification = true
                         }
                 )
             }
@@ -141,6 +163,9 @@ private fun TestScreen(
                     }
                     Button(onClick = { showBottomSheet = true }) {
                         Text(text = "BottomSheet")
+                    }
+                    Button(onClick = { showNotification = true }) {
+                        Text(text = "Notification")
                     }
                 }
             }

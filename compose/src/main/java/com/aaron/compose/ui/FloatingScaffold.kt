@@ -95,9 +95,9 @@ fun FloatingScaffold(
             val floatingTotal = LocalFloatingTotal.current
             AnimatedVisibility(
                 modifier = Modifier
-                    .zIndex(floatingTotal.zIndexForScrim())
+                    .zIndex(floatingTotal.zIndexForMinFocused())
                     .matchParentSize(),
-                visible = floatingTotal.hasFloating,
+                visible = floatingTotal.showScrim,
                 enter = scrimEnter,
                 exit = scrimExit,
                 label = "Scrim"
@@ -255,6 +255,7 @@ fun FloatingScaffoldScope.Notification(
             modifier = modifier
                 .systemBarsPadding()
                 .swipeNotificationToDismiss(
+                    visible = visible,
                     gestureEnabled = swipeToDismissEnabled,
                     onDismiss = onDismiss,
                     onOffsetChange = onOffsetChange,
@@ -264,7 +265,7 @@ fun FloatingScaffoldScope.Notification(
                 .padding(16.dp),
             color = backgroundColor,
             shape = shape,
-            elevation = elevation
+            elevation = if (hasFocus) elevation else 0.dp
         ) {
             content()
         }
@@ -272,17 +273,25 @@ fun FloatingScaffoldScope.Notification(
 }
 
 private fun Modifier.swipeNotificationToDismiss(
+    visible: Boolean,
     gestureEnabled: Boolean,
     onDismiss: () -> Unit,
     onOffsetChange: ((Int) -> Unit)? = null,
     swipeToDismissTriggerDistance: Dp,
-) = if (!gestureEnabled) this else composed {
+) = composed {
     val density = LocalDensity.current
     var curJob: Job? = remember { null }
     var offset by remember { mutableStateOf(0) }
     var dismissed by remember { mutableStateOf(false) }
+    val curOnDismiss by rememberUpdatedState(onDismiss)
     val curOnDragOffsetChange by rememberUpdatedState(onOffsetChange)
 
+    LaunchedEffect(key1 = visible) {
+        if (visible) {
+            offset = 0
+            dismissed = false
+        }
+    }
     LaunchedEffect(key1 = Unit) {
         snapshotFlow { offset }
             .distinctUntilChanged()
@@ -301,14 +310,14 @@ private fun Modifier.swipeNotificationToDismiss(
                 offset += (delta * 0.75).toInt()
             },
             orientation = Orientation.Vertical,
-            enabled = !dismissed,
+            enabled = gestureEnabled && !dismissed,
             onDragStarted = {
                 curJob?.cancel()
             },
             onDragStopped = {
                 if (offset <= with(density) { -swipeToDismissTriggerDistance.toPx() }) {
                     dismissed = true
-                    onDismiss()
+                    curOnDismiss()
                 } else {
                     launch {
                         animate(
@@ -346,9 +355,9 @@ fun FloatingScaffoldScope.FloatingElement(
 ) {
     val floatingTotal = LocalFloatingTotal.current
     val uniqueId = remember { UUID.randomUUID().toString() }
-    LaunchedEffect(key1 = visible) {
+    LaunchedEffect(visible, uniqueId, properties) {
         if (visible) {
-            floatingTotal.add(uniqueId)
+            floatingTotal.addOnUpdate(uniqueId, properties)
         } else {
             floatingTotal.remove(uniqueId)
         }
@@ -356,7 +365,13 @@ fun FloatingScaffoldScope.FloatingElement(
 
     AnimatedVisibility(
         modifier = modifier
-            .zIndex(floatingTotal.zIndex(uniqueId))
+            .zIndex(
+                zIndex = when (visible) {
+                    true -> floatingTotal.zIndex(uniqueId)
+                    // 在退出时依然保持焦点模式，不被阴影遮挡
+                    else -> floatingTotal.zIndexForMinFocused()
+                }
+            )
             .matchParentSize(),
         visible = visible,
         enter = EnterTransition.None,
@@ -364,14 +379,21 @@ fun FloatingScaffoldScope.FloatingElement(
         label = label
     ) {
         val curOnDismiss by rememberUpdatedState(onDismiss)
-        BackHandler(properties.dismissOnBackPress && visible) {
+        val enableBackHandler = run {
+            // 如果永远有焦点则不能拦截返回键
+            !properties.focusedAlways
+                    && properties.dismissOnBackPress
+                    && visible
+        }
+        BackHandler(enableBackHandler) {
             curOnDismiss()
         }
         Box(
             modifier = modifier
                 .matchParentSize()
                 .run {
-                    if (!visible) this else {
+                    // 如果永远有焦点则不能拦截阴影点击
+                    if (!visible || properties.focusedAlways) this else {
                         pointerInput(Unit) {
                             detectTapGestures {
                                 if (properties.dismissOnClickOutside) {
@@ -409,7 +431,11 @@ data class FloatingElementProperties(
     /** 点击返回按钮消失 */
     val dismissOnBackPress: Boolean = true,
     /** 点击弹窗外部区域消失 */
-    val dismissOnClickOutside: Boolean = true
+    val dismissOnClickOutside: Boolean = true,
+    /**
+     * 永远有焦点，不被阴影遮挡，如果当前只有自己将移除阴影，[dismissOnBackPress] 、[dismissOnClickOutside] 将失效
+     */
+    val focusedAlways: Boolean = false
 )
 
 @Stable
@@ -438,38 +464,63 @@ private val LocalFloatingTotal = staticCompositionLocalOf<FloatingTotal> {
 
 private class FloatingTotal {
 
-    private val visibleBucket = mutableStateListOf<String>()
+    private val visibleBucket = mutableStateListOf<Floating>()
 
-    private val visibleCount: Int by derivedStateOf { visibleBucket.size }
+    val visibleCount: Int by derivedStateOf { visibleBucket.size }
 
-    val hasFloating: Boolean by derivedStateOf { visibleCount > 0 }
+    val showScrim: Boolean by derivedStateOf {
+        visibleBucket.run {
+            val tryRemoveScrimCount = filter { it.properties.focusedAlways }.size
+            tryRemoveScrimCount < size
+        }
+    }
 
     fun hasFocus(id: String): Boolean {
-        return visibleBucket.lastOrNull() == id
+        return visibleBucket.run {
+            lastOrNull()?.id == id
+                    || find { it.id == id }?.properties?.focusedAlways == true
+        }
     }
 
     fun zIndex(id: String): Float {
-        val index = visibleBucket.indexOf(id)
+        val visibleBucket = visibleBucket
+        val index = visibleBucket.indexOfFirst { it.id == id }
+        val item = visibleBucket.getOrNull(index)
+        if (item?.properties?.focusedAlways == true) {
+            return zIndexMax()
+        }
         return safeZIndex(index.toFloat())
     }
 
-    fun zIndexForScrim(): Float {
-        return zIndexMax()
+    fun zIndexForMinFocused(): Float {
+        val index = visibleBucket.indexOfLast { it.properties.focusedAlways.not() }
+        return safeZIndex(index.toFloat())
     }
 
     private fun zIndexMax(): Float {
-        return safeZIndex(visibleCount - 1f)
+        return safeZIndex(visibleBucket.size.toFloat())
     }
 
     private fun safeZIndex(zIndex: Float): Float {
         return zIndex.coerceAtLeast(0f)
     }
 
-    fun add(id: String) {
-        visibleBucket.add(id)
+    fun addOnUpdate(id: String, properties: FloatingElementProperties) {
+        val visibleBucket = visibleBucket
+        val index = visibleBucket.indexOfFirst { it.id == id }
+        if (index == -1) {
+            visibleBucket.add(Floating(id, properties))
+        } else {
+            visibleBucket[index] = Floating(id, properties)
+        }
     }
 
     fun remove(id: String) {
-        visibleBucket.remove(id)
+        visibleBucket.removeAll { it.id == id }
     }
 }
+
+private data class Floating(
+    val id: String,
+    val properties: FloatingElementProperties
+)
