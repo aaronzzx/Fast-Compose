@@ -2,16 +2,15 @@ package com.aaron.fastcompose.ui.paging
 
 import com.aaron.compose.base.BasePagingResult
 import com.google.gson.annotations.SerializedName
-import kotlinx.collections.immutable.ImmutableList
 
 class RepoResponse(
-    @SerializedName("items") val items: ImmutableList<Repo>
+    @SerializedName("items") val items: List<Repo>
 ) : BasePagingResult<Repo> {
 
     override val code: Int
         get() = 200
     override val msg: String
         get() = "OK"
-    override val data: ImmutableList<Repo>
+    override val data: List<Repo>
         get() = items
 }

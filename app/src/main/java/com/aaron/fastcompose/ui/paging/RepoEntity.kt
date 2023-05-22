@@ -1,7 +1,6 @@
 package com.aaron.fastcompose.ui.paging
 
 import com.aaron.compose.base.BasePagingResult
-import kotlinx.collections.immutable.ImmutableList
 
 /**
  * @author aaronzzxup@gmail.com
@@ -10,5 +9,5 @@ import kotlinx.collections.immutable.ImmutableList
 data class RepoEntity(
     override val code: Int,
     override val msg: String?,
-    override val data: ImmutableList<Repo>
+    override val data: List<Repo>
 ) : BasePagingResult<Repo>
