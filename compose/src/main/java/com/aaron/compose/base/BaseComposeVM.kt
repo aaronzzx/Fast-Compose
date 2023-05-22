@@ -58,21 +58,26 @@ import kotlin.coroutines.EmptyCoroutineContext
  * @author aaronzzxup@gmail.com
  * @since 2023/5/16
  */
-abstract class BaseComposeVM<UiState, UiEvent>(initialState: UiState) : ViewModel(),
+abstract class BaseComposeVM<UiState : Any, UiEvent : Any> : ViewModel(),
     SafeStateScope,
     PagingScope,
     LazyPagingScope {
 
     //region UDFComponent
-    @PublishedApi
-    internal val mutableState = MutableStateFlow(initialState)
-    private val eventChannel = Channel<UiEvent>(Channel.UNLIMITED)
-    private val baseEventChannel = Channel<Any>(Channel.UNLIMITED)
+    protected abstract val initialState: UiState
+    protected val uiState: UiState get() = mutableState.value
 
-    val udfComponent = object : UDFComponent<UiState, UiEvent> {
-        override val state: StateFlow<UiState> = mutableState.asStateFlow()
-        override val event: Flow<UiEvent> = eventChannel.receiveAsFlow()
-        override val baseEvent: Flow<Any> = baseEventChannel.receiveAsFlow()
+    @PublishedApi
+    internal val mutableState by lazy { MutableStateFlow(initialState) }
+    private val eventChannel by lazy { Channel<UiEvent>(Channel.UNLIMITED) }
+    private val baseEventChannel by lazy { Channel<Any>(Channel.UNLIMITED) }
+
+    val udfComponent by lazy {
+        object : UDFComponent<UiState, UiEvent> {
+            override val state: StateFlow<UiState> = mutableState.asStateFlow()
+            override val event: Flow<UiEvent> = eventChannel.receiveAsFlow()
+            override val baseEvent: Flow<Any> = baseEventChannel.receiveAsFlow()
+        }
     }
 
     protected inline fun updateUiState(crossinline block: (UiState) -> UiState) {
@@ -88,7 +93,7 @@ abstract class BaseComposeVM<UiState, UiEvent>(initialState: UiState) : ViewMode
     }
 
     //region 预置视图事件
-    protected val unsafeCall = UnsafeCall()
+    protected val unsafeCall by lazy { UnsafeCall() }
 
     protected inner class UnsafeCall internal constructor() {
         /**
@@ -123,11 +128,13 @@ abstract class BaseComposeVM<UiState, UiEvent>(initialState: UiState) : ViewMode
     //endregion
 
     //region LazyComponent
-    val lazyComponent = object : LazyComponent {
-        override val initialized: SafeState<Boolean> = safeStateOf(false)
+    val lazyComponent by lazy {
+        object : LazyComponent {
+            override val initialized: SafeState<Boolean> = safeStateOf(false)
 
-        override fun initialize() {
-            this@BaseComposeVM.initialize()
+            override fun initialize() {
+                this@BaseComposeVM.initialize()
+            }
         }
     }
 
@@ -136,9 +143,11 @@ abstract class BaseComposeVM<UiState, UiEvent>(initialState: UiState) : ViewMode
     //endregion
 
     //region LoadingComponent
-    val loadingComponent = object : LoadingComponent {
-        override val loading: SafeState<Boolean> = safeStateOf(false)
-        override val loadingJobs: SafeStateMap<Any, Job?> = safeStateMapOf()
+    val loadingComponent by lazy {
+        object : LoadingComponent {
+            override val loading: SafeState<Boolean> = safeStateOf(false)
+            override val loadingJobs: SafeStateMap<Any, Job?> = safeStateMapOf()
+        }
     }
 
     protected fun CoroutineScope.launchWithLoading(
@@ -162,7 +171,7 @@ abstract class BaseComposeVM<UiState, UiEvent>(initialState: UiState) : ViewMode
     //endregion
 
     //region StateComponent
-    val stateComponent: StateComponent =
+    val stateComponent: StateComponent by lazy {
         object : StateComponent, LoadingComponent by loadingComponent {
             override val viewState: SafeState<ViewState> = safeStateOf(ViewState.Idle)
 
@@ -170,6 +179,7 @@ abstract class BaseComposeVM<UiState, UiEvent>(initialState: UiState) : ViewMode
                 this@BaseComposeVM.retry()
             }
         }
+    }
 
     protected fun showViewState(viewState: ViewState) {
         stateComponent.showState(viewState)
@@ -180,12 +190,14 @@ abstract class BaseComposeVM<UiState, UiEvent>(initialState: UiState) : ViewMode
     //endregion
 
     //region RefreshComponent
-    val refreshComponent = object : RefreshComponent {
-        override val smartRefreshType: SafeState<SmartRefreshType> =
-            safeStateOf(SmartRefreshType.Idle)
+    val refreshComponent by lazy {
+        object : RefreshComponent {
+            override val smartRefreshType: SafeState<SmartRefreshType> =
+                safeStateOf(SmartRefreshType.Idle)
 
-        override fun refreshIgnoreAnimation() {
-            this@BaseComposeVM.refreshIgnoreAnimation()
+            override fun refreshIgnoreAnimation() {
+                this@BaseComposeVM.refreshIgnoreAnimation()
+            }
         }
     }
 

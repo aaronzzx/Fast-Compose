@@ -30,7 +30,7 @@ import kotlinx.coroutines.launch
  * @param content 视图状态向下流动
  */
 @Composable
-fun <UiState, UiEvent> UDFComponent(
+fun <UiState : Any, UiEvent : Any> UDFComponent(
     component: UDFComponent<UiState, UiEvent>,
     activeState: Lifecycle.State = Lifecycle.State.STARTED,
     onBaseEvent: (baseEvent: Any) -> Boolean = { false },
@@ -99,7 +99,7 @@ fun <UiState, UiEvent> UDFComponent(
  * [UiEvent] 表示一次性的视图事件，使用 sealed interface 或 sealed class 定义，方便在使用 when 时一键填充，且增加新的 sealed 子类时编译器能进行缺失提示
  */
 @Stable
-interface UDFComponent<UiState, UiEvent> {
+interface UDFComponent<UiState : Any, UiEvent : Any> {
 
     val state: StateFlow<UiState>
 
@@ -124,10 +124,10 @@ sealed interface UiBaseEvent {
     ) : UiBaseEvent
 }
 
-fun <UiState> udfComponent(initialState: UiState): UDFComponent<UiState, Any> {
-    return object : UDFComponent<UiState, Any> {
+fun <UiState : Any, UiEvent : Any> udfComponent(initialState: UiState): UDFComponent<UiState, UiEvent> {
+    return object : UDFComponent<UiState, UiEvent> {
         override val state: StateFlow<UiState> = MutableStateFlow(initialState)
-        override val event: Flow<Any> = emptyFlow()
+        override val event: Flow<UiEvent> = emptyFlow()
         override val baseEvent: Flow<Any> = emptyFlow()
     }
 }
