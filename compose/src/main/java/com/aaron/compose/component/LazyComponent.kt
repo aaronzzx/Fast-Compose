@@ -53,6 +53,10 @@ interface LazyComponent {
     val initialized: SafeState<Boolean>
 
     fun initialize()
+
+    fun markAsUninitialized() {
+        initialized.setValueInternal(false)
+    }
 }
 
 /**

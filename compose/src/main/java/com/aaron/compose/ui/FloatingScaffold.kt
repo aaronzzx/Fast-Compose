@@ -388,22 +388,24 @@ fun FloatingScaffoldScope.FloatingElement(
         BackHandler(enableBackHandler) {
             curOnDismiss()
         }
-        Box(
-            modifier = modifier
-                .matchParentSize()
-                .run {
-                    // 如果永远有焦点则不能拦截阴影点击
-                    if (!visible || properties.focusedAlways) this else {
-                        pointerInput(Unit) {
-                            detectTapGestures {
-                                if (properties.dismissOnClickOutside) {
-                                    curOnDismiss()
+        Box(modifier = modifier.matchParentSize()) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .run {
+                        // 如果永远有焦点则不能拦截阴影点击
+                        if (!visible || properties.focusedAlways) this else {
+                            pointerInput(Unit) {
+                                detectTapGestures {
+                                    if (properties.dismissOnClickOutside) {
+                                        curOnDismiss()
+                                    }
                                 }
                             }
                         }
                     }
-                }
-        ) {
+            )
+
             transition.AnimatedVisibility(
                 modifier = Modifier
                     .align(contentAlignment)
