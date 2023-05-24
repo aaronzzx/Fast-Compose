@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -45,7 +46,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -87,7 +87,7 @@ fun FloatingScaffold(
     content: @Composable BoxScope.() -> Unit
 ) {
     CompositionLocalProvider(
-        LocalFloatingTotal providesDefault remember { FloatingTotal() }
+        LocalFloatingTotal provides remember { FloatingTotal() }
     ) {
         Box(modifier = modifier) {
             content()
@@ -460,7 +460,7 @@ private class FloatingElementScopeImpl(
     override var hasFocus: Boolean by mutableStateOf(false)
 }
 
-private val LocalFloatingTotal = staticCompositionLocalOf<FloatingTotal> {
+private val LocalFloatingTotal = compositionLocalOf<FloatingTotal> {
     noLocalProvidedFor("LocalFloatingTotal")
 }
 
