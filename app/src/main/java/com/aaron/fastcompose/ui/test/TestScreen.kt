@@ -38,8 +38,11 @@ import com.aaron.compose.ui.FloatingElementProperties
 import com.aaron.compose.ui.FloatingScaffold
 import com.aaron.compose.ui.Notification
 import com.aaron.compose.ui.TopBar
+import com.aaron.compose.ui.pickerview.WheelPicker
 import com.aaron.fastcompose.R
+import com.blankj.utilcode.util.ToastUtils
 import com.google.accompanist.navigation.animation.composable
+import kotlinx.collections.immutable.persistentListOf
 
 /**
  * @author aaronzzxup@gmail.com
@@ -125,12 +128,26 @@ private fun TestScreen(
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .onClick(enableRipple = false) {
-                            showNotification = true
+                        .navigationBarsPadding()
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    val data = persistentListOf(
+                        *Array(30) {
+                            "Index: $it"
                         }
-                )
+                    )
+                    WheelPicker(
+                        data = data,
+                        onItemSelected = {
+                            ToastUtils.showShort(it)
+                        },
+                        alphaGradientEnabled = false,
+                        cyclicEnabled = true,
+                        itemsVisibleCount = 3,
+                        fontSize = 30.sp,
+                    )
+                }
             }
         }
     ) {
