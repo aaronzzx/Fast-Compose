@@ -1,30 +1,15 @@
 package com.aaron.compose.base
 
-import android.content.Intent
-import androidx.activity.ComponentActivity
-import androidx.annotation.StringRes
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.util.Consumer
-import androidx.lifecycle.HasDefaultViewModelProviderFactory
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aaron.compose.component.LazyComponent
 import com.aaron.compose.component.LoadingComponent
+import com.aaron.compose.component.LoadingStateComponent
 import com.aaron.compose.component.RefreshComponent
 import com.aaron.compose.component.StateComponent
 import com.aaron.compose.component.UDFComponent
 import com.aaron.compose.component.UiBaseEvent
 import com.aaron.compose.component.ViewState
-import com.aaron.compose.ktx.findGenericActivity
 import com.aaron.compose.paging.LazyPagingScope
 import com.aaron.compose.paging.PagingScope
 import com.aaron.compose.safestate.SafeState
@@ -47,6 +32,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.UUID
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -72,7 +58,7 @@ abstract class BaseComposeVM<UiState : Any, UiEvent : Any> : ViewModel(),
     private val eventChannel by lazy { Channel<UiEvent>(Channel.UNLIMITED) }
     private val baseEventChannel by lazy { Channel<Any>(Channel.UNLIMITED) }
 
-    val udfComponent by lazy {
+    val udfComponent: UDFComponent<UiState, UiEvent> by lazy {
         object : UDFComponent<UiState, UiEvent> {
             override val state: StateFlow<UiState> = mutableState.asStateFlow()
             override val event: Flow<UiEvent> = eventChannel.receiveAsFlow()
@@ -109,7 +95,7 @@ abstract class BaseComposeVM<UiState : Any, UiEvent : Any> : ViewModel(),
         }
     }
 
-    protected fun toast(@StringRes resId: Int) {
+    protected fun toast(resId: Int) {
         unsafeCall.sendUiBaseEvent(UiBaseEvent.ResToast(resId))
     }
 
@@ -120,15 +106,11 @@ abstract class BaseComposeVM<UiState : Any, UiEvent : Any> : ViewModel(),
     protected fun finish() {
         unsafeCall.sendUiBaseEvent(UiBaseEvent.Finish)
     }
-
-    protected fun finishWithResult(resultCode: Int, data: Intent) {
-        unsafeCall.sendUiBaseEvent(UiBaseEvent.FinishWithResult(resultCode, data))
-    }
     //endregion
     //endregion
 
     //region LazyComponent
-    val lazyComponent by lazy {
+    val lazyComponent: LazyComponent by lazy {
         object : LazyComponent {
             override val initialized: SafeState<Boolean> = safeStateOf(false)
 
@@ -143,10 +125,10 @@ abstract class BaseComposeVM<UiState : Any, UiEvent : Any> : ViewModel(),
     //endregion
 
     //region LoadingComponent
-    val loadingComponent by lazy {
+    val loadingComponent: LoadingComponent by lazy {
         object : LoadingComponent {
             override val loading: SafeState<Boolean> = safeStateOf(false)
-            override val loadingJobs: SafeStateMap<Any, Job?> = safeStateMapOf()
+            override val loadingJobs: SafeStateMap<UUID, Job> = safeStateMapOf()
         }
     }
 
@@ -172,7 +154,7 @@ abstract class BaseComposeVM<UiState : Any, UiEvent : Any> : ViewModel(),
 
     //region StateComponent
     val stateComponent: StateComponent by lazy {
-        object : StateComponent, LoadingComponent by loadingComponent {
+        object : StateComponent {
             override val viewState: SafeState<ViewState> = safeStateOf(ViewState.Idle)
 
             override fun retry() {
@@ -181,8 +163,14 @@ abstract class BaseComposeVM<UiState : Any, UiEvent : Any> : ViewModel(),
         }
     }
 
+    val loadingStateComponent: LoadingStateComponent by lazy {
+        object : LoadingStateComponent,
+            StateComponent by stateComponent,
+            LoadingComponent by loadingComponent {}
+    }
+
     protected fun showViewState(viewState: ViewState) {
-        stateComponent.showState(viewState)
+        stateComponent.showViewState(viewState)
     }
 
     protected open fun retry() {
@@ -190,7 +178,7 @@ abstract class BaseComposeVM<UiState : Any, UiEvent : Any> : ViewModel(),
     //endregion
 
     //region RefreshComponent
-    val refreshComponent by lazy {
+    val refreshComponent: RefreshComponent by lazy {
         object : RefreshComponent {
             override val smartRefreshType: SafeState<SmartRefreshType> =
                 safeStateOf(SmartRefreshType.Idle)
@@ -230,50 +218,4 @@ abstract class BaseComposeVM<UiState : Any, UiEvent : Any> : ViewModel(),
         tryEmit(block(value))
     }
     //endregion
-
-    //region onNewIntent
-    @PublishedApi
-    internal fun onNewIntentInternal(intent: Intent?) {
-        onNewIntent(intent)
-    }
-
-    protected open fun onNewIntent(intent: Intent?) {
-    }
-    //endregion
-}
-
-@Composable
-inline fun <reified VM : BaseComposeVM<*, *>> composeVM2(
-    viewModelStoreOwner: ViewModelStoreOwner = checkNotNull(LocalViewModelStoreOwner.current) {
-        "No ViewModelStoreOwner was provided via LocalViewModelStoreOwner"
-    },
-    key: String? = null,
-    factory: ViewModelProvider.Factory? = null,
-    extras: CreationExtras = if (viewModelStoreOwner is HasDefaultViewModelProviderFactory) {
-        viewModelStoreOwner.defaultViewModelCreationExtras
-    } else {
-        CreationExtras.Empty
-    }
-): VM {
-    val vm = viewModel<VM>(viewModelStoreOwner, key, factory, extras)
-    NewIntentEffect {
-        vm.onNewIntentInternal(it)
-    }
-    return vm
-}
-
-@Composable
-fun NewIntentEffect(block: (Intent?) -> Unit) {
-    val context = LocalContext.current
-    val curBlock by rememberUpdatedState(newValue = block)
-    DisposableEffect(key1 = context) {
-        val listener = Consumer<Intent> {
-            curBlock(it)
-        }
-        val activity = context.findGenericActivity<ComponentActivity>()
-        activity?.addOnNewIntentListener(listener)
-        onDispose {
-            activity?.removeOnNewIntentListener(listener)
-        }
-    }
 }

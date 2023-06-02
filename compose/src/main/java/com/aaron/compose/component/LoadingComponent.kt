@@ -30,6 +30,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import java.util.UUID
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -50,22 +51,26 @@ fun LoadingComponent(
     content: @Composable BoxScope.() -> Unit
 ) {
     Box(modifier = modifier) {
-        val showLoading by component.loading
-        if (!hideContentWhenLoading || !showLoading) {
+        if (!enabled) {
             content()
-        }
-        if (loading != null) {
-            BackHandler(enabled = enabled && showLoading && component.loadingJobs.isNotEmpty()) {
-                component.cancelLoading()
+        } else {
+            val showLoading by component.loading
+            if (!hideContentWhenLoading || !showLoading) {
+                content()
             }
-            AnimatedVisibility(
-                modifier = Modifier.matchParentSize(),
-                visible = enabled && showLoading,
-                enter = fadeIn(animationSpec = spring()),
-                exit = fadeOut(animationSpec = spring()),
-                label = "LoadingContentAnimation"
-            ) {
-                loading()
+            if (loading != null) {
+                BackHandler(enabled = showLoading) {
+                    component.cancelLoading()
+                }
+                AnimatedVisibility(
+                    modifier = Modifier.matchParentSize(),
+                    visible = showLoading,
+                    enter = fadeIn(animationSpec = spring()),
+                    exit = fadeOut(animationSpec = spring()),
+                    label = "LoadingContentAnimation"
+                ) {
+                    loading()
+                }
             }
         }
     }
@@ -125,7 +130,7 @@ interface LoadingComponent {
     /**
      * 用来存储通过 [launchWithLoading] 启动的协程作业，外部不建议使用
      */
-    val loadingJobs: SafeStateMap<Any, Job?>
+    val loadingJobs: SafeStateMap<UUID, Job>
 
     /**
      * 启动协程
@@ -137,25 +142,23 @@ interface LoadingComponent {
         start: CoroutineStart = CoroutineStart.DEFAULT,
         cancelable: Boolean = true,
         block: suspend CoroutineScope.() -> Unit
-    ): Job {
+    ): Job = launch(
+        context = context,
+        start = start,
+        block = block
+    ).apply {
         val jobs = loadingJobs
-        val curTime = System.currentTimeMillis()
+        val key = UUID.randomUUID()
         showLoading(true)
-        return launch(
-            context = context,
-            start = start,
-            block = block
-        ).apply {
+        if (cancelable) {
+            jobs.editInternal()[key] = this
+        }
+        invokeOnCompletion {
             if (cancelable) {
-                jobs.editInternal()[curTime] = this
+                jobs.editInternal().remove(key)
             }
-            invokeOnCompletion {
-                if (cancelable) {
-                    jobs.editInternal().remove(curTime)
-                }
-                if (jobs.isEmpty()) {
-                    showLoading(false)
-                }
+            if (jobs.isEmpty()) {
+                showLoading(false)
             }
         }
     }
@@ -171,12 +174,16 @@ interface LoadingComponent {
      * 这个方法应该作为中途需要取消加载的途径
      */
     fun cancelLoading() {
+        showLoading(false)
         val jobs = loadingJobs
+        if (jobs.isEmpty()) {
+            return
+        }
+
         jobs.forEach {
-            it.value?.cancel()
+            it.value.cancel()
         }
         jobs.editInternal().clear()
-        showLoading(false)
     }
 }
 
@@ -189,5 +196,5 @@ fun loadingComponent(
 
     override val loading: SafeState<Boolean> = safeStateOf(loading)
 
-    override val loadingJobs: SafeStateMap<Any, Job?> = safeStateMapOf()
+    override val loadingJobs: SafeStateMap<UUID, Job> = safeStateMapOf()
 }

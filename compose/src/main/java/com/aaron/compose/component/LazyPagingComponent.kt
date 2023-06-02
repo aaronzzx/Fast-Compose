@@ -14,7 +14,7 @@ import kotlinx.coroutines.MainScope
  * 分页数据懒加载组件接口，实现了刷新。
  */
 @Stable
-interface LazyPagingComponent<K, V> : PagingComponent<K, V>,
+interface LazyPagingComponent<E> : PagingComponent<E>,
     LazyComponent, RefreshComponent, SafeStateScope, LazyPagingScope {
 
     override val isInitialized: Boolean
@@ -43,9 +43,9 @@ interface LazyPagingComponent<K, V> : PagingComponent<K, V>,
 /**
  * 分页懒加载接口实现类，封装 [PageData] ，将 PageData 转换为 [LazyPagingComponent] 。
  */
-open class LazyPagingComponentHelper<K, V>(
-    final override val pageData: PageData<K, V>
-) : LazyPagingComponent<K, V> {
+open class LazyPagingComponentHelper<E>(
+    final override val pageData: PageData<*, E>
+) : LazyPagingComponent<E> {
 
     override val initialized: SafeState<Boolean> = safeStateOf(false)
 
@@ -61,14 +61,14 @@ open class LazyPagingComponentHelper<K, V>(
 /**
  * 用于 Compose 预览的参数占位。
  */
-fun <K, V> lazyPagingComponent(
-    vararg item: V
-): LazyPagingComponent<K, V> = object : LazyPagingComponent<K, V> {
+fun <E> lazyPagingComponent(
+    vararg item: E
+): LazyPagingComponent<E> = object : LazyPagingComponent<E> {
     override val initialized: SafeState<Boolean> = safeStateOf(false)
 
     override val smartRefreshType: SafeState<SmartRefreshType> = safeStateOf(SmartRefreshType.Idle)
 
-    override val pageData: PageData<K, V> = PageData(
+    override val pageData: PageData<*, E> = PageData(
         coroutineScope = MainScope(),
         onRequest = { LoadResult.Page(listOf(*item), null) }
     )

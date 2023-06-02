@@ -95,8 +95,8 @@ import kotlinx.coroutines.launch
  * @param errorContent 请求错误视图。
  */
 @Composable
-fun <K, V> PagingComponent(
-    component: PagingComponent<K, V>,
+fun <E> PagingComponent(
+    component: PagingComponent<E>,
     modifier: Modifier = Modifier,
     state: LazyListState = rememberLazyListState(),
     contentPadding: PaddingValues = PaddingValues(0.dp),
@@ -121,7 +121,7 @@ fun <K, V> PagingComponent(
             onClick = { component.pagingRefresh() }
         )
     },
-    content: LazyListScope.(PageData<K, V>) -> Unit
+    content: LazyListScope.(PageData<*, E>) -> Unit
 ) {
     BoxWithConstraints(modifier = modifier) {
         val listHeightPixels = maxHeight.roundToPx()
@@ -235,8 +235,8 @@ fun <K, V> PagingComponent(
  * @param errorContent 请求错误视图。
  */
 @Composable
-fun <K, V> PagingGridComponent(
-    component: PagingComponent<K, V>,
+fun <E> PagingGridComponent(
+    component: PagingComponent<E>,
     columns: GridCells,
     modifier: Modifier = Modifier,
     state: LazyGridState = rememberLazyGridState(),
@@ -262,7 +262,7 @@ fun <K, V> PagingGridComponent(
             onClick = { component.pagingRefresh() }
         )
     },
-    content: LazyGridScope.(PageData<K, V>) -> Unit
+    content: LazyGridScope.(PageData<*, E>) -> Unit
 ) {
     BoxWithConstraints(modifier = modifier) {
         val listHeightPixels = maxHeight.roundToPx()
@@ -378,8 +378,8 @@ fun <K, V> PagingGridComponent(
  * @param errorContent 请求错误视图。
  */
 @Composable
-fun <K, V> PagingStaggeredGridComponent(
-    component: PagingComponent<K, V>,
+fun <E> PagingStaggeredGridComponent(
+    component: PagingComponent<E>,
     columns: StaggeredGridCells,
     modifier: Modifier = Modifier,
     state: LazyStaggeredGridState = rememberLazyStaggeredGridState(),
@@ -403,7 +403,7 @@ fun <K, V> PagingStaggeredGridComponent(
             onClick = { component.pagingRefresh() }
         )
     },
-    content: LazyStaggeredGridScope.(PageData<K, V>) -> Unit
+    content: LazyStaggeredGridScope.(PageData<*, E>) -> Unit
 ) {
     BoxWithConstraints(modifier = modifier) {
         val listHeightPixels = maxHeight.roundToPx()
@@ -506,8 +506,8 @@ fun <K, V> PagingStaggeredGridComponent(
 }
 
 @Composable
-private fun <K, V> BoxScope.LoadingBox(
-    component: PagingComponent<K, V>,
+private fun <E> BoxScope.LoadingBox(
+    component: PagingComponent<E>,
     refreshLoading: Boolean,
     loadingContent: (@Composable BoxScope.() -> Unit)?,
     content: @Composable BoxScope.() -> Unit
@@ -528,8 +528,8 @@ private fun <K, V> BoxScope.LoadingBox(
  * @param component 实现的分页组件，一般由 [androidx.lifecycle.ViewModel] 进行实现。
  */
 @Composable
-fun <K, V> PagingHorizontalComponent(
-    component: PagingComponent<K, V>,
+fun <E> PagingHorizontalComponent(
+    component: PagingComponent<E>,
     modifier: Modifier = Modifier,
     state: LazyListState = rememberLazyListState(),
     contentPadding: PaddingValues = PaddingValues(0.dp),
@@ -540,7 +540,7 @@ fun <K, V> PagingHorizontalComponent(
     flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
     userScrollEnabled: Boolean = true,
     pagingStateFooter: PagingStateFooter? = PagingComponentDefaults.horizontalPagingStateFooter,
-    content: LazyListScope.(PageData<K, V>) -> Unit
+    content: LazyListScope.(PageData<*, E>) -> Unit
 ) {
     val density = LocalDensity.current
     var lastIndex = remember(component) { component.pageData.lastIndex }
@@ -609,8 +609,8 @@ fun <K, V> PagingHorizontalComponent(
         if (pagingStateFooter != null) {
             fun trySetFooter(
                 lazyListScope: LazyListScope,
-                component: PagingComponent<*, *>,
-                content: (@Composable (PagingComponent<*, *>) -> Unit)?
+                component: PagingComponent<*>,
+                content: (@Composable (PagingComponent<*>) -> Unit)?
             ) {
                 if (content != null) {
                     lazyListScope.item(
@@ -653,9 +653,9 @@ fun <K, V> PagingHorizontalComponent(
     }
 }
 
-private fun <K, V> handleCentralContent(
+private fun <E> handleCentralContent(
     scope: Any,
-    component: PagingComponent<K, V>,
+    component: PagingComponent<E>,
     refreshLoading: Boolean,
     refreshError: Boolean,
     listHeightPixels: Int,
@@ -668,7 +668,7 @@ private fun <K, V> handleCentralContent(
     loadingContent: (@Composable BoxScope.() -> Unit)?,
     emptyContent: (@Composable BoxScope.() -> Unit)?,
     errorContent: (@Composable BoxScope.() -> Unit)?,
-    content: (PageData<K, V>) -> Unit,
+    content: (PageData<*, E>) -> Unit,
 ) {
     val centralContent: @Composable (content: @Composable BoxScope.() -> Unit) -> Unit = {
         CentralContent(
@@ -755,16 +755,16 @@ private fun itemCentral(
     }
 }
 
-private fun <K, V> trySetPagingStateFooter(
+private fun <E> trySetPagingStateFooter(
     scope: Any,
-    component: PagingComponent<K, V>,
+    component: PagingComponent<E>,
     pagingFooterType: PagingFooterType,
     pagingStateFooter: PagingStateFooter
 ) {
     fun trySetFooter(
         scope: Any,
-        component: PagingComponent<*, *>,
-        content: (@Composable (PagingComponent<*, *>) -> Unit)?
+        component: PagingComponent<*>,
+        content: (@Composable (PagingComponent<*>) -> Unit)?
     ) {
         if (content != null) {
             if (scope is LazyListScope) {
@@ -1067,7 +1067,7 @@ private fun CentralContent(
  * 获取当前分页加载状态
  */
 @Composable
-fun <K, V> rememberPagingFooterType(component: PagingComponent<K, V>): State<PagingFooterType> {
+fun <E> rememberPagingFooterType(component: PagingComponent<E>): State<PagingFooterType> {
     val pageData = component.pageData
     val loadMoreState = pageData.loadState.loadMore
     val waitingRefresh = loadMoreState is LoadState.Waiting
@@ -1127,15 +1127,11 @@ object PagingComponentDefaults {
 @Stable
 abstract class PagingStateFooter {
 
-    abstract val loading: (@Composable (PagingComponent<*, *>) -> Unit)?
-
-    abstract val loadMore: (@Composable (PagingComponent<*, *>) -> Unit)?
-
-    abstract val loadError: (@Composable (PagingComponent<*, *>) -> Unit)?
-
-    abstract val noMoreData: (@Composable (PagingComponent<*, *>) -> Unit)?
-
-    abstract val waitingRefresh: (@Composable (PagingComponent<*, *>) -> Unit)?
+    abstract val loading: (@Composable (PagingComponent<*>) -> Unit)?
+    abstract val loadMore: (@Composable (PagingComponent<*>) -> Unit)?
+    abstract val loadError: (@Composable (PagingComponent<*>) -> Unit)?
+    abstract val noMoreData: (@Composable (PagingComponent<*>) -> Unit)?
+    abstract val waitingRefresh: (@Composable (PagingComponent<*>) -> Unit)?
 }
 
 /**
@@ -1144,39 +1140,35 @@ abstract class PagingStateFooter {
 @Stable
 open class VerticalPagingStateFooter : PagingStateFooter() {
 
-    override val loading: (@Composable (PagingComponent<*, *>) -> Unit)? = {
+    override val loading: (@Composable (PagingComponent<*>) -> Unit)? = {
         FooterText(
             text = stringResource(id = R.string.compose_component_loading),
             component = it,
             footerType = PagingFooterType.Loading
         )
     }
-
-    override val loadMore: (@Composable (PagingComponent<*, *>) -> Unit)? = {
+    override val loadMore: (@Composable (PagingComponent<*>) -> Unit)? = {
         FooterText(
             text = stringResource(id = R.string.compose_component_load_more),
             component = it,
             footerType = PagingFooterType.LoadMore
         )
     }
-
-    override val loadError: (@Composable (PagingComponent<*, *>) -> Unit)? = {
+    override val loadError: (@Composable (PagingComponent<*>) -> Unit)? = {
         FooterText(
             stringResource(id = R.string.compose_component_load_failed),
             component = it,
             footerType = PagingFooterType.LoadError
         )
     }
-
-    override val noMoreData: (@Composable (PagingComponent<*, *>) -> Unit)? = {
+    override val noMoreData: (@Composable (PagingComponent<*>) -> Unit)? = {
         CommonNoMoreDataContent(
             modifier = Modifier
                 .padding(16.dp)
                 .fillMaxWidth()
         )
     }
-
-    override val waitingRefresh: (@Composable (PagingComponent<*, *>) -> Unit)? = {
+    override val waitingRefresh: (@Composable (PagingComponent<*>) -> Unit)? = {
         FooterText(
             stringResource(id = R.string.compose_component_load_wait),
             component = it,
@@ -1239,7 +1231,7 @@ open class VerticalPagingStateFooter : PagingStateFooter() {
 @Stable
 open class HorizontalPagingStateFooter : PagingStateFooter() {
 
-    override val loading: @Composable (PagingComponent<*, *>) -> Unit = {
+    override val loading: @Composable (PagingComponent<*>) -> Unit = {
         Box(
             modifier = Modifier
                 .fillMaxHeight()
@@ -1251,17 +1243,16 @@ open class HorizontalPagingStateFooter : PagingStateFooter() {
             )
         }
     }
-
-    override val loadMore: ((PagingComponent<*, *>) -> Unit)? = null
-    override val loadError: ((PagingComponent<*, *>) -> Unit)? = null
-    override val noMoreData: ((PagingComponent<*, *>) -> Unit)? = null
-    override val waitingRefresh: ((PagingComponent<*, *>) -> Unit)? = null
+    override val loadMore: ((PagingComponent<*>) -> Unit)? = null
+    override val loadError: ((PagingComponent<*>) -> Unit)? = null
+    override val noMoreData: ((PagingComponent<*>) -> Unit)? = null
+    override val waitingRefresh: ((PagingComponent<*>) -> Unit)? = null
 }
 
 @Composable
 private fun FooterText(
     text: String,
-    component: PagingComponent<*, *>,
+    component: PagingComponent<*>,
     footerType: PagingFooterType,
     modifier: Modifier = Modifier,
     fontSize: TextUnit = 12.sp,
@@ -1297,9 +1288,9 @@ private fun FooterText(
  * 构建 [PageData] ，如 [buildPageData] 、[buildMappingPageData] 。
  */
 @Stable
-interface PagingComponent<K, V> : PagingScope {
+interface PagingComponent<E> : PagingScope {
 
-    val pageData: PageData<K, V>
+    val pageData: PageData<*, E>
 
     /**
      * PageData 是否已经初始化，即成功加载过数据
@@ -1322,9 +1313,9 @@ interface PagingComponent<K, V> : PagingScope {
 /**
  * 用于 Compose 预览的参数占位。
  */
-fun <K, V> pagingComponent(vararg item: V): PagingComponent<K, V> = object : PagingComponent<K, V> {
+fun <E> pagingComponent(vararg item: E): PagingComponent<E> = object : PagingComponent<E> {
 
-    override val pageData: PageData<K, V> = PageData(
+    override val pageData: PageData<*, E> = PageData(
         coroutineScope = MainScope(),
         onRequest = { LoadResult.Page(listOf(*item), null) }
     )

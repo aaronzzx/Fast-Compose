@@ -39,6 +39,7 @@ import com.aaron.compose.safestate.SafeStateMap
 import com.aaron.compose.safestate.safeStateMapOf
 import com.aaron.compose.safestate.safeStateOf
 import kotlinx.coroutines.Job
+import java.util.UUID
 
 /**
  * 感知视图状态，显示失败、错误、空数据等页面结果。
@@ -48,12 +49,7 @@ fun StateComponent(
     component: StateComponent,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    loading: (@Composable BoxScope.() -> Unit)? = {
-        CircularLoadingLayout(
-            modifier = Modifier.matchParentSize()
-        )
-    },
-    failure: (@Composable BoxScope.(code: Int, msg: String?) -> Unit)? = { code, msg ->
+    failure: (@Composable BoxScope.(ViewState.Failure) -> Unit)? = {
         MyStateView(
             text = stringResource(R.string.compose_component_request_failure),
             modifier = Modifier
@@ -62,7 +58,7 @@ fun StateComponent(
                 }
         )
     },
-    error: (@Composable BoxScope.(ex: Throwable) -> Unit)? = { ex ->
+    error: (@Composable BoxScope.(ViewState.Error) -> Unit)? = {
         MyStateView(
             text = stringResource(R.string.compose_component_request_error),
             modifier = Modifier
@@ -76,24 +72,26 @@ fun StateComponent(
     },
     content: @Composable BoxScope.() -> Unit
 ) {
-    LoadingComponent(
-        component = component,
-        modifier = modifier,
-        enabled = enabled,
-        loading = loading
-    ) {
-        val result = component.viewState.value
-        when {
-            enabled && result is ViewState.Failure && failure != null -> {
-                failure(result.code, result.msg)
+    Box(modifier = modifier) {
+        if (!enabled) {
+            content()
+        } else {
+            val result = component.viewState.value
+            when {
+                result is ViewState.Failure && failure != null -> {
+                    failure(result)
+                }
+
+                result is ViewState.Error && error != null -> {
+                    error(result)
+                }
+
+                result is ViewState.Empty && empty != null -> {
+                    empty()
+                }
+
+                else -> content()
             }
-            enabled && result is ViewState.Error && error != null -> {
-                error(result.ex)
-            }
-            enabled && result is ViewState.Empty && empty != null -> {
-                empty()
-            }
-            else -> content()
         }
     }
 }
@@ -177,14 +175,14 @@ fun StateView(
  * ViewModel 可以实现此接口接管视图状态，此接口包含显示加载状态的实现。
  */
 @Stable
-interface StateComponent : LoadingComponent {
+interface StateComponent {
 
     val viewState: SafeState<ViewState>
 
     /**
      * 切换视图状态
      */
-    fun showState(viewState: ViewState) {
+    fun showViewState(viewState: ViewState) {
         this.viewState.setValueInternal(viewState)
     }
 
@@ -193,6 +191,9 @@ interface StateComponent : LoadingComponent {
      */
     fun retry()
 }
+
+@Stable
+interface LoadingStateComponent : StateComponent, LoadingComponent
 
 /**
  * 视图状态
@@ -225,15 +226,27 @@ sealed class ViewState {
  * 用于 Compose 预览的参数占位。
  */
 fun stateComponent(
-    loading: Boolean = false,
     viewState: ViewState = ViewState.Idle
 ): StateComponent = object : StateComponent {
-
-    override val loading: SafeState<Boolean> = safeStateOf(loading)
-    override val loadingJobs: SafeStateMap<Any, Job?> = safeStateMapOf()
     override val viewState: SafeState<ViewState> = safeStateOf(viewState)
 
     override fun retry() {
         error("You must implement retry function by self.")
+    }
+}
+
+/**
+ * 用于 Compose 预览的参数占位。
+ */
+fun loadingStateComponent(
+    loading: Boolean = false,
+    viewState: ViewState = ViewState.Idle
+): LoadingStateComponent = object : LoadingStateComponent {
+    override val loading: SafeState<Boolean> = safeStateOf(loading)
+    override val loadingJobs: SafeStateMap<UUID, Job> = safeStateMapOf()
+    override val viewState: SafeState<ViewState> = safeStateOf(viewState)
+
+    override fun retry() {
+        TODO("Not yet implemented")
     }
 }

@@ -2,6 +2,7 @@ package com.aaron.compose.component
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -9,7 +10,8 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.withStateAtLeast
+import androidx.lifecycle.repeatOnLifecycle
+import com.aaron.compose.ktx.currentPageDelayed
 import com.aaron.compose.safestate.SafeState
 import com.aaron.compose.safestate.safeStateOf
 import kotlinx.coroutines.flow.filter
@@ -23,21 +25,47 @@ import kotlinx.coroutines.flow.filter
 fun LazyComponent(
     component: LazyComponent,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     activeState: Lifecycle.State = Lifecycle.State.RESUMED,
+    pagerInfo: Pair<PagerState, Int>? = null,
     content: @Composable BoxScope.() -> Unit
 ) {
     Box(modifier = modifier) {
-        val owner = LocalLifecycleOwner.current
-        LaunchedEffect(key1 = component) {
-            owner.withStateAtLeast(activeState) {}
-            snapshotFlow { component.initialized.value }
-                .filter { !it }
-                .collect {
-                    component.initialized.setValueInternal(true)
-                    component.initialize()
+        if (!enabled) {
+            content()
+        } else {
+            val owner = LocalLifecycleOwner.current
+            if (pagerInfo != null) {
+                val (pagerState, page) = pagerInfo
+                val curPage = pagerState.currentPageDelayed()
+                LaunchedEffect(component, pagerState, page) {
+                    owner.repeatOnLifecycle(activeState) {
+                        snapshotFlow { curPage.value to component.initialized.value }
+                            .filter { (curPageVal, initializedVal) ->
+                                curPageVal == page && !initializedVal
+                            }
+                            .collect {
+                                component.initialized.setValueInternal(true)
+                                component.initialize()
+                            }
+                    }
                 }
+            } else {
+                LaunchedEffect(key1 = component) {
+                    owner.repeatOnLifecycle(activeState) {
+                        snapshotFlow { component.initialized.value }
+                            .filter { initialized ->
+                                !initialized
+                            }
+                            .collect {
+                                component.initialized.setValueInternal(true)
+                                component.initialize()
+                            }
+                    }
+                }
+            }
+            content()
         }
-        content()
     }
 }
 

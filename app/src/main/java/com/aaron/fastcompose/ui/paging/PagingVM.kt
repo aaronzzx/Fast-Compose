@@ -2,17 +2,10 @@ package com.aaron.fastcompose.ui.paging
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aaron.compose.component.LazyPagerPagingComponent
-import com.aaron.compose.component.LazyPagingData
 import com.aaron.compose.defaults.Defaults
-import com.aaron.compose.ktx.toLazyPagingComponent
 import com.aaron.compose.paging.PageConfigDefaults
-import com.aaron.compose.safestate.SafeState
 import com.aaron.compose.safestate.SafeStateScope
-import com.aaron.compose.safestate.safeStateOf
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -23,7 +16,7 @@ import kotlin.random.Random
  * @since 2022/10/24
  */
 @HiltViewModel
-class PagingVM @Inject constructor() : ViewModel(), LazyPagerPagingComponent<String, Any?, Repo>, SafeStateScope {
+class PagingVM @Inject constructor() : ViewModel(), SafeStateScope {
 
     companion object {
         init {
@@ -37,30 +30,22 @@ class PagingVM @Inject constructor() : ViewModel(), LazyPagerPagingComponent<Str
         }
     }
 
-    override val lazyPagingData: SafeState<LazyPagingData<String, Any?, Repo>> =
-        safeStateOf(persistentListOf())
-
     init {
         initialize()
     }
 
-    fun getLazyPagerPagingComponent(): LazyPagerPagingComponent<String, Any?, Repo> {
-        return this
-    }
-
     private fun initialize() {
         viewModelScope.launch {
-            val list = List(5) {
-                val lazyPagingComponent = viewModelScope.buildPageData(
-                    initialKey = 1,
-                    lazyLoad = true
-                ) { page, pageSize ->
-                    request(page as Int, pageSize)
-                }.toLazyPagingComponent()
-
-                "Tab$$it" to lazyPagingComponent
-            }
-            lazyPagingData.setValue(list.toPersistentList())
+//            val list = List(5) {
+//                val lazyPagingComponent = viewModelScope.buildPageData(
+//                    initialKey = 1,
+//                    lazyLoad = true
+//                ) { page, pageSize ->
+//                    request(page as Int, pageSize)
+//                }.toLazyPagingComponent()
+//
+//                "Tab$$it" to lazyPagingComponent
+//            }
         }
     }
 

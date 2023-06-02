@@ -1,8 +1,6 @@
 package com.aaron.compose.component
 
-import android.content.Intent
 import android.widget.Toast
-import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -50,13 +48,6 @@ fun <UiState : Any, UiEvent : Any> UDFComponent(
                             UiBaseEvent.Finish -> {
                                 context.findActivity()?.finish()
                             }
-
-                            is UiBaseEvent.FinishWithResult -> {
-                                val activity = context.findActivity()
-                                activity?.setResult(baseEvent.resultCode, baseEvent.data)
-                                activity?.finish()
-                            }
-
                             is UiBaseEvent.ResToast -> {
                                 Toast.makeText(
                                     context.applicationContext,
@@ -64,7 +55,6 @@ fun <UiState : Any, UiEvent : Any> UDFComponent(
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
-
                             is UiBaseEvent.StringToast -> {
                                 Toast.makeText(
                                     context.applicationContext,
@@ -112,16 +102,11 @@ sealed interface UiBaseEvent {
 
     sealed interface Toast : UiBaseEvent
 
-    data class ResToast(@StringRes val res: Int) : Toast
+    data class ResToast(val res: Int) : Toast
 
     data class StringToast(val text: String) : Toast
 
     object Finish : UiBaseEvent
-
-    data class FinishWithResult(
-        val resultCode: Int,
-        val data: Intent
-    ) : UiBaseEvent
 }
 
 fun <UiState : Any, UiEvent : Any> udfComponent(initialState: UiState): UDFComponent<UiState, UiEvent> {

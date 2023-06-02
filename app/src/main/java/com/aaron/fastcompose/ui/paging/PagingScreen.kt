@@ -1,6 +1,5 @@
 package com.aaron.fastcompose.ui.paging
 
-import android.util.Log
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -19,12 +17,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Card
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.LocalContentColor
@@ -40,10 +35,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -52,7 +45,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -61,11 +53,8 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import com.aaron.compose.base.BaseRoute
 import com.aaron.compose.base.navTo
-import com.aaron.compose.component.LazyPagerPagingComponent
-import com.aaron.compose.component.PagingStaggeredGridComponent
 import com.aaron.compose.component.RefreshComponent
 import com.aaron.compose.ktx.clipToBackground
-import com.aaron.compose.ktx.lazylist.itemsIndexed
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ui.BottomSheet
 import com.aaron.compose.ui.Dialog
@@ -77,12 +66,10 @@ import com.aaron.compose.ui.VisibilityContainerProperties
 import com.aaron.compose.ui.VisibilityContainerState
 import com.aaron.compose.ui.VisibilityScrimContainer
 import com.aaron.compose.ui.rememberVisibilityContainerState
-import com.aaron.compose.utils.OverScrollHandler
 import com.aaron.fastcompose.R
 import com.blankj.utilcode.util.ToastUtils
 import com.google.accompanist.navigation.animation.composable
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
@@ -167,10 +154,6 @@ private fun PagingScreen(
                         )
                     }
                 }
-            )
-
-            LazyPagingContent(
-                lazyPagerPagingComponent = vm.getLazyPagerPagingComponent()
             )
         }
 
@@ -391,68 +374,6 @@ private fun NotificationContent(onClick: () -> Unit) {
         contentScale = ContentScale.FillWidth,
         alignment = Alignment.TopCenter
     )
-}
-
-@Composable
-private fun LazyPagingContent(lazyPagerPagingComponent: LazyPagerPagingComponent<String, Any?, Repo>) {
-    LazyPagerPagingComponent(component = lazyPagerPagingComponent) { lazyPagingComponent ->
-        RefreshContent(
-            refreshComponent = lazyPagingComponent,
-            refreshEnabled = true
-        ) {
-            OverScrollHandler(enabled = false) {
-                val listState = rememberLazyStaggeredGridState()
-                LaunchedEffect(key1 = listState) {
-                    snapshotFlow { listState.isScrollInProgress }
-                        .filter { it }
-                        .collect {
-                            Log.d("zzx", "start: ${!listState.canScrollBackward}, end: ${!listState.canScrollForward}")
-                        }
-                }
-                PagingStaggeredGridComponent(
-                    component = lazyPagingComponent,
-                    state = listState,
-                    columns = StaggeredGridCells.Fixed(2),
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(8.dp),
-                    verticalItemSpacing = 8.dp,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    itemsIndexed(lazyPagingComponent, key = { _, item -> item.id }) { index, item ->
-                        Card(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .onClick {
-                                    lazyPagingComponent.pagingRefresh()
-                                }
-                                .fillMaxWidth()
-                                .let {
-                                    if (index % 3 == 0) it.aspectRatio(1f) else {
-                                        it.aspectRatio(1.5f)
-                                    }
-                                },
-                            shape = RoundedCornerShape(8.dp),
-                            backgroundColor = when (isSystemInDarkTheme()) {
-                                true -> MaterialTheme.colors.surface
-                                else -> Color.White
-                            }
-                        ) {
-                            Box(
-                                modifier = Modifier.padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = item.name,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 @Composable

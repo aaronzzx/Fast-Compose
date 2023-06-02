@@ -24,16 +24,16 @@ interface LazyPagingScope : PagingScope {
      * @param onNextKey 获取下一个 loadKey ，决定是否还有下一页
      * @param onRequest 请求块，loadKey 一般和 initialKey 相同类型，根据需要进行强转
      */
-    fun <V> CoroutineScope.buildLazyPagingComponent(
+    fun <E> CoroutineScope.buildLazyPagingComponent(
         initialKey: Any?,
         successCode: Int = Defaults.SuccessCode,
         pageConfig: PageConfig = PageConfig(),
-        invokeCompletion: (suspend LazyPagingComponent<Any?, V>.(LoadResult<Any?, V>) -> Unit)? = null,
-        onNextKey: suspend (BasePagingResult<V>, LoadParams<Any?>) -> Any? = { resp, params ->
+        invokeCompletion: (suspend LazyPagingComponent<E>.(LoadResult<Any?, E>) -> Unit)? = null,
+        onNextKey: suspend (BasePagingResult<E>, LoadParams<Any?>) -> Any? = { resp, params ->
             getNextLoadKey(initialKey, params)
         },
-        onRequest: suspend LazyPagingComponent<Any?, V>.(loadKey: Any?, pageSize: Int) -> BasePagingResult<V>
-    ): LazyPagingComponent<Any?, V> = buildMappingLazyPagingComponent(
+        onRequest: suspend LazyPagingComponent< E>.(loadKey: Any?, pageSize: Int) -> BasePagingResult<E>
+    ): LazyPagingComponent<E> = buildMappingLazyPagingComponent(
         initialKey = initialKey,
         successCode = successCode,
         pageConfig = pageConfig,
@@ -54,18 +54,18 @@ interface LazyPagingScope : PagingScope {
      * @param onMapping 转换数据
      * @param onRequest 请求块，loadKey 一般和 initialKey 相同类型，根据需要进行强转
      */
-    fun <V, R> CoroutineScope.buildMappingLazyPagingComponent(
+    fun <T, R> CoroutineScope.buildMappingLazyPagingComponent(
         initialKey: Any?,
         successCode: Int = Defaults.SuccessCode,
         pageConfig: PageConfig = PageConfig(),
-        invokeCompletion: (suspend LazyPagingComponent<Any?, R>.(LoadResult<Any?, R>) -> Unit)? = null,
-        onNextKey: suspend (BasePagingResult<V>, LoadParams<Any?>) -> Any? = { resp, params ->
+        invokeCompletion: (suspend LazyPagingComponent<R>.(LoadResult<Any?, R>) -> Unit)? = null,
+        onNextKey: suspend (BasePagingResult<T>, LoadParams<Any?>) -> Any? = { resp, params ->
             getNextLoadKey(initialKey, params)
         },
-        onMapping: suspend (data: List<V>) -> List<R>,
-        onRequest: suspend LazyPagingComponent<Any?, R>.(loadKey: Any?, pageSize: Int) -> BasePagingResult<V>
-    ): LazyPagingComponent<Any?, R> {
-        var pagingComponent: LazyPagingComponent<Any?, R>? = null
+        onMapping: suspend (data: List<T>) -> List<R>,
+        onRequest: suspend LazyPagingComponent<R>.(loadKey: Any?, pageSize: Int) -> BasePagingResult<T>
+    ): LazyPagingComponent<R> {
+        var pagingComponent: LazyPagingComponent<R>? = null
         pagingComponent = buildMappingPageData(
             initialKey = initialKey,
             successCode = successCode,
@@ -105,17 +105,17 @@ interface PagingScope {
      * @param onNextKey 获取下一个 loadKey ，决定是否还有下一页
      * @param onRequest 请求块，loadKey 一般和 initialKey 相同类型，根据需要进行强转
      */
-    fun <V> CoroutineScope.buildPageData(
+    fun <E> CoroutineScope.buildPageData(
         initialKey: Any?,
         successCode: Int = Defaults.SuccessCode,
         pageConfig: PageConfig = PageConfig(),
         lazyLoad: Boolean = false,
-        invokeCompletion: (suspend PageData<Any?, V>.(LoadResult<Any?, V>) -> Unit)? = null,
-        onNextKey: suspend (BasePagingResult<V>, LoadParams<Any?>) -> Any? = { resp, params ->
+        invokeCompletion: (suspend PageData<Any?, E>.(LoadResult<Any?, E>) -> Unit)? = null,
+        onNextKey: suspend (BasePagingResult<E>, LoadParams<Any?>) -> Any? = { resp, params ->
             getNextLoadKey(initialKey, params)
         },
-        onRequest: suspend PageData<Any?, V>.(loadKey: Any?, pageSize: Int) -> BasePagingResult<V>
-    ): PageData<Any?, V> = buildMappingPageData(
+        onRequest: suspend PageData<Any?, E>.(loadKey: Any?, pageSize: Int) -> BasePagingResult<E>
+    ): PageData<Any?, E> = buildMappingPageData(
         initialKey = initialKey,
         successCode = successCode,
         pageConfig = pageConfig,
@@ -138,17 +138,17 @@ interface PagingScope {
      * @param onMapping 转换数据
      * @param onRequest 请求块，loadKey 一般和 initialKey 相同类型，根据需要进行强转
      */
-    fun <V, R> CoroutineScope.buildMappingPageData(
+    fun <T, R> CoroutineScope.buildMappingPageData(
         initialKey: Any?,
         successCode: Int = Defaults.SuccessCode,
         pageConfig: PageConfig = PageConfig(),
         lazyLoad: Boolean = false,
         invokeCompletion: (suspend PageData<Any?, R>.(LoadResult<Any?, R>) -> Unit)? = null,
-        onNextKey: suspend (BasePagingResult<V>, LoadParams<Any?>) -> Any? = { resp, params ->
+        onNextKey: suspend (BasePagingResult<T>, LoadParams<Any?>) -> Any? = { resp, params ->
             getNextLoadKey(initialKey, params)
         },
-        onMapping: suspend (data: List<V>) -> List<R>,
-        onRequest: suspend PageData<Any?, R>.(loadKey: Any?, pageSize: Int) -> BasePagingResult<V>
+        onMapping: suspend (data: List<T>) -> List<R>,
+        onRequest: suspend PageData<Any?, R>.(loadKey: Any?, pageSize: Int) -> BasePagingResult<T>
     ): PageData<Any?, R> = PageData(
         coroutineScope = this,
         config = pageConfig,

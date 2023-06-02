@@ -23,11 +23,11 @@ import com.aaron.compose.component.PagingComponent
  * @since 2022/12/5
  */
 
-inline fun <K, V> LazyListScope.items(
-    component: PagingComponent<K, V>,
-    crossinline key: (item: V) -> Any? = { null },
-    crossinline contentType: (item: V) -> Any? = { null },
-    crossinline itemContent: @Composable LazyItemScope.(item: V) -> Unit
+inline fun <E> LazyListScope.items(
+    component: PagingComponent<E>,
+    crossinline key: (item: E) -> Any? = { null },
+    crossinline contentType: (item: E) -> Any? = { null },
+    crossinline itemContent: @Composable LazyItemScope.(item: E) -> Unit
 ) {
     itemsIndexed(
         component = component,
@@ -38,11 +38,11 @@ inline fun <K, V> LazyListScope.items(
     }
 }
 
-inline fun <K, V> LazyListScope.itemsIndexed(
-    component: PagingComponent<K, V>,
-    crossinline key: (index: Int, item: V) -> Any? = { _, _ -> null },
-    crossinline contentType: (index: Int, item: V) -> Any? = { _, _ -> null },
-    crossinline itemContent: @Composable LazyItemScope.(index: Int, item: V) -> Unit
+inline fun <E> LazyListScope.itemsIndexed(
+    component: PagingComponent<E>,
+    crossinline key: (index: Int, item: E) -> Any? = { _, _ -> null },
+    crossinline contentType: (index: Int, item: E) -> Any? = { _, _ -> null },
+    crossinline itemContent: @Composable LazyItemScope.(index: Int, item: E) -> Unit
 ) {
     val pageData = component.pageData
     items(
@@ -58,12 +58,12 @@ inline fun <K, V> LazyListScope.itemsIndexed(
     }
 }
 
-inline fun <K, V> LazyGridScope.items(
-    component: PagingComponent<K, V>,
-    crossinline key: (item: V) -> Any? = { null },
-    crossinline contentType: (item: V) -> Any? = { null },
-    crossinline span: LazyGridItemSpanScope.(item: V) -> GridItemSpan = { GridItemSpan(1) },
-    crossinline itemContent: @Composable LazyGridItemScope.(item: V) -> Unit
+inline fun <E> LazyGridScope.items(
+    component: PagingComponent<E>,
+    crossinline key: (item: E) -> Any? = { null },
+    crossinline contentType: (item: E) -> Any? = { null },
+    crossinline span: LazyGridItemSpanScope.(item: E) -> GridItemSpan = { GridItemSpan(1) },
+    crossinline itemContent: @Composable LazyGridItemScope.(item: E) -> Unit
 ) {
     itemsIndexed(
         component = component,
@@ -75,16 +75,16 @@ inline fun <K, V> LazyGridScope.items(
     }
 }
 
-inline fun <K, V> LazyGridScope.itemsIndexed(
-    component: PagingComponent<K, V>,
-    crossinline key: (index: Int, item: V) -> Any? = { _, _ -> null },
-    crossinline contentType: (index: Int, item: V) -> Any? = { _, _ -> null },
-    crossinline span: LazyGridItemSpanScope.(index: Int, item: V) -> GridItemSpan = { _, _ ->
+inline fun <E> LazyGridScope.itemsIndexed(
+    component: PagingComponent<E>,
+    crossinline key: (index: Int, item: E) -> Any? = { _, _ -> null },
+    crossinline contentType: (index: Int, item: E) -> Any? = { _, _ -> null },
+    crossinline span: LazyGridItemSpanScope.(index: Int, item: E) -> GridItemSpan = { _, _ ->
         GridItemSpan(
             1
         )
     },
-    crossinline itemContent: @Composable LazyGridItemScope.(index: Int, item: V) -> Unit
+    crossinline itemContent: @Composable LazyGridItemScope.(index: Int, item: E) -> Unit
 ) {
     val pageData = component.pageData
     items(
@@ -103,11 +103,11 @@ inline fun <K, V> LazyGridScope.itemsIndexed(
     }
 }
 
-inline fun <K, V> LazyStaggeredGridScope.items(
-    component: PagingComponent<K, V>,
-    crossinline key: (item: V) -> Any? = { null },
-    crossinline contentType: (item: V) -> Any? = { null },
-    crossinline itemContent: @Composable (LazyStaggeredGridItemScope.(item: V) -> Unit)
+inline fun <E> LazyStaggeredGridScope.items(
+    component: PagingComponent<E>,
+    crossinline key: (item: E) -> Any? = { null },
+    crossinline contentType: (item: E) -> Any? = { null },
+    crossinline itemContent: @Composable (LazyStaggeredGridItemScope.(item: E) -> Unit)
 ) {
     itemsIndexed(
         component = component,
@@ -118,11 +118,11 @@ inline fun <K, V> LazyStaggeredGridScope.items(
     }
 }
 
-inline fun <K, V> LazyStaggeredGridScope.itemsIndexed(
-    component: PagingComponent<K, V>,
-    crossinline key: (index: Int, item: V) -> Any? = { _, _ -> null },
-    crossinline contentType: (index: Int, item: V) -> Any? = { _, _ -> null },
-    crossinline itemContent: @Composable (LazyStaggeredGridItemScope.(index: Int, item: V) -> Unit)
+inline fun <E> LazyStaggeredGridScope.itemsIndexed(
+    component: PagingComponent<E>,
+    crossinline key: (index: Int, item: E) -> Any? = { _, _ -> null },
+    crossinline contentType: (index: Int, item: E) -> Any? = { _, _ -> null },
+    crossinline itemContent: @Composable (LazyStaggeredGridItemScope.(index: Int, item: E) -> Unit)
 ) {
     val pageData = component.pageData
     items(
@@ -139,7 +139,7 @@ inline fun <K, V> LazyStaggeredGridScope.itemsIndexed(
 }
 
 @PublishedApi
-internal fun <K, V> getItem(component: PagingComponent<K, V>, index: Int): V {
+internal fun <E> getItem(component: PagingComponent<E>, index: Int): E {
     // 判断是否触发加载
     val pageData = component.pageData
     val config = pageData.config
