@@ -53,6 +53,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
@@ -60,6 +61,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.aaron.compose.utils.noLocalProvidedFor
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -109,6 +111,24 @@ fun FloatingScaffold(
                             drawRect(color = scrimColor)
                         }
                 )
+            }
+
+            val systemUiController = rememberSystemUiController()
+            LaunchedEffect(floatingTotal, systemUiController) {
+                val oldStatusState = systemUiController.statusBarDarkContentEnabled
+                val oldNavBarState = systemUiController.navigationBarDarkContentEnabled
+                snapshotFlow { floatingTotal.showScrim }
+                    .collect { showScrim ->
+                        if (showScrim) {
+                            val darkIcons =
+                                scrimColor.luminance() > 0.5f || scrimColor.alpha < 0.32f
+                            systemUiController.statusBarDarkContentEnabled = darkIcons
+                            systemUiController.navigationBarDarkContentEnabled = darkIcons
+                        } else {
+                            systemUiController.statusBarDarkContentEnabled = oldStatusState
+                            systemUiController.navigationBarDarkContentEnabled = oldNavBarState
+                        }
+                    }
             }
 
             remember { FloatingScaffoldScopeImpl(this) }.floating()
