@@ -59,7 +59,8 @@ fun LoadingComponent(
                 content()
             }
             if (loading != null) {
-                BackHandler(enabled = showLoading) {
+                // 如果没有 loadingJob 意味着操作不可取消，此时不启用拦截
+                BackHandler(enabled = showLoading && component.loadingJobs.isNotEmpty()) {
                     component.cancelLoading()
                 }
                 AnimatedVisibility(
