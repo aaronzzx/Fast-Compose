@@ -19,6 +19,27 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 /**
+ * 计算给定页偏移值
+ */
+fun PagerState.calculateOffsetFraction(page: Int): Float {
+    return (currentPage - page) + currentPageOffsetFraction
+}
+
+/**
+ * 计算给定页开始方向的偏移值，最少为 0
+ */
+fun PagerState.calculateStartOffsetFraction(page: Int): Float {
+    return calculateOffsetFraction(page).coerceAtLeast(0f)
+}
+
+/**
+ * 计算给定页结束方向的偏移值，最多为 0
+ */
+fun PagerState.calculateEndOffsetFraction(page: Int): Float {
+    return calculateOffsetFraction(page).coerceAtMost(0f)
+}
+
+/**
  * 延迟 [PagerState.currentPage] 的读取
  */
 @Composable
