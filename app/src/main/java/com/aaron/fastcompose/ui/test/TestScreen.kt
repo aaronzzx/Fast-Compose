@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
@@ -48,11 +50,10 @@ import com.aaron.compose.base.BaseRoute
 import com.aaron.compose.base.navTo
 import com.aaron.compose.ui.AutoResizeText
 import com.aaron.compose.ui.FontSizeRange
-import com.aaron.compose.ui.RollPickerDefaults
 import com.aaron.compose.ui.RollPickerStyle
 import com.aaron.compose.ui.TopBar
 import com.aaron.compose.ui.VerticalRollPicker
-import com.aaron.compose.ui.clipRollPickerCenter
+import com.aaron.compose.ui.clipCenterForRollPicker
 import com.aaron.compose.ui.rememberRollPickerState
 import com.aaron.fastcompose.R
 import com.blankj.utilcode.util.ToastUtils
@@ -126,7 +127,14 @@ private fun TestScreen(
         ) {
 //            Wheels()
 
-            SingleWheel()
+            Column {
+                AutoResizeText(
+                    modifier = Modifier.background(Color(0xFFEF9A9A)),
+                    text = "Hello World! 你好，世界！",
+                    fitCenter = true
+                )
+                SingleWheel()
+            }
         }
     }
 }
@@ -150,32 +158,60 @@ private fun SingleWheel() {
                 }
         }
 
-        VerticalRollPicker(
-            modifier = Modifier
-                .size(200.dp)
-                .clipRollPickerCenter(
-                    state = state,
-                    color = MaterialTheme.colors.primary,
-                    scaleX = 1.1f
-                ),
-            count = 99,
-            state = state,
-            visibleCount = 5,
-            lineSpacingMultiplier = 1f,
-            loop = true,
-            onPick = { index ->
-                ToastUtils.showShort("${index.value}")
-            },
-            style = RollPickerStyle.Wheel(),
-//            absMaxVelocity = 10000f,
-            onFling = RollPickerDefaults.slowInFling(state = state)
-        ) { index ->
-            AutoResizeText(
-                text = formatInt(index.value),
-                fontSizeRange = FontSizeRange(8.sp, state.itemFontSize),
-                fitCenter = true,
-                style = LocalTextStyle.current.copy(fontFamily = FontFamily.Monospace)
+        Box {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .width(300.dp)
+                    .height(state.itemSize * 0.75f)
+                    .background(
+                        color = Color(0xFFF7DBDB),
+                        shape = RoundedCornerShape(8.dp)
+                    )
             )
+
+            val list = List(100) { index ->
+                when (index % 5) {
+                    0 -> "01Integer富强"
+                    1 -> "民主"
+                    2 -> "敬业"
+                    3 -> "友善"
+                    else -> "劳动"
+                }
+            }
+            VerticalRollPicker(
+                modifier = Modifier
+                    .size(300.dp)
+                    .clipCenterForRollPicker(
+                        state = state,
+                        color = Color(0xFFE57373),
+                        scaleX = 1.0f,
+                        scaleY = 1.0f,
+                        clipFraction = 0.75f
+                    )
+                    /*.slowInFlingForRollPicker(state = state)*/,
+                count = list.size,
+                state = state,
+                visibleCount = 5,
+                lineSpacingMultiplier = 1f,
+                loop = true,
+                onPick = { index ->
+                    ToastUtils.showShort(list[index.value])
+                },
+                style = RollPickerStyle.Wheel()
+            ) { index ->
+                AutoResizeText(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .wrapContentSize(),
+                    text = list[index.value],
+                    fontSizeRange = FontSizeRange(8.sp, state.itemFontSize),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fitCenter = true,
+                    style = LocalTextStyle.current.copy(fontFamily = FontFamily.Monospace)
+                )
+            }
         }
     }
 }
@@ -298,7 +334,6 @@ private fun MyWheel(
             visibleCount = 9,
             loop = true,
             lineSpacingMultiplier = 1f,
-            absMaxVelocity = 6000f,
             onPick = { index ->
                 onSelected(data[index.value])
             }

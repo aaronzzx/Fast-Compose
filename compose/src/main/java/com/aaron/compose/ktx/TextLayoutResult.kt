@@ -27,11 +27,11 @@ fun TextLayoutResult.getTextMetrics(lineIndex: Int): TextMetrics {
  * 获取给定行文本居中所需偏移值
  */
 fun TextLayoutResult.getCenterOffset(lineIndex: Int): Float {
-    val baseline = getBaseline(lineIndex)
     val top = getTop(lineIndex)
-    val bottom = getBottom(lineIndex)
     val ascent = getAscent(lineIndex)
-    return ((ascent - top) - (bottom - baseline)) / 2
+    val descent = getDescent(lineIndex)
+    val bottom = getBottom(lineIndex)
+    return ((ascent - top) - (bottom - descent)) / 2
 }
 
 /**

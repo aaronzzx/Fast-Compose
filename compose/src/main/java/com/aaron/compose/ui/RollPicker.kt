@@ -6,7 +6,6 @@ import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateDecay
-import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -42,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.BlendMode
@@ -67,9 +67,9 @@ import androidx.compose.ui.util.unpackInt1
 import androidx.compose.ui.util.unpackInt2
 import com.aaron.compose.ktx.onClick
 import com.aaron.compose.ktx.toSp
+import com.aaron.compose.ui.RollPickerDefaults.AbsMaxFlingVelocity
 import com.aaron.compose.ui.RollPickerDefaults.LineSpacingMultiplier
 import com.aaron.compose.ui.RollPickerDefaults.Loop
-import com.aaron.compose.ui.RollPickerDefaults.MaxFlingVelocity
 import com.aaron.compose.ui.RollPickerDefaults.Style
 import com.aaron.compose.ui.RollPickerDefaults.VisibleCount
 import com.aaron.compose.ui.RollPickerDefaults.getDefaultSize
@@ -97,13 +97,16 @@ fun VerticalRollPicker(
     style: RollPickerStyle = Style,
     visibleCount: Int = VisibleCount,
     lineSpacingMultiplier: Float = LineSpacingMultiplier,
-    absMaxVelocity: Float = MaxFlingVelocity,
     loop: Boolean = Loop,
     onItemClick: ((index: RollPickerIndex) -> Unit)? = null,
-    onFling: (suspend (Velocity) -> Unit)? = null,
     itemContent: @Composable (index: RollPickerIndex) -> Unit
 ) {
-    BoxWithConstraints(modifier = modifier.size(getDefaultSize(style, visibleCount))) {
+    BoxWithConstraints(
+        modifier = modifier
+            .size(getDefaultSize(style, visibleCount))
+            .flingForRollPicker(state)
+            .snapToCurrent(state)
+    ) {
         if (maxWidth <= 0.dp || maxHeight <= 0.dp) return@BoxWithConstraints
 
         RollPicker(
@@ -115,10 +118,8 @@ fun VerticalRollPicker(
             style = style,
             visibleCount = visibleCount,
             lineSpacingMultiplier = lineSpacingMultiplier,
-            absMaxVelocity = absMaxVelocity,
             loop = loop,
             onItemClick = onItemClick,
-            onFling = onFling,
             itemContent = itemContent
         )
     }
@@ -133,13 +134,16 @@ fun HorizontalRollPicker(
     style: RollPickerStyle = Style,
     visibleCount: Int = VisibleCount,
     lineSpacingMultiplier: Float = LineSpacingMultiplier,
-    absMaxVelocity: Float = MaxFlingVelocity,
     loop: Boolean = Loop,
     onItemClick: ((index: RollPickerIndex) -> Unit)? = null,
-    onFling: (suspend (Velocity) -> Unit)? = null,
     itemContent: @Composable (index: RollPickerIndex) -> Unit
 ) {
-    BoxWithConstraints(modifier = modifier.size(getDefaultSize(style, visibleCount))) {
+    BoxWithConstraints(
+        modifier = modifier
+            .size(getDefaultSize(style, visibleCount))
+            .flingForRollPicker(state)
+            .snapToCurrent(state)
+    ) {
         if (maxWidth <= 0.dp || maxHeight <= 0.dp) return@BoxWithConstraints
 
         RollPicker(
@@ -151,10 +155,8 @@ fun HorizontalRollPicker(
             style = style,
             visibleCount = visibleCount,
             lineSpacingMultiplier = lineSpacingMultiplier,
-            absMaxVelocity = absMaxVelocity,
             loop = loop,
             onItemClick = onItemClick,
-            onFling = onFling,
             itemContent = itemContent
         )
     }
@@ -170,10 +172,8 @@ private fun RollPicker(
     style: RollPickerStyle,
     visibleCount: Int,
     lineSpacingMultiplier: Float,
-    absMaxVelocity: Float,
     loop: Boolean,
     onItemClick: ((index: RollPickerIndex) -> Unit)?,
-    onFling: (suspend (Velocity) -> Unit)?,
     itemContent: @Composable (index: RollPickerIndex) -> Unit
 ) {
     if (count <= 0) return
@@ -210,7 +210,7 @@ private fun RollPicker(
         it.diameter = diameter
         it.itemSizeAnchor = itemSizeAnchor
         it.itemSize = itemSize
-        it.itemFontSize = itemSize.toSp() * 0.73f
+        it.itemFontSize = itemSize.toSp() * 0.677f
     }
 
     val curOnPick by rememberUpdatedState(newValue = onPick)
@@ -233,42 +233,6 @@ private fun RollPicker(
             ?: coroutineScope.launch {
                 state.animateScrollToIndex(rollPickerIndex)
             }
-    }
-
-    val curOnFling by rememberUpdatedState(newValue = onFling)
-    val curOrientation by rememberUpdatedState(newValue = orientation)
-    val decayAnimationSpec = rememberSplineBasedDecay<Float>()
-    val nestedScrollConnection = remember(state, coroutineScope) {
-        val velocityRange = -absMaxVelocity..absMaxVelocity
-        object : NestedScrollConnection {
-            override suspend fun onPreFling(available: Velocity): Velocity {
-                val limitedVelocity = Velocity(
-                    x = available.x.coerceIn(velocityRange),
-                    y = available.y.coerceIn(velocityRange)
-                )
-                val internalOnFling = curOnFling
-                if (internalOnFling != null) {
-                    internalOnFling(limitedVelocity)
-                } else {
-                    var lastValue = 0f
-                    AnimationState(
-                        initialValue = 0f,
-                        initialVelocity = when (curOrientation) {
-                            Orientation.Vertical -> available.y.coerceIn(velocityRange)
-                            else -> available.x.coerceIn(velocityRange)
-                        }
-                    ).animateDecay(animationSpec = decayAnimationSpec) {
-                        coroutineScope.launch {
-                            val delta = value - lastValue
-                            state.scrollBy(-delta)
-                            lastValue = value
-                        }
-                    }
-                    state.snapToCurrentIndex()
-                }
-                return available
-            }
-        }
     }
 
     val pickerBox: @Composable (index: Int) -> Unit = { index ->
@@ -323,9 +287,7 @@ private fun RollPicker(
 
     if (orientation == Orientation.Vertical) {
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(nestedScrollConnection),
+            modifier = Modifier.fillMaxSize(),
             state = listState,
             contentPadding = PaddingValues(vertical = padding)
         ) {
@@ -335,9 +297,7 @@ private fun RollPicker(
         }
     } else {
         LazyRow(
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(nestedScrollConnection),
+            modifier = Modifier.fillMaxSize(),
             state = listState,
             contentPadding = PaddingValues(horizontal = padding)
         ) {
@@ -348,33 +308,36 @@ private fun RollPicker(
     }
 }
 
-fun Modifier.clipRollPickerCenter(
+fun Modifier.clipCenterForRollPicker(
     state: RollPickerState,
     color: Color,
     scaleX: Float = 1.0f,
-    scaleY: Float = 1.0f
+    scaleY: Float = 1.0f,
+    clipFraction: Float = 1.0f
 ) = run {
     graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
         .drawWithCache {
             val path = Path().apply {
                 val itemSizePx = state.itemSize.toPx()
+                val halfItemSizePx = itemSizePx / 2f
+                val fraction = 1f - clipFraction
                 if (state.orientation == Orientation.Vertical) {
                     val top = (size.height - itemSizePx) / 2f
                     addRect(
                         Rect(
                             left = 0f,
-                            top = top,
+                            top = top + (halfItemSizePx * fraction),
                             right = size.width,
-                            bottom = top + itemSizePx
+                            bottom = (top + itemSizePx) - (halfItemSizePx * fraction)
                         )
                     )
                 } else {
                     val left = (size.width - itemSizePx) / 2f
                     addRect(
                         Rect(
-                            left = left,
+                            left = left + (halfItemSizePx * fraction),
                             top = 0f,
-                            right = left + itemSizePx,
+                            right = (left + itemSizePx) - (halfItemSizePx * fraction),
                             bottom = size.height
                         )
                     )
@@ -397,6 +360,92 @@ fun Modifier.clipRollPickerCenter(
                 }
             }
         }
+}
+
+fun Modifier.flingForRollPicker(
+    state: RollPickerState,
+    absMaxVelocity: Float = AbsMaxFlingVelocity
+) = composed {
+    val velocityRange = -absMaxVelocity..absMaxVelocity
+    val coroutineScope = rememberCoroutineScope()
+    val decayAnimationSpec = rememberSplineBasedDecay<Float>()
+    val nestedScrollConnection = object : NestedScrollConnection {
+        override suspend fun onPreFling(available: Velocity): Velocity {
+            val limitedVelocity = Velocity(
+                x = available.x.coerceIn(velocityRange),
+                y = available.y.coerceIn(velocityRange)
+            )
+            var lastValue = 0f
+            AnimationState(
+                initialValue = 0f,
+                initialVelocity = when (state.orientation) {
+                    Orientation.Vertical -> limitedVelocity.y
+                    else -> limitedVelocity.x
+                }
+            ).animateDecay(animationSpec = decayAnimationSpec) {
+                coroutineScope.launch {
+                    val delta = value - lastValue
+                    state.scrollBy(-delta)
+                    lastValue = value
+                }
+            }
+            return available
+        }
+    }
+    nestedScroll(nestedScrollConnection)
+}
+
+fun Modifier.slowInFlingForRollPicker(
+    state: RollPickerState,
+    absMaxVelocity: Float = AbsMaxFlingVelocity,
+    maxFlingCount: Int = Int.MAX_VALUE,
+    avgItemDurationMillis: Int = 300,
+    durationMillisRange: IntRange = 300..3000
+) = composed {
+    val velocityRange = -absMaxVelocity..absMaxVelocity
+    val density = LocalDensity.current
+    val splineBasedDecay = rememberSplineBasedDecay<Float>()
+    val nestedScrollConnection = object : NestedScrollConnection {
+        override suspend fun onPreFling(available: Velocity): Velocity {
+            val limitedVelocity = Velocity(
+                x = available.x.coerceIn(velocityRange),
+                y = available.y.coerceIn(velocityRange)
+            )
+            val converter = Float.VectorConverter
+            val initialValue = converter.convertToVector(0f)
+            val initialVelocity = when (state.orientation) {
+                Orientation.Vertical -> converter.convertToVector(limitedVelocity.y)
+                else -> converter.convertToVector(limitedVelocity.x)
+            }
+            val targetValue = splineBasedDecay.vectorize(converter).getTargetValue(
+                initialValue = initialValue,
+                initialVelocity = initialVelocity
+            )
+            val indexCount = targetValue.value / density.run { state.itemSizeAnchor.toPx() }
+            val limitedIndexCount = indexCount.toInt().coerceIn(-maxFlingCount, maxFlingCount)
+            state.animateScrollToIndex(
+                index = state.currentIndex - limitedIndexCount,
+                animationSpec = tween(
+                    durationMillis = (avgItemDurationMillis * limitedIndexCount.absoluteValue).coerceIn(durationMillisRange),
+                    easing = LinearOutSlowInEasing
+                )
+            )
+            return available
+        }
+    }
+    nestedScroll(nestedScrollConnection)
+}
+
+private fun Modifier.snapToCurrent(state: RollPickerState) = run {
+    val nestedScrollConnection = object : NestedScrollConnection {
+        override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+            if (state.isScrollInProgress.not() && state.currentIndexOffsetFraction != 0f) {
+                state.snapToCurrentIndex()
+            }
+            return super.onPostFling(consumed, available)
+        }
+    }
+    nestedScroll(nestedScrollConnection)
 }
 
 private fun Modifier.wheelTransformation(
@@ -692,40 +741,11 @@ object RollPickerDefaults {
     const val VisibleCount = 5
     const val LineSpacingMultiplier = 1f
     const val Loop = false
-    const val MaxFlingVelocity = 10000f
+    const val AbsMaxFlingVelocity = 6000f
     val Style = Wheel()
 
     private val ItemSize = 25.dp
 
-    @Composable
-    fun slowInFling(
-        state: RollPickerState,
-        maxFlingCount: Int = Int.MAX_VALUE,
-        avgItemDurationMillis: Int = 300,
-        durationMillisRange: IntRange = 300..3000
-    ): suspend (Velocity) -> Unit {
-        val density = LocalDensity.current
-        val decay = remember { exponentialDecay<Float>() }
-        val block: suspend (Velocity) -> Unit = { velocity ->
-            val converter = Float.VectorConverter
-            val initialValue = converter.convertToVector(0f)
-            val initialVelocity = converter.convertToVector(velocity.y)
-            val targetValue = decay.vectorize(converter).getTargetValue(
-                initialValue = initialValue,
-                initialVelocity = initialVelocity
-            )
-            val indexCount = targetValue.value / density.run { state.itemSizeAnchor.toPx() }
-            val limitedIndexCount = indexCount.toInt().coerceIn(-maxFlingCount, maxFlingCount)
-            state.animateScrollToIndex(
-                index = state.currentIndex - limitedIndexCount,
-                animationSpec = tween(
-                    durationMillis = (avgItemDurationMillis * limitedIndexCount.absoluteValue).coerceIn(durationMillisRange),
-                    easing = LinearOutSlowInEasing
-                )
-            )
-        }
-        return block
-    }
     internal fun getDefaultSize(style: RollPickerStyle, visibleCount: Int): Dp {
         val defaultItemSize = ItemSize
         if (style is Wheel) {
