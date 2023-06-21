@@ -124,7 +124,7 @@ fun AutoResizeText(
         Canvas(modifier = Modifier.size(width, height)) {
             if (fitCenter) {
                 val textOffset = textResult.getCenterOffset(0)
-                translate(top = (size.height - textResult.size.height) / 2 - textOffset) {
+                translate(top = (size.height - textResult.size.height) / 2 + textOffset) {
                     drawText(textResult)
                 }
             } else {

@@ -29,9 +29,10 @@ fun TextLayoutResult.getTextMetrics(lineIndex: Int): TextMetrics {
 fun TextLayoutResult.getCenterOffset(lineIndex: Int): Float {
     val top = getTop(lineIndex)
     val ascent = getAscent(lineIndex)
+    val baseline = getBaseline(lineIndex)
     val descent = getDescent(lineIndex)
     val bottom = getBottom(lineIndex)
-    return ((ascent - top) - (bottom - descent)) / 2
+    return ((bottom - baseline) - (ascent - top)) / 2
 }
 
 /**
