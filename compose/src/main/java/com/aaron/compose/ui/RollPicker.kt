@@ -81,6 +81,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
+import kotlin.math.cos
 import kotlin.math.sin
 
 /**
@@ -453,26 +454,26 @@ private fun Modifier.wheelTransformation(
     index: RollPickerIndex
 ) = graphicsLayer {
     val orientation = state.orientation
-    val diameter = state.diameter
+    val diameter = state.diameter.toPx()
+    val radius = diameter / 2f
     val visibleCount = state.visibleCount
-    val itemSizeAnchor = state.itemSizeAnchor
+    val itemSizeAnchor = state.itemSizeAnchor.toPx()
 
     val offsetFraction = state.calculateOffsetFraction(index)
     val actualVisibleCount = visibleCount + 2
     val actualSideVisibleCount = (actualVisibleCount - 1) / 2
-    val degree = offsetFraction * 90f / actualSideVisibleCount
-    val safeDegree = degree.coerceIn(-90f, 90f)
-
-    val scaleFactor = 1f - (safeDegree.absoluteValue / 90f)
-
-    val radius = diameter.toPx() / 2f
+    val degree = (offsetFraction * 90f / actualSideVisibleCount).coerceIn(-90f, 90f)
     val radian = Math
         .toRadians(degree.toDouble())
         .toFloat()
+
+//    val scaleFactor = 1f - (degree.absoluteValue / 90f)
+    val scaleFactor = cos(radian)
+
     val arcLength = sin(radian) * radius
 
     // 所有子项偏移到原点（选中区域）
-    val initialTrans = itemSizeAnchor.toPx() * offsetFraction
+    val initialTrans = itemSizeAnchor * offsetFraction
     val transOffset = initialTrans - arcLength
 
     if (orientation == Orientation.Vertical) {
