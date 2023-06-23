@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.ClipOp
@@ -51,6 +52,7 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -83,6 +85,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.math.tan
 
 /**
  * @author aaronzzxup@gmail.com
@@ -256,7 +259,8 @@ private fun RollPicker(
                     if (style !is Wheel) this else {
                         wheelTransformation(
                             state = state,
-                            index = rollPickerIndex
+                            index = rollPickerIndex,
+                            curvature = style.curvature
                         )
                     }
                 }
@@ -451,7 +455,8 @@ private fun Modifier.snapToCurrent(state: RollPickerState) = run {
 
 private fun Modifier.wheelTransformation(
     state: RollPickerState,
-    index: RollPickerIndex
+    index: RollPickerIndex,
+    curvature: Float
 ) = graphicsLayer {
     val orientation = state.orientation
     val diameter = state.diameter.toPx()
@@ -482,6 +487,32 @@ private fun Modifier.wheelTransformation(
     } else {
         scaleX = scaleFactor
         translationX = transOffset
+    }
+}.drawWithContent {
+    val orientation = state.orientation
+    val itemSizeAnchor = state.itemSizeAnchor.toPx()
+    val offsetFraction = state.calculateOffsetFraction(index)
+
+    val degree = (45f * curvature * -offsetFraction).coerceIn(-45f, 45f)
+    val radian = Math.toRadians(degree.toDouble()).toFloat()
+    val initialTrans = itemSizeAnchor * sin(radian)
+    val skew = tan(radian)
+    var transOffset = initialTrans * -offsetFraction
+    if (offsetFraction > 0f) {
+        // 因为错切原点一样，如果选中区上方不减少偏移就和下方对应不上
+        transOffset -= initialTrans
+    }
+
+    if (orientation == Orientation.Vertical) {
+        translate(left = transOffset) {
+            drawContext.canvas.skew(sx = skew, sy = 0f)
+            this@drawWithContent.drawContent()
+        }
+    } else {
+        translate(top = transOffset) {
+            drawContext.canvas.skew(sx = 0f, sy = skew)
+            this@drawWithContent.drawContent()
+        }
     }
 }
 
@@ -689,17 +720,7 @@ class RollPickerState(val initialIndex: Int = 0) {
 @Stable
 sealed class RollPickerStyle {
 
-    class Wheel : RollPickerStyle() {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-            return true
-        }
-
-        override fun hashCode(): Int {
-            return javaClass.hashCode()
-        }
-    }
+    data class Wheel(val curvature: Float = 0f) : RollPickerStyle()
 
     data class Flat(val halfExposed: Boolean = false) : RollPickerStyle()
 }

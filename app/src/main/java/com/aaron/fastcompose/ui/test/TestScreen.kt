@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.material.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -125,16 +124,16 @@ private fun TestScreen(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-//            Wheels()
+            Wheels()
 
-            Column {
-                AutoResizeText(
-                    modifier = Modifier.background(Color(0xFFEF9A9A)),
-                    text = "Hello World! 你好，世界！",
-                    fitCenter = true
-                )
-                SingleWheel()
-            }
+//            Column {
+//                AutoResizeText(
+//                    modifier = Modifier.background(Color(0xFFEF9A9A)),
+//                    text = "Hello World! 你好，世界！",
+//                    fitCenter = true
+//                )
+//                SingleWheel()
+//            }
         }
     }
 }
@@ -222,7 +221,7 @@ private fun Wheels() {
         modifier = Modifier
             .background(color = Color(0xFFF0F0F0))
             .fillMaxWidth()
-            .height(250.dp)
+            .height(150.dp)
     ) {
         var itemSize by remember {
             mutableStateOf(0.dp)
@@ -245,15 +244,17 @@ private fun Wheels() {
                 .fillMaxSize(),
 //                    horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            val year = (1970..2023).map { "$it" }.toPersistentList()
-            val month = (1..12).map { formatInt(it) }.toPersistentList()
-            val day = (1..30).map { formatInt(it) }.toPersistentList()
+            val year = (1970..2023).map { "${it}" }.toPersistentList()
+            val month = (1..12).map { "${formatInt(it)}" }.toPersistentList()
+            val day = (1..30).map { "${formatInt(it)}" }.toPersistentList()
+            val curvature = 0.05f
             MyWheel(
                 modifier = Modifier
                     .fillMaxHeight()
                     .weight(1f),
                 label = "年",
                 data = year,
+                style = RollPickerStyle.Wheel(curvature),
                 onSelected = {
                     ToastUtils.showShort(it)
                 },
@@ -267,6 +268,7 @@ private fun Wheels() {
                     .weight(1f),
                 label = "月",
                 data = month,
+                style = RollPickerStyle.Wheel(),
                 onSelected = {
                     ToastUtils.showShort(it)
                 }
@@ -277,6 +279,7 @@ private fun Wheels() {
                     .weight(1f),
                 label = "日",
                 data = day,
+                style = RollPickerStyle.Wheel(-curvature),
                 onSelected = {
                     ToastUtils.showShort(it)
                 }
@@ -291,21 +294,22 @@ private fun MyWheel(
     data: PersistentList<String>,
     onSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
+    style: RollPickerStyle = RollPickerStyle.Wheel(),
     onItemSizeChange: ((Dp) -> Unit)? = null
 ) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val rollPickerState = rememberRollPickerState()
+
         val textStyle = LocalTextStyle.current.copy(
             fontFamily = FontFamily.Monospace,
             color = Color(0xFF7C7C7C)
         )
         val maxLines = 1
         val overflow = TextOverflow.Ellipsis
-        val fontSizeRange = FontSizeRange(min = 8.sp, max = 26.sp)
 
-        val rollPickerState = rememberRollPickerState()
         val curOnItemSizeChange by rememberUpdatedState(newValue = onItemSizeChange)
         LaunchedEffect(key1 = rollPickerState) {
             launch {
@@ -328,26 +332,31 @@ private fun MyWheel(
         VerticalRollPicker(
             modifier = Modifier
                 .fillMaxHeight()
-                .weight(1f),
+                .weight(1f)
+                .clipCenterForRollPicker(
+                    state = rollPickerState,
+                    color = MaterialTheme.colors.primary
+                ),
             count = data.size,
             state = rollPickerState,
-            visibleCount = 9,
+            visibleCount = 7,
             loop = true,
             lineSpacingMultiplier = 1f,
             onPick = { index ->
                 onSelected(data[index.value])
-            }
+            },
+            style = style
         ) { index ->
             AutoResizeText(
                 text = data[index.value],
                 style = textStyle.copy(fontFamily = FontFamily.Monospace),
                 maxLines = maxLines,
                 overflow = overflow,
-                fontSizeRange = fontSizeRange
+                fontSizeRange = FontSizeRange(min = 8.sp, max = rollPickerState.itemFontSize)
             )
         }
 
-        Text(text = label)
+//        Text(text = label)
     }
 }
 
