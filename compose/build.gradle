@@ -5,6 +5,8 @@ plugins {
 }
 
 android {
+    namespace "com.aaron.compose"
+
     compileSdk 33
 
     defaultConfig {
@@ -27,11 +29,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = '11'
+        jvmTarget = '17'
         freeCompilerArgs += [
                 "-Xallow-jvm-ir-dependencies",
                 "-Xskip-prerelease-check",
@@ -71,7 +73,8 @@ dependencies {
     api "androidx.compose.ui:ui-util:$compose_version"
     api "androidx.compose.ui:ui-tooling-preview:$compose_version"
     api "androidx.compose.ui:ui-viewbinding:$compose_version"
-    api "androidx.compose.material:material:$compose_version"
+//    api "androidx.compose.material:material:$compose_version"
+    api "androidx.compose.material3:material3:1.1.1"
     api "androidx.compose.runtime:runtime-livedata:$compose_version"
 
     androidTestApi "androidx.compose.ui:ui-test-junit4:$compose_version"
