@@ -1,6 +1,6 @@
 package com.aaron.fastcompose.ui
 
-import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
@@ -48,7 +48,7 @@ private fun FastComposeNavHost(navController: NavHostController) {
         startDestination = HomeScreen.route,
         enterTransition = {
             slideIntoContainer(
-                towards = AnimatedContentScope.SlideDirection.Start,
+                towards = AnimatedContentTransitionScope.SlideDirection.Start,
                 animationSpec = tween(
                     durationMillis = durationMillis
                 )
@@ -56,7 +56,7 @@ private fun FastComposeNavHost(navController: NavHostController) {
         },
         exitTransition = {
             slideOutOfContainer(
-                towards = AnimatedContentScope.SlideDirection.Start,
+                towards = AnimatedContentTransitionScope.SlideDirection.Start,
                 animationSpec = tween(
                     durationMillis = durationMillis
                 ),
@@ -65,7 +65,7 @@ private fun FastComposeNavHost(navController: NavHostController) {
         },
         popEnterTransition = {
             slideIntoContainer(
-                towards = AnimatedContentScope.SlideDirection.End,
+                towards = AnimatedContentTransitionScope.SlideDirection.End,
                 animationSpec = tween(
                     durationMillis = durationMillis
                 ),
@@ -74,7 +74,7 @@ private fun FastComposeNavHost(navController: NavHostController) {
         },
         popExitTransition = {
             slideOutOfContainer(
-                towards = AnimatedContentScope.SlideDirection.End,
+                towards = AnimatedContentTransitionScope.SlideDirection.End,
                 animationSpec = tween(
                     durationMillis = durationMillis
                 )

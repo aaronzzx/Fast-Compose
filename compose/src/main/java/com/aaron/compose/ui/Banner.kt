@@ -101,14 +101,13 @@ fun Banner(
             1 -> 1
             else -> maxPage / 2
         }
-        val pagerState = rememberPagerState(initialPage = startIndex)
+        val pagerState = rememberPagerState(initialPage = startIndex) { virtualPageCount }
 
         var bannerWidth by rememberSaveable {
             mutableStateOf(0)
         }
         HorizontalPager(
             state = pagerState,
-            pageCount = virtualPageCount,
             modifier = Modifier
                 .fillMaxSize()
                 .onGloballyPositioned {

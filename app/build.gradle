@@ -6,12 +6,13 @@ plugins {
 }
 
 android {
-    compileSdk 33
+    compileSdk 34
+    namespace "com.aaron.fastcompose"
 
     defaultConfig {
         applicationId "com.aaron.fastcompose"
         minSdk 21
-        targetSdk 33
+        targetSdk 34
         versionCode 1
         versionName "1.0"
 
@@ -92,16 +93,16 @@ dependencies {
     implementation 'io.github.scwang90:refresh-header-classics:2.0.5'
     implementation 'io.github.scwang90:refresh-footer-classics:2.0.5'
 
-    implementation "com.google.dagger:hilt-android:2.38.1"
-    kapt "com.google.dagger:hilt-compiler:2.38.1"
+    implementation "com.google.dagger:hilt-android:2.47"
+    kapt "com.google.dagger:hilt-compiler:2.47"
 
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
 
-    def room_version = "2.4.3"
+    def room_version = "2.5.2"
 
     implementation "androidx.room:room-runtime:$room_version"
     // To use Kotlin annotation processing tool (kapt)
     kapt "androidx.room:room-compiler:$room_version"
-    implementation "androidx.room:room-paging:2.5.0-alpha03"
+    implementation "androidx.room:room-paging:$room_version"
 }
